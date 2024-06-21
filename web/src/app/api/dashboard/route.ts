@@ -7,8 +7,11 @@ type Params = {
 }
 
 export async function GET(request: Request, context: { params: Params }): Promise<NextResponse<Params>> {
+    console.log(request, context);
+
     try {
         const {data} = await axios.get<string>(API_URL);
+        console.log(data);
     } catch (e) {
         console.log("Errrrr");
         console.log(e);

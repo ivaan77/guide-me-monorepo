@@ -19,7 +19,7 @@ export const Map = ({ markerPositions, polylinePositions, onDoubleClick }: Props
     });
 
 
-    const [map, setMap] = useState<google.maps.Map | null>(null);
+    const [, setMap] = useState<google.maps.Map | null>(null);
 
     const onLoad = useCallback(function callback(map: google.maps.Map) {
         setMap(map);

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Map } from '@/components/Map';
 
 export default async function Dashboard() {
-    const [tourStops, setTourStops] = useState<google.maps.LatLngLiteral[]>([]);
+    //const [tourStops, setTourStops] = useState<google.maps.LatLngLiteral[]>([]);
     const [navigationDirections, setNavigationDirections] = useState<google.maps.LatLngLiteral[]>([]);
 
     useEffect(() => {
