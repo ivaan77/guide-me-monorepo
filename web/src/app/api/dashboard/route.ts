@@ -1,13 +1,19 @@
 import axios from 'axios';
 import { NextResponse } from 'next/server';
+import { API_URL } from '@/utils/config';
 
 type Params = {
     team: string
 }
 
 export async function GET(request: Request, context: { params: Params }): Promise<NextResponse<Params>> {
-    console.log(request);
+    try {
+        const {data} = await axios.get<string>(API_URL);
+    } catch (e) {
+        console.log("Errrrr");
+        console.log(e);
+        console.log("Errrrr");
+    }
 
-    const {data} = await axios.get<string>('http://localhost:3001');
-    return NextResponse.json({team: data});
+    return NextResponse.json({team: 'data'});
 }
