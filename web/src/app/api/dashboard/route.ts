@@ -10,7 +10,7 @@ export async function GET(request: Request, context: { params: Params }): Promis
     console.log(request, context);
 
     try {
-        const {data} = await axios.get<string>(API_URL);
+        const {data} = await axios.get(API_URL);
         console.log(data);
     } catch (e) {
         console.log("Errrrr");
