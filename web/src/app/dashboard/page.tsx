@@ -1,18 +1,12 @@
 'use client';
 
-import { dummReq } from '@/utils/api';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Map } from '@/components/Map';
 
-export default async function Dashboard() {
+export default function Dashboard() {
     //const [tourStops, setTourStops] = useState<google.maps.LatLngLiteral[]>([]);
     const [navigationDirections, setNavigationDirections] = useState<google.maps.LatLngLiteral[]>([]);
-
-    useEffect(() => {
-        dummReq();
-    }, []);
-
 
     const handleDoubleClick = (latLng: google.maps.LatLngLiteral): void => {
         setNavigationDirections(prevState => {

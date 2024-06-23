@@ -1,24 +1,22 @@
-import axios from 'axios';
-import { NextResponse } from 'next/server';
-import { API_URL } from '@/utils/config';
-import { AdminPath, AllCityResponse,  } from '@guide-me-app/core';
+import { restClient } from '@/utils/server/restClient';
+import { NextRequest, NextResponse } from 'next/server';
+import { AdminPath, AllCityResponse, CityByIdResponse, SaveCityRequest, } from '@guide-me-app/core';
 
-type Params = {
-    team: string
+export async function GET(): Promise<NextResponse<AllCityResponse>> {
+    try {
+        const {data} = await restClient.get<AllCityResponse>(AdminPath.City.getAll) as AllCityResponse;
+        return NextResponse.json(data);
+    } catch (e) {
+        console.log(e);
+    }
 }
 
-const restClient = axios.create({ baseURL: API_URL});
-
-export async function GET(request: Request, context: { params: Params }): Promise<NextResponse<Params>> {
-    console.log(request, context);
+export async function POST(request: NextRequest): Promise<NextResponse<CityByIdResponse>> {
     try {
-        const {data} = await restClient.get<AllCityResponse>(AdminPath.City.getAll);
-        console.log(data);
+        const body = await request.json() as SaveCityRequest;
+        const {data} = await restClient.post<CityByIdResponse>(AdminPath.City.save, body) as CityByIdResponse;
+        return NextResponse.json(data);
     } catch (e) {
-        console.log("Errrrr");
         console.log(e);
-        console.log("Errrrr");
     }
-
-    return NextResponse.json({team: 'data'});
 }
