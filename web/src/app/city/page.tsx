@@ -5,7 +5,7 @@ import { useLoading } from '@/components/Loading/useLoading';
 import { getAllCities, saveCity } from '@/utils/api';
 import { CheckIcon } from '@chakra-ui/icons';
 import { Box, Button, Input, Table, TableCaption, TableContainer, Tbody, Td, Th, Thead, Tr, useToast } from '@chakra-ui/react';
-import { AllCityResponse, City } from '@guide-me-app/core';
+import { City } from '@guide-me-app/core';
 import { useEffect, useState } from 'react';
 
 export default function CityPage() {
