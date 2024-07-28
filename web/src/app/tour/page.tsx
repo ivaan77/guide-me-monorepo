@@ -31,7 +31,7 @@ import {
     useDisclosure,
     useToast
 } from '@chakra-ui/react';
-import { AllCityResponse, City, CreateTourSpotRequest, Nullable, OnValueChangeHandler, TourSpotResponse } from '@guide-me-app/core';
+import { City, CreateTourSpotRequest, Nullable, OnValueChangeHandler, TourSpotResponse } from '@guide-me-app/core';
 import { ReactElement, useEffect, useState } from 'react';
 
 type TourGuidePlace = {
@@ -74,7 +74,7 @@ export default function Tour() {
 
     const fetchAllCities = async (): Promise<void> => {
         try {
-            const { data } = await withLoading(getAllCities<AllCityResponse>());
+            const { data } = await withLoading(getAllCities());
             setCities(data.cities);
         } catch (e) {
             toast({
