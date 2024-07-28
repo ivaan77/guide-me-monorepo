@@ -31,7 +31,7 @@ import {
     useDisclosure,
     useToast
 } from '@chakra-ui/react';
-import { City, CreateTourSpotRequest, Nullable, OnValueChangeHandler, TourSpotResponse } from '@guide-me-app/core';
+import { City, CreateTourSpotRequest, Nullable, OnValueChangeHandler } from '@guide-me-app/core';
 import { ReactElement, useEffect, useState } from 'react';
 
 type TourGuidePlace = {
@@ -216,7 +216,7 @@ function AddTourStop({ onSave, city }: AddStopProps) {
         };
 
         try {
-            const { data } = await withLoading(saveTourSpot(req)) as TourSpotResponse;
+            const { data } = await withLoading(saveTourSpot(req));
             onSave({ ...stop, id: data.id });
         } catch (e) {
             console.log(e);
