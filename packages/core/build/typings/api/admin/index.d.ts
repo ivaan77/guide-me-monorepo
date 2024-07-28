@@ -15,12 +15,14 @@ export type CreateTourSpotRequest = {
     name: string;
     images: string[];
     audio: string;
+    location: Coordinates;
 };
 export type TourSpotResponse = {
     id: string;
     name: string;
     images: string[];
     audio: string;
+    location: Coordinates;
 };
 export type CreateTourGuideRequest = {
     name: string;
