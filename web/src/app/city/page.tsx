@@ -21,7 +21,7 @@ export default function CityPage() {
 
     const fetchAllCities = async (): Promise<void> => {
         try {
-            const { data } = await withLoading(getAllCities<AllCityResponse>());
+            const { data } = await withLoading(getAllCities());
             setCities(data.cities);
         } catch (e) {
             toast({
