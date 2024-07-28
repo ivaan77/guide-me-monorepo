@@ -32,7 +32,7 @@ import {
     useToast
 } from '@chakra-ui/react';
 import { City, CreateTourSpotRequest, Nullable, OnValueChangeHandler } from '@guide-me-app/core';
-import { ReactElement, useEffect, useState } from 'react';
+import { ChangeEvent, ReactElement, useEffect, useState } from 'react';
 
 type TourGuidePlace = {
     cityId: string | undefined;
@@ -270,8 +270,8 @@ type Props = {
 }
 
 const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement => {
-    const handleUploadFile = async (event): Promise<void> => {
-        const files = event.target.files as FileList;
+    const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+        const files = event.target.files;
         const f = Object.values(files);
         try {
             if (f.length > 0) {
