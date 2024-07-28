@@ -1,9 +1,21 @@
+import { Button, Flex, Image } from '@chakra-ui/react';
+import { BRAND_COLOR } from '@guide-me-app/core';
+import Link from 'next/link';
+
 export default function Home() {
     return (
-        <div style={{ width: '100%', flex: 1, padding: '4rem', background: '#F8F9FA', justify: 'space-around' }}>
-            <div style={{ width: '80%', flexDirection: 'column', gap: 24 }}>
-                <h1 className="text-3xl font-bold underline"/>
-            </div>
-        </div>
+        <>
+            <Flex justifyContent="center" alignItems="center" flex={.5}>
+                <Image src="/images/logo-blue.png"/>
+            </Flex>
+            <Flex justifyContent="center" flex={1} gap={8} alignItems="center">
+                <Button background={BRAND_COLOR}>
+                    <Link href="./city">Cities</Link>
+                </Button>
+                <Button background={BRAND_COLOR}>
+                    <Link href="./dashboard">Dashboard</Link>
+                </Button>
+            </Flex>
+        </>
     );
 }

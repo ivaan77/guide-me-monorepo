@@ -16,6 +16,10 @@
   }
 }
 
+html {
+  height: 100%;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -24,6 +28,8 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+  height: 100%;
+  display: flex;
 }
 
 @layer utilities {

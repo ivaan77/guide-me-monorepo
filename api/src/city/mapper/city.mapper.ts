@@ -1,22 +1,19 @@
 import { City, SaveCityRequest } from '@guide-me-app/core';
-import { CityModel, SaveCityModel } from './city.repository';
+import { City as CityModel, CityDocument } from '../schemas/city.schema';
 
 export class CityMapper {
-    private constructor() {
-    }
-
-    static fromModelsToCities = (models: CityModel[]): City[] => {
+    static fromModelsToCities = (models: CityDocument[]): City[] => {
         return models.map(CityMapper.fromModelToCity);
     };
 
-    static fromModelToCity = (model: CityModel): City => {
+    static fromModelToCity = (model: CityDocument): City => {
         return {
             id: model._id.toString(),
             name: model.name
         };
     };
 
-    static fromSaveRequestToModel = (request: SaveCityRequest): SaveCityModel => {
+    static fromSaveRequestToModel = (request: SaveCityRequest): CityModel => {
         return {
             name: request.name,
         };

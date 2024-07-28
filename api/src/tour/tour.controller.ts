@@ -1,0 +1,30 @@
+import { AdminPath, CreateTourGuideRequest, CreateTourSpotRequest, TourGuideResponse, TourSpotResponse } from '@guide-me-app/core';
+import { Body, Controller, Get, Post } from '@nestjs/common';
+import { TourService } from './tour.service';
+
+@Controller()
+export class TourController {
+    constructor(private readonly tourService: TourService) {
+    }
+
+    @Post(AdminPath.TourSpot.save)
+    async saveSpot(@Body() request: CreateTourSpotRequest): Promise<TourSpotResponse> {
+        return await this.tourService.saveSpot(request);
+    }
+
+    @Get(AdminPath.TourSpot.getAll)
+    async getAllSpots(): Promise<TourSpotResponse[]> {
+        return await this.tourService.getAllSpots();
+    }
+
+    @Get(AdminPath.Tour.getAll)
+    async getAllTours(): Promise<TourGuideResponse[]> {
+        return await this.tourService.getAllTours();
+    }
+
+    @Post(AdminPath.Tour.save)
+    async saveTourGuide(@Body() request: CreateTourGuideRequest): Promise<TourGuideResponse> {
+        return await this.tourService.saveTourGuide(request);
+    }
+
+}

@@ -1,8 +1,11 @@
+import { LoadingProvider } from '@/components/Loading/LoadingContext';
+import { Flex, Text } from '@chakra-ui/react';
+import { BRAND_COLOR } from '@guide-me-app/core';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ReactNode } from 'react';
-import { Providers } from './providers';
 import './globals.css';
+import { Providers } from './providers';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -13,11 +16,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
     return (
-        <html lang="en" >
+        <html lang="en">
         <body className={inter.className} suppressHydrationWarning>
-        <Providers>
-            {children}
-        </Providers>
+        <LoadingProvider>
+            <Providers>
+                <Flex flex={1} flexDirection='column'>
+                    <Flex width="100%" style={{ padding: '2rem', background: BRAND_COLOR, justifyContent: 'center' }}>
+                        <Text style={{ fontWeight: 'bold' }}>
+                            GuideMe! admin
+                        </Text>
+                    </Flex>
+                    {children}
+                </Flex>
+            </Providers>
+        </LoadingProvider>
         </body>
         </html>
     );

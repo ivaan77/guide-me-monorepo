@@ -6,5 +6,13 @@ export const AdminPath = {
         byId: '/city/:id',
         getCityById: (id: string): string => AdminPath.City.byId.replace(':id', id),
         deleteCityById: (id: string): string => AdminPath.City.delete.replace(':id', id),
+    },
+    Tour: {
+        getAll: '/tour/all',
+        save: '/tour/save'
+    },
+    TourSpot: {
+        save: '/tour/spot/save',
+        getAll: '/tour/spot/all',
     }
 };

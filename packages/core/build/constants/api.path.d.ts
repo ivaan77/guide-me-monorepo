@@ -7,4 +7,12 @@ export declare const AdminPath: {
         getCityById: (id: string) => string;
         deleteCityById: (id: string) => string;
     };
+    Tour: {
+        getAll: string;
+        save: string;
+    };
+    TourSpot: {
+        save: string;
+        getAll: string;
+    };
 };
