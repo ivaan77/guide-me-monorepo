@@ -272,6 +272,11 @@ type Props = {
 const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement => {
     const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
         const files = event.target.files;
+
+        if (!files) {
+            return;
+        }
+
         const f = Object.values(files);
         try {
             if (f.length > 0) {
