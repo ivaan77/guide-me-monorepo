@@ -8,7 +8,7 @@ import { Box, Button, Input, Table, TableCaption, TableContainer, Tbody, Td, Th,
 import { AllCityResponse, City } from '@guide-me-app/core';
 import { useEffect, useState } from 'react';
 
-export default function City() {
+export default function CityPage() {
     const [cities, setCities] = useState<City[]>([]);
     const [cityName, setCityName] = useState<string>('');
 
