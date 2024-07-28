@@ -10,7 +10,7 @@ interface LoadingContext {
 
 export const LoadingContext = createContext<LoadingContext>({
     isLoading: false,
-    withLoading: (promise: Promise<unknown>) => promise,
+    withLoading: (promise: Promise<any>) => promise,
 });
 
 export const LoadingProvider = ({ children }: PropsWithChildren<unknown>): ReactElement => {
