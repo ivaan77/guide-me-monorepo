@@ -1,29 +1,11 @@
+import { Flex, Text } from '@chakra-ui/react';
+import { BRAND_COLOR } from '@guide-me-app/core';
+import { ReactElement } from 'react';
 
-// export const links = [
-//     { link: '/about', label: 'Features' },
-//     {
-//         link: '#1',
-//         label: 'Learn',
-//         links: [
-//             { link: '/docs', label: 'Documentation' },
-//             { link: '/resources', label: 'Resources' },
-//             { link: '/community', label: 'Community' },
-//             { link: '/blog', label: 'Blog' },
-//         ],
-//     },
-//     { link: '/about', label: 'About' },
-//     { link: '/pricing', label: 'Pricing' },
-//     {
-//         link: '#2',
-//         label: 'Support',
-//         links: [
-//             { link: '/faq', label: 'FAQ' },
-//             { link: '/demo', label: 'Book a demo' },
-//             { link: '/forums', label: 'Forums' },
-//         ],
-//     },
-// ];
-
-export const HeaderMenu = () => (
-    <div>s</div>
+export const Header = (): ReactElement => (
+    <Flex width="100%" style={{ padding: '2rem', background: BRAND_COLOR, justifyContent: 'center' }}>
+        <Text style={{ fontWeight: 'bold' }}>
+            GuideMe! admin
+        </Text>
+    </Flex>
 )

@@ -1,6 +1,6 @@
 import { restClient } from '@/utils/server/restClient';
 import { NextResponse } from 'next/server';
-import { AdminPath, CityByIdResponse, } from '@guide-me-app/core';
+import { AdminPath, CityByIdResponse } from '@guide-me-app/core';
 
 type Params = {
     id: string

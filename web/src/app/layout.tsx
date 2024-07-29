@@ -1,6 +1,6 @@
+import { Header } from '@/components/Header';
 import { LoadingProvider } from '@/components/Loading/LoadingContext';
-import { Flex, Text } from '@chakra-ui/react';
-import { BRAND_COLOR } from '@guide-me-app/core';
+import { Flex } from '@chakra-ui/react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ReactNode } from 'react';
@@ -20,12 +20,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <body className={inter.className} suppressHydrationWarning>
         <LoadingProvider>
             <Providers>
-                <Flex flex={1} flexDirection='column'>
-                    <Flex width="100%" style={{ padding: '2rem', background: BRAND_COLOR, justifyContent: 'center' }}>
-                        <Text style={{ fontWeight: 'bold' }}>
-                            GuideMe! admin
-                        </Text>
-                    </Flex>
+                <Flex flex={1} flexDirection="column">
+                    <Header/>
                     {children}
                 </Flex>
             </Providers>

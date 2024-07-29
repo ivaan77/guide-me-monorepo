@@ -1,298 +1,112 @@
 'use client';
 
-import { UploadResponse } from '@/app/api/upload/route';
 import { LoadingSkeleton } from '@/components/Loading/LoadingSkeleton';
 import { useLoading } from '@/components/Loading/useLoading';
-import { Map } from '@/components/Map';
-import { getAllCities, saveTourSpot, uploadFile } from '@/utils/api';
-import {
-    Box,
-    Button,
-    FormControl,
-    FormLabel,
-    Input,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-    Select,
-    Table,
-    TableCaption,
-    TableContainer,
-    Tbody,
-    Td,
-    Text,
-    Th,
-    Thead,
-    Tr,
-    useDisclosure,
-    useToast
-} from '@chakra-ui/react';
-import { City, CreateTourSpotRequest, Nullable, OnValueChangeHandler } from '@guide-me-app/core';
-import { ChangeEvent, ReactElement, useEffect, useState } from 'react';
+import { getAllTourGuides } from '@/utils/api';
+import { EditIcon } from '@chakra-ui/icons';
+import { Button, Center, Container, Flex, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tooltip, Tr, useToast } from '@chakra-ui/react';
+import { BRAND_COLOR, OnValueChangeHandler, TourGuideResponse } from '@guide-me-app/core';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ReactElement, useEffect, useState } from 'react';
 
-type TourGuidePlace = {
-    cityId: string | undefined;
-    name: string;
-    stops: TourGuideStop[];
-}
-
-const INITIAL_TOUR_GUIDE_STOP: TourGuideStop = {
-    id: null,
-    name: '',
-    coordinate: null,
-    audio: [],
-    images: [],
-};
-
-type TourGuideStop = {
-    id: Nullable<string>;
-    name: string;
-    coordinate: Nullable<google.maps.LatLngLiteral>;
-    audio: string[];
-    images: string[];
-}
-
-const INITIAL_TOUR_GUIDE_PLACE: TourGuidePlace = {
-    cityId: undefined,
-    name: '',
-    stops: [],
-};
-
-export default function Tour() {
-    const [cities, setCities] = useState<City[]>([]);
-    const [tourPlace, setTourPlace] = useState<TourGuidePlace>(INITIAL_TOUR_GUIDE_PLACE);
+export default function AllToursPage() {
+    const [tourGuides, setTourGuides] = useState<TourGuideResponse[]>([]);
     const { isLoading, withLoading } = useLoading();
     const toast = useToast();
+    const router = useRouter();
 
     useEffect(() => {
-        fetchAllCities();
+        fetchAllTourGuides();
     }, []);
 
-    const fetchAllCities = async (): Promise<void> => {
+    const fetchAllTourGuides = async (): Promise<void> => {
         try {
-            const { data } = await withLoading(getAllCities());
-            setCities(data.cities);
+            const { data } = await withLoading(getAllTourGuides());
+            setTourGuides(data);
         } catch (e) {
             toast({
-                title: 'City',
-                description: 'Failed loading cities',
+                title: 'Tour Guides',
+                description: 'Failed fetching tour guides',
                 status: 'error',
                 duration: 3000,
                 isClosable: true,
             });
         }
-    };
-
-    const updatePlace = (value: Partial<TourGuidePlace>): void => {
-        setTourPlace(prevState => {
-            return {
-                ...prevState,
-                ...value
-            };
-        });
-    };
-
-    const addStop = (value: TourGuideStop): void => {
-        setTourPlace(prevState => {
-            return {
-                ...prevState,
-                stops: [
-                    ...prevState.stops,
-                    value
-                ]
-            };
-        });
     };
 
     if (isLoading) {
         return <LoadingSkeleton/>;
     }
 
+    const onEditClick = (tourGuideId: string): void => router.push(`/tour/${tourGuideId}`);
+
     return (
-        <Box display="flex" flexDirection="column" width="90%" alignItems="center" justifyContent="space-around" flex={1}>
-            <h3>Cities</h3>
-            <FormControl isRequired>
-                <FormLabel>Tour city</FormLabel>
-                <Select value={tourPlace.cityId} placeholder="Select option" onChange={event => updatePlace({ cityId: event.target.value })}>
-                    {cities.map(city => (
-                        <option key={city.id} value={city.id}>{city.name}</option>
+        <section>
+            <Center padding={8}>
+                <Text>GuideMe Tours</Text>
+            </Center>
+            <Flex flex={1} flexDirection="row-reverse" paddingLeft={8} paddingRight={8}>
+                <Button mb={8} background={BRAND_COLOR}>
+                    <Link href={'/tour/add'}>Add new tour</Link>
+                </Button>
+            </Flex>
+            <TourGuidesTable tourGuides={tourGuides} onEditClick={onEditClick}/>
+        </section>
+    );
+}
+
+type TableProps = {
+    tourGuides: TourGuideResponse[];
+    onEditClick: OnValueChangeHandler<string>;
+}
+
+const TourGuidesTable = ({ tourGuides, onEditClick }: TableProps): ReactElement => {
+    if (tourGuides.length == 0) {
+        return (
+            <Container padding={8}>
+                <Center>
+                    <Text>No tours in database</Text>
+                </Center>
+                <Center>
+                    <Text>When you add tour it will be displayed here</Text>
+                </Center>
+            </Container>
+        );
+    }
+
+    return (
+        <TableContainer>
+            <Table variant="simple">
+                <Thead>
+                    <Tr>
+                        <Th>Id</Th>
+                        <Th>Name</Th>
+                        <Th>City Name</Th>
+                        <Th>Spots count</Th>
+                        <Th>Directions count</Th>
+                        <Th>Video</Th>
+                        <Th>Actions</Th>
+                    </Tr>
+                </Thead>
+                <Tbody>
+                    {tourGuides.map(tourGuide => (
+                        <Tr key={tourGuide.id}>
+                            <Td>{tourGuide.id}</Td>
+                            <Td>{tourGuide.name}</Td>
+                            <Td>{tourGuide.city.name}</Td>
+                            <Td>{tourGuide.tourSpots.length}</Td>
+                            <Td>{tourGuide.directions.length}</Td>
+                            <Td>{tourGuide.video}</Td>
+                            <Td>
+                                <Tooltip hasArrow fontSize="md" label="Edit tour gude">
+                                    <EditIcon w={4} h={4} color="green.500" onClick={() => onEditClick(tourGuide.id)}/>
+                                </Tooltip>
+                            </Td>
+                        </Tr>
                     ))}
-                </Select>
-            </FormControl>
-            <FormControl isRequired>
-                <FormLabel>Tour name</FormLabel>
-                <Input value={tourPlace.name} onChange={event => updatePlace({ name: event.target.value })} placeholder="Tour name"/>
-            </FormControl>
-            <FormControl isRequired>
-                <FormLabel>Tour stops</FormLabel>
-                {tourPlace.stops.length == 0 ? (<Text fontSize="md">No stops</Text>) : (
-                    <TableContainer>
-                        <Table variant="simple">
-                            <TableCaption>Tour guide stops</TableCaption>
-                            <Thead>
-                                <Tr>
-                                    <Th>Id</Th>
-                                    <Th>Name</Th>
-                                    <Th>Images</Th>
-                                    <Th>Audio</Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {tourPlace.stops.map(stop => (
-                                    <Tr key={stop.id}>
-                                        <Td>{stop.id}</Td>
-                                        <Td>{stop.name}</Td>
-                                        <Td>{stop.images.length} image{stop.images.length > 1 ? 's' : ''}</Td>
-                                        <Td>{stop.audio.length} audio{stop.audio.length > 1 ? 's' : ''}</Td>
-                                        <Td></Td>
-                                    </Tr>
-                                ))}
-                            </Tbody>
-                        </Table>
-                    </TableContainer>
-                )}
-                <AddTourStop onSave={addStop} city={tourPlace.cityId}/>
-            </FormControl>
-        </Box>
-    );
-}
-
-type AddStopProps = {
-    onSave: OnValueChangeHandler<TourGuideStop>;
-    city: string | undefined;
-}
-
-function AddTourStop({ onSave, city }: AddStopProps) {
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const [stop, setStop] = useState<TourGuideStop>(INITIAL_TOUR_GUIDE_STOP);
-    const toast = useToast();
-    const { withLoading } = useLoading();
-
-    const updateStop = (value: Partial<TourGuideStop>): void => {
-        setStop(prevState => {
-            return {
-                ...prevState,
-                ...value
-            };
-        });
-    };
-
-    const handleSave = async (): Promise<void> => {
-        console.log(stop);
-        if (stop.name.trim().length < 3 || !stop.audio.length || !stop.images.length || !stop.coordinate) {
-            toast({
-                title: 'Tour Stop',
-                description: 'Missing mandatory data',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        if (!city) {
-            toast({
-                title: 'Tour Stop',
-                description: 'Missing city data',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        const req: CreateTourSpotRequest = {
-            audio: stop.audio[0]!,
-            name: stop.name!,
-            images: stop.images!,
-            location: {
-                longitude: stop.coordinate.lng,
-                latitude: stop.coordinate.lat
-            }
-        };
-
-        try {
-            const { data } = await withLoading(saveTourSpot(req));
-            onSave({ ...stop, id: data.id });
-        } catch (e) {
-            console.log(e);
-        }
-    };
-
-    return (
-        <>
-            <Button onClick={onOpen}>Add Stop</Button>
-            <Modal isOpen={isOpen} onClose={onClose}>
-                <ModalOverlay/>
-                <ModalContent>
-                    <ModalHeader>Add new Tour guide stop</ModalHeader>
-                    <ModalCloseButton/>
-                    <ModalBody>
-                        <FormControl isRequired>
-                            <FormLabel>Stop name</FormLabel>
-                            <Input value={stop.name} onChange={event => updateStop({ name: event.target.value })} placeholder="Stop name"/>
-                        </FormControl>
-                        <FormControl isRequired>
-                            <FormLabel>Spot</FormLabel>
-                            <div style={{ height: '400px' }}>
-                                <Map onDoubleClick={coordinate => updateStop({ coordinate })} markerPositions={stop.coordinate ? [stop.coordinate] : []}/>
-                            </div>
-                        </FormControl>
-                        <FormControl isRequired>
-                            <FormLabel>Audio</FormLabel>
-                            <FileInput accept={'audio/*'} multiple={false} onUpload={audio => updateStop({ audio: audio.map(a => a.url) })}/>
-                        </FormControl>
-                        <FormControl isRequired>
-                            <FormLabel>Image</FormLabel>
-                            <FileInput accept={'image/*'} multiple onUpload={images => updateStop({ images: images.map(a => a.url) })}/>
-                        </FormControl>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button variant="ghost" mr={3} onClick={onClose}>
-                            Close
-                        </Button>
-                        <Button colorScheme="blue" onClick={handleSave}>Save</Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-        </>
-    );
-}
-
-type Props = {
-    multiple: boolean;
-    accept: string;
-    onUpload: OnValueChangeHandler<UploadResponse[]>;
-}
-
-const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement => {
-    const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
-        const files = event.target.files;
-
-        if (!files) {
-            return;
-        }
-
-        const f = Object.values(files);
-        try {
-            if (f.length > 0) {
-                const a = await Promise.all(f.map(uploadFile));
-                const c = a.map(b => b.data);
-                onUpload(c);
-            }
-        } catch (e) {
-            console.log('Error', e);
-        }
-
-    };
-
-    return (
-        <span>
-            <input type="file" multiple={multiple} accept={accept} onChange={handleUploadFile}/>
-        </span>
+                </Tbody>
+            </Table>
+        </TableContainer>
     );
 };

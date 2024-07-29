@@ -1,5 +1,5 @@
 import { UploadResponse } from '@/app/api/upload/route';
-import { AllCityResponse, CityByIdResponse, CreateTourSpotRequest, SaveCityRequest, TourSpotResponse } from '@guide-me-app/core';
+import { AllCityResponse, CityByIdResponse, CreateTourSpotRequest, SaveCityRequest, TourGuideResponse, TourSpotResponse } from '@guide-me-app/core';
 import axios, { AxiosResponse } from 'axios';
 
 const restClient = axios.create({ baseURL: '/api' });
@@ -21,4 +21,8 @@ export const uploadFile = async (file: File): Promise<AxiosResponse<UploadRespon
 
 export const saveTourSpot = async (request: CreateTourSpotRequest): Promise<AxiosResponse<TourSpotResponse>> => {
     return await restClient.post('/tour/spot', request);
+};
+
+export const getAllTourGuides = async ():Promise<AxiosResponse<TourGuideResponse[]>> => {
+    return await restClient.get('/tour');
 };
