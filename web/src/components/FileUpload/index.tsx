@@ -28,8 +28,8 @@ export const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement =
             }
         } catch (e) {
             toast({
-                title: 'City',
-                description: e.message,
+                title: 'Upload',
+                description: 'Upload failed',
                 status: 'error',
                 duration: 3000,
                 isClosable: true,
