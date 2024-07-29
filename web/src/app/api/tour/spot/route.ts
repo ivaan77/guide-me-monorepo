@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
     try {
-        const {data} = await restClient.get<>(AdminPath.City.getAll);
+        const {data} = await restClient.get(AdminPath.City.getAll);
         return NextResponse.json(data);
     } catch (e) {
         console.log(e);
