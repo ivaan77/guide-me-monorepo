@@ -57,4 +57,4 @@ export default function ViewTourPage() {
             </div>
         </section>
     );
-};
+}

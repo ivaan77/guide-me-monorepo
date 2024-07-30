@@ -30,7 +30,6 @@ import {
     useToast
 } from '@chakra-ui/react';
 import { City, CreateTourSpotRequest, Nullable, OnValueChangeHandler } from '@guide-me-app/core';
-import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 type TourGuidePlace = {
@@ -60,11 +59,6 @@ const INITIAL_TOUR_GUIDE_PLACE: TourGuidePlace = {
     name: '',
     stops: [],
 };
-
-type Params = {
-    id: string
-}
-
 
 export default function TourAdd() {
     const [cities, setCities] = useState<City[]>([]);
