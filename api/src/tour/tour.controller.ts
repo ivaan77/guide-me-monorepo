@@ -1,5 +1,5 @@
 import { AdminPath, CreateTourGuideRequest, CreateTourSpotRequest, TourGuideResponse, TourSpotResponse } from '@guide-me-app/core';
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { TourService } from './tour.service';
 
 @Controller()
@@ -25,6 +25,11 @@ export class TourController {
     @Post(AdminPath.Tour.save)
     async saveTourGuide(@Body() request: CreateTourGuideRequest): Promise<TourGuideResponse> {
         return await this.tourService.saveTourGuide(request);
+    }
+
+    @Get(AdminPath.Tour.byId)
+    async getCityById(@Param('id') id: string): Promise<TourGuideResponse> {
+        return await this.tourService.getTourById(id);
     }
 
 }

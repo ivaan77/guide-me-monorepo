@@ -6,7 +6,7 @@
     "build:all": "tsc --build --verbose",
     "core:build": "yarn workspace @guide-me-app/core run build",
     "api:build": "yarn workspace @guide-me-app/api run build",
-    "api:start": "yarn workspace @guide-me-app/api run start",
+    "api:start:dev": "yarn workspace @guide-me-app/api run start",
     "web:build": "yarn workspace @guide-me-app/web run build",
     "web:start": "yarn workspace @guide-me-app/web run start",
     "web:start:dev": "yarn workspace @guide-me-app/web run dev"

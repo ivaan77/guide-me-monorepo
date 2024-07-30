@@ -15,6 +15,7 @@ export type UploadResponse = {
 export async function POST(request: NextRequest): Promise<NextResponse<UploadResponse>> {
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const folderSuffix = formData.get('folder') as string;
 
     if (!file) {
         throw new Error('No file provided');
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
 
     const buffer = await file.arrayBuffer();
 
-    const folder = resolveFolder(file.type);
+    const folder = resolveFolder(file.type) + folderSuffix;
     const name = folder + file.name;
 
     await storage.bucket(bucketName).file(name).save(Buffer.from(buffer));

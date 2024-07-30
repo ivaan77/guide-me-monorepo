@@ -1,5 +1,13 @@
 import { UploadResponse } from '@/app/api/upload/route';
-import { AllCityResponse, CityByIdResponse, CreateTourSpotRequest, SaveCityRequest, TourGuideResponse, TourSpotResponse } from '@guide-me-app/core';
+import {
+    AllCityResponse,
+    CityByIdResponse,
+    CreateTourGuideRequest,
+    CreateTourSpotRequest,
+    SaveCityRequest,
+    TourGuideResponse,
+    TourSpotResponse
+} from '@guide-me-app/core';
 import axios, { AxiosResponse } from 'axios';
 
 const restClient = axios.create({ baseURL: '/api' });
@@ -12,9 +20,13 @@ export const saveCity = async (request: SaveCityRequest): Promise<AxiosResponse<
     return await restClient.post('/city', request);
 };
 
-export const uploadFile = async (file: File): Promise<AxiosResponse<UploadResponse>> => {
+export const uploadFile = async (file: File, folder?: string): Promise<AxiosResponse<UploadResponse>> => {
     const formData = new FormData();
     formData.set('file', file);
+
+    if (folder) {
+        formData.set('folder', folder);
+    }
 
     return await restClient.post('/upload', formData);
 };
@@ -25,4 +37,12 @@ export const saveTourSpot = async (request: CreateTourSpotRequest): Promise<Axio
 
 export const getAllTourGuides = async ():Promise<AxiosResponse<TourGuideResponse[]>> => {
     return await restClient.get('/tour');
+}
+
+export const saveTourGuide = async (request: CreateTourGuideRequest):Promise<AxiosResponse<TourGuideResponse>> => {
+    return await restClient.post('/tour', request);
 };
+
+export const getTourGuide = async (tourId: string):Promise<AxiosResponse<TourGuideResponse>> => {
+    return await restClient.get(`/tour/${tourId}`);
+}

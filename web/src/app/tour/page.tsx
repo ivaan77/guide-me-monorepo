@@ -3,7 +3,7 @@
 import { LoadingSkeleton } from '@/components/Loading/LoadingSkeleton';
 import { useLoading } from '@/components/Loading/useLoading';
 import { getAllTourGuides } from '@/utils/api';
-import { EditIcon } from '@chakra-ui/icons';
+import { EditIcon, ViewIcon } from '@chakra-ui/icons';
 import { Button, Center, Container, Flex, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tooltip, Tr, useToast } from '@chakra-ui/react';
 import { BRAND_COLOR, OnValueChangeHandler, TourGuideResponse } from '@guide-me-app/core';
 import Link from 'next/link';
@@ -39,7 +39,8 @@ export default function AllToursPage() {
         return <LoadingSkeleton/>;
     }
 
-    const onEditClick = (tourGuideId: string): void => router.push(`/tour/${tourGuideId}`);
+    const onEditClick = (tourGuideId: string): void => router.push(`/tour/${tourGuideId}/edit`);
+    const onViewClick = (tourGuideId: string): void => router.push(`/tour/${tourGuideId}/view`);
 
     return (
         <section>
@@ -51,7 +52,7 @@ export default function AllToursPage() {
                     <Link href={'/tour/add'}>Add new tour</Link>
                 </Button>
             </Flex>
-            <TourGuidesTable tourGuides={tourGuides} onEditClick={onEditClick}/>
+            <TourGuidesTable tourGuides={tourGuides} onEditClick={onEditClick} onViewClick={onViewClick}/>
         </section>
     );
 }
@@ -59,9 +60,10 @@ export default function AllToursPage() {
 type TableProps = {
     tourGuides: TourGuideResponse[];
     onEditClick: OnValueChangeHandler<string>;
+    onViewClick: OnValueChangeHandler<string>;
 }
 
-const TourGuidesTable = ({ tourGuides, onEditClick }: TableProps): ReactElement => {
+const TourGuidesTable = ({ tourGuides, onEditClick, onViewClick }: TableProps): ReactElement => {
     if (tourGuides.length == 0) {
         return (
             <Container padding={8}>
@@ -99,9 +101,14 @@ const TourGuidesTable = ({ tourGuides, onEditClick }: TableProps): ReactElement 
                             <Td>{tourGuide.directions.length}</Td>
                             <Td>{tourGuide.video}</Td>
                             <Td>
-                                <Tooltip hasArrow fontSize="md" label="Edit tour gude">
-                                    <EditIcon w={4} h={4} color="green.500" onClick={() => onEditClick(tourGuide.id)}/>
-                                </Tooltip>
+                                <Flex gap={2}>
+                                    <Tooltip hasArrow fontSize="md" label="Edit tour guide">
+                                        <EditIcon w={4} h={4} color="green.500" onClick={() => onEditClick(tourGuide.id)}/>
+                                    </Tooltip>
+                                    <Tooltip hasArrow fontSize="md" label="View tour guide details">
+                                        <ViewIcon w={4} h={4} color="green.500" onClick={() => onViewClick(tourGuide.id)}/>
+                                    </Tooltip>
+                                </Flex>
                             </Td>
                         </Tr>
                     ))}

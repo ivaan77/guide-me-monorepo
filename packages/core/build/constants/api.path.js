@@ -11,8 +11,10 @@ exports.AdminPath = {
         deleteCityById: (id) => exports.AdminPath.City.delete.replace(':id', id),
     },
     Tour: {
+        byId: '/tour/:id',
         getAll: '/tour/all',
-        save: '/tour/save'
+        save: '/tour/save',
+        getTourById: (id) => exports.AdminPath.Tour.byId.replace(':id', id),
     },
     TourSpot: {
         save: '/tour/spot/save',

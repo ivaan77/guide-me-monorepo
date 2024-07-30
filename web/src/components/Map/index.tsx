@@ -1,23 +1,24 @@
-import { Marker } from '@/components/Map/Marker';
+import { Marker, MarkerInfo } from '@/components/Map/Marker';
 import { Polyline } from '@/components/Map/Polyline';
 import { Nullable, OnValueChangeHandler} from '@guide-me-app/core';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { ReactElement, useCallback, useState } from 'react';
 
 type Props = {
-    markerPositions?: google.maps.LatLngLiteral[];
-    polylinePositions?: google.maps.LatLngLiteral[];
-    onDoubleClick: OnValueChangeHandler<google.maps.LatLngLiteral>;
+    markers?: MarkerInfo[];
+    polylines?: google.maps.LatLngLiteral[];
+    onDoubleClick?: OnValueChangeHandler<google.maps.LatLngLiteral>;
+    onMarkerClick?: OnValueChangeHandler<string>;
+    zoom?: number;
 }
 
 const ZOOM_LEVEL = 10;
 
-export const Map = ({ markerPositions, polylinePositions, onDoubleClick }: Props): Nullable<ReactElement> => {
+export const Map = ({ markers, polylines, onDoubleClick, zoom, onMarkerClick }: Props): Nullable<ReactElement> => {
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: 'AIzaSyAiQ8YI-iQfstg5lyzJgPRo88Zqojja89E'
     });
-
 
     const [, setMap] = useState<google.maps.Map | null>(null);
 
@@ -35,7 +36,7 @@ export const Map = ({ markerPositions, polylinePositions, onDoubleClick }: Props
             const latitude = lat();
             const longitude = lng();
 
-            onDoubleClick({ lat: latitude, lng: longitude });
+            onDoubleClick?.({ lat: latitude, lng: longitude });
         }
     };
 
@@ -45,7 +46,7 @@ export const Map = ({ markerPositions, polylinePositions, onDoubleClick }: Props
 
     return (
         <GoogleMap
-            zoom={ZOOM_LEVEL}
+            zoom={zoom || ZOOM_LEVEL}
             options={{
                 disableDoubleClickZoom: true
             }}
@@ -54,8 +55,8 @@ export const Map = ({ markerPositions, polylinePositions, onDoubleClick }: Props
             onLoad={onLoad}
             onUnmount={onUnmount}
             onDblClick={handleDoubleClick}>
-            <Polyline path={polylinePositions}/>
-            <Marker locations={markerPositions} />
+            <Polyline path={polylines}/>
+            <Marker markers={markers} onClick={onMarkerClick} />
         </GoogleMap>
     );
 };

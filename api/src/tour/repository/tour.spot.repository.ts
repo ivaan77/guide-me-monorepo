@@ -15,6 +15,11 @@ export class TourSpotRepository {
     }
 
     async findAll(): Promise<TourSpotDocument[]> {
-        return this.tourSpotModel.find().exec();
+        return await this.tourSpotModel.find().exec();
     }
+
+    async findByIds(ids: string[]): Promise<TourSpotDocument[]> {
+        return await this.tourSpotModel.find({ _id: { $in: ids } }).exec();
+    }
+
 }

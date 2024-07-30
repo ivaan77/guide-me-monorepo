@@ -3,20 +3,23 @@ import { FileInput } from '@/components/FileUpload';
 import { useLoading } from '@/components/Loading/useLoading';
 import { Map } from '@/components/Map';
 import { saveTourSpot } from '@/utils/api';
+import { CoordinateMapper } from '@/utils/mapppers';
 import {
     Button,
     FormControl,
-    FormLabel, Input,
+    FormLabel,
+    Input,
     Modal,
     ModalBody,
     ModalCloseButton,
-    ModalContent, ModalFooter,
+    ModalContent,
+    ModalFooter,
     ModalHeader,
     ModalOverlay,
     useDisclosure,
     useToast
 } from '@chakra-ui/react';
-import { CreateTourSpotRequest, OnValueChangeHandler } from '@guide-me-app/core';
+import { City, CreateTourSpotRequest, OnValueChangeHandler } from '@guide-me-app/core';
 import { ReactElement, useState } from 'react';
 
 const INITIAL_TOUR_GUIDE_STOP: TourGuideStop = {
@@ -29,10 +32,10 @@ const INITIAL_TOUR_GUIDE_STOP: TourGuideStop = {
 
 type Props = {
     onSave: OnValueChangeHandler<TourGuideStop>;
-    cityId: string | undefined;
+    city: City | undefined;
 }
 
-export const EditTourStopModal = ({ onSave, cityId }: Props):ReactElement => {
+export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [stop, setStop] = useState<TourGuideStop>(INITIAL_TOUR_GUIDE_STOP);
     const toast = useToast();
@@ -59,7 +62,7 @@ export const EditTourStopModal = ({ onSave, cityId }: Props):ReactElement => {
             return;
         }
 
-        if (!cityId) {
+        if (!city) {
             toast({
                 title: 'Tour Stop',
                 description: 'Missing city data',
@@ -88,12 +91,14 @@ export const EditTourStopModal = ({ onSave, cityId }: Props):ReactElement => {
         }
     };
 
+    console.log(stop.coordinate)
+
     return (
         <>
-            <Button onClick={onOpen}>Add Stop</Button>
+            <Button isDisabled={!city} onClick={onOpen}>Add Stop</Button>
             <Modal isOpen={isOpen} onClose={onClose}>
                 <ModalOverlay/>
-                <ModalContent>
+                <ModalContent minW={600}>
                     <ModalHeader>Add new Tour guide stop</ModalHeader>
                     <ModalCloseButton/>
                     <ModalBody>
@@ -104,16 +109,17 @@ export const EditTourStopModal = ({ onSave, cityId }: Props):ReactElement => {
                         <FormControl isRequired>
                             <FormLabel>Spot</FormLabel>
                             <div style={{ height: '400px' }}>
-                                <Map onDoubleClick={coordinate => updateStop({ coordinate })} markerPositions={stop.coordinate ? [stop.coordinate] : []}/>
+                                <Map zoom={12} onDoubleClick={coordinate => updateStop({ coordinate })}
+                                     markers={stop.coordinate ? [CoordinateMapper.fromGoogleToMarkerInfo(stop.coordinate)] : []}/>
                             </div>
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Audio</FormLabel>
-                            <FileInput accept={'audio/*'} multiple={false} onUpload={audio => updateStop({ audio: audio.map(a => a.url) })}/>
+                            <FileInput disabled={!city?.name || stop.name.trim().length <3} accept={'audio/*'} multiple={false} folder={`${city?.name}/${stop.name}`} onUpload={audio => updateStop({ audio: audio.map(audio => audio.url) })}/>
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Image</FormLabel>
-                            <FileInput accept={'image/*'} multiple onUpload={images => updateStop({ images: images.map(a => a.url) })}/>
+                            <FileInput disabled={!city?.name || stop.name.trim().length <3 } accept={'image/*'} multiple folder={`${city?.name}/${stop.name}`} onUpload={images => updateStop({ images: images.map(image => image.url) })}/>
                         </FormControl>
                     </ModalBody>
                     <ModalFooter>
@@ -126,4 +132,4 @@ export const EditTourStopModal = ({ onSave, cityId }: Props):ReactElement => {
             </Modal>
         </>
     );
-}
+};

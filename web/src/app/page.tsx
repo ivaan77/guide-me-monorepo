@@ -13,6 +13,9 @@ export default function Home() {
                     <Link href="./city">Cities</Link>
                 </Button>
                 <Button background={BRAND_COLOR}>
+                    <Link href="./tour">Tours</Link>
+                </Button>
+                <Button background={BRAND_COLOR}>
                     <Link href="./dashboard">Dashboard</Link>
                 </Button>
             </Flex>

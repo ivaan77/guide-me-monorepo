@@ -12,13 +12,23 @@ export class TourService {
     }
 
     async saveTourGuide(request: CreateTourGuideRequest): Promise<TourGuideResponse> {
-        const tourSpot = await this.tourRepository.createTourGuide(request);
-        return TourMapper.fromModelToTourGuideResponse(tourSpot);
+        const tour = await this.tourRepository.create(request);
+        return TourMapper.fromModelToTourGuideResponse(tour);
     }
 
     async getAllTours(): Promise<TourGuideResponse[]> {
-        const tours = await this.tourRepository.findAllTourGuides();
+        const tours = await this.tourRepository.findAll();
         return TourMapper.fromModelsToTourGuideResponses(tours);
+    }
+
+    async getTourById(tourId: string): Promise<TourGuideResponse> {
+        const tour = await this.tourRepository.findById(tourId);
+
+        if (!tour) {
+            throw new Error(`No tour with id: ${tourId}`);
+        }
+
+        return TourMapper.fromModelToTourGuideResponse(tour);
     }
 
     async getAllSpots(): Promise<TourSpotResponse[]> {

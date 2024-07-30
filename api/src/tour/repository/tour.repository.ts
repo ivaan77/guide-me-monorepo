@@ -9,12 +9,16 @@ export class TourRepository {
     constructor(@InjectModel(Tour.name) private tourModel: Model<Tour>) {
     }
 
-    async createTourGuide(request: CreateTourGuideRequest): Promise<TourDocument> {
+    async create(request: CreateTourGuideRequest): Promise<TourDocument> {
         const createdTourSpot = new this.tourModel(request);
-        return await createdTourSpot.save();
+        return (await createdTourSpot.save()).populate(['city', 'tourSpots']);
     }
 
-    async findAllTourGuides(): Promise<TourDocument[]> {
-        return this.tourModel.find().exec();
+    async findAll(): Promise<TourDocument[]> {
+        return await this.tourModel.find().populate(['city', 'tourSpots']).exec();
+    }
+
+    async findById(id: string): Promise<TourDocument> {
+        return await this.tourModel.findById(id).populate(['city', 'tourSpots']).exec();
     }
 }

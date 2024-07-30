@@ -8,8 +8,10 @@ export const AdminPath = {
         deleteCityById: (id: string): string => AdminPath.City.delete.replace(':id', id),
     },
     Tour: {
+        byId: '/tour/:id',
         getAll: '/tour/all',
-        save: '/tour/save'
+        save: '/tour/save',
+        getTourById: (id: string): string => AdminPath.Tour.byId.replace(':id', id),
     },
     TourSpot: {
         save: '/tour/spot/save',

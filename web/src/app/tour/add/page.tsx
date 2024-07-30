@@ -2,24 +2,20 @@
 
 import { LoadingSkeleton } from '@/components/Loading/LoadingSkeleton';
 import { useLoading } from '@/components/Loading/useLoading';
+import { EditDirectionsModal } from '@/components/TourStop/EditDirectionsModal';
 import { EditTourStopModal } from '@/components/TourStop/EditTourStopModal';
 import { TourStopTable } from '@/components/TourStop/TourStopTable';
-import { getAllCities } from '@/utils/api';
-import {
-    Flex,
-    FormControl,
-    FormLabel,
-    Input,
-    Select,
-    useToast
-} from '@chakra-ui/react';
-import { City, Nullable } from '@guide-me-app/core';
-import { useEffect, useState } from 'react';
+import { getAllCities, saveTourGuide } from '@/utils/api';
+import { Button, Flex, FormControl, FormLabel, Input, Select, useToast } from '@chakra-ui/react';
+import { BRAND_COLOR, City, Coordinates, CreateTourGuideRequest, Nullable, OnClickHandler } from '@guide-me-app/core';
+import { useRouter } from 'next/navigation';
+import { ReactElement, useEffect, useState } from 'react';
 
-type TourGuidePlace = {
+export type TourGuidePlace = {
     cityId: string | undefined;
     name: string;
     stops: TourGuideStop[];
+    directions: Coordinates[];
 }
 
 export type TourGuideStop = {
@@ -34,6 +30,7 @@ const INITIAL_TOUR_GUIDE_PLACE: TourGuidePlace = {
     cityId: undefined,
     name: '',
     stops: [],
+    directions: [],
 };
 
 export default function TourGuideAdd() {
@@ -41,6 +38,7 @@ export default function TourGuideAdd() {
     const [tourPlace, setTourPlace] = useState<TourGuidePlace>(INITIAL_TOUR_GUIDE_PLACE);
     const { isLoading, withLoading } = useLoading();
     const toast = useToast();
+    const router = useRouter();
 
     useEffect(() => {
         fetchAllCities();
@@ -82,6 +80,72 @@ export default function TourGuideAdd() {
         });
     };
 
+    const addDirections = (directions: Coordinates[]): void => updatePlace({ directions });
+
+    const onSave = async (): Promise<void> => {
+        if (tourPlace.name.trim().length == 0) {
+            toast({
+                title: 'Tour',
+                description: 'Missing tour place name',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        if (!tourPlace.cityId) {
+            toast({
+                title: 'Tour',
+                description: 'Missing city',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        if (tourPlace.stops.length == 0) {
+            toast({
+                title: 'Tour',
+                description: 'Missing tour place stops',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
+        try {
+            const request: CreateTourGuideRequest = {
+                name: tourPlace.name,
+                city: tourPlace.cityId!,
+                tourSpots: tourPlace.stops.map(stop => stop.id!) as string[],
+                directions: tourPlace.directions,
+                video: '',
+            };
+            await withLoading(saveTourGuide(request));
+
+            toast({
+                title: 'Tour',
+                description: 'Sucessfully saved tour guide',
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+            });
+        } catch (e) {
+            toast({
+                title: 'Tour',
+                description: 'Error saving tour guide',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    };
+
+    const onCancel = (): void => router.back();
+
     if (isLoading) {
         return <LoadingSkeleton/>;
     }
@@ -103,10 +167,26 @@ export default function TourGuideAdd() {
                     <Input value={tourPlace.name} onChange={event => updatePlace({ name: event.target.value })} placeholder="Tour name"/>
                 </FormControl>
             </Flex>
-            <Flex flexDirection="column">
-                <TourStopTable stops={tourPlace.stops} />
-                <EditTourStopModal onSave={addStop} cityId={tourPlace.cityId}/>
+            <Flex flexDirection="column" gap={4}>
+                <TourStopTable stops={tourPlace.stops}/>
+                <EditTourStopModal onSave={addStop} city={cities.find(city => city.id == tourPlace.cityId)}/>
+                <EditDirectionsModal onSave={addDirections} place={tourPlace} />
             </Flex>
+            <Footer onSave={onSave} onCancel={onCancel}/>
         </Flex>
     );
 }
+
+type FooterProps = {
+    onSave: OnClickHandler;
+    onCancel: OnClickHandler;
+}
+
+const Footer = ({ onSave, onCancel }: FooterProps): ReactElement => (
+    <section style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: 16, background: '#F7FAFC' }}>
+        <Flex flexDirection="row-reverse" gap={8}>
+            <Button type="submit" background={BRAND_COLOR} onClick={onSave}>Save</Button>
+            <Button type="button" onClick={onCancel}>Back</Button>
+        </Flex>
+    </section>
+);

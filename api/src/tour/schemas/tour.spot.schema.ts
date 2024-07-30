@@ -15,7 +15,7 @@ export class TourSpot {
     @Prop({ required: true })
     audio: string;
 
-    @Prop({ required: true, type: [{ latitude: { type: Number }, longitude: { type: Number } }] })
+    @Prop({ required: true, type: { latitude: { type: Number }, longitude: { type: Number } } })
     location: Coordinates;
 }
 

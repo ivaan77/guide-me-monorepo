@@ -1,10 +1,8 @@
 'use client';
 
-import { UploadResponse } from '@/app/api/upload/route';
 import { LoadingSkeleton } from '@/components/Loading/LoadingSkeleton';
 import { useLoading } from '@/components/Loading/useLoading';
-import { Map } from '@/components/Map';
-import { getAllCities, saveTourSpot, uploadFile } from '@/utils/api';
+import { getAllCities, saveTourSpot } from '@/utils/api';
 import {
     Box,
     Button,
@@ -33,7 +31,7 @@ import {
 } from '@chakra-ui/react';
 import { City, CreateTourSpotRequest, Nullable, OnValueChangeHandler } from '@guide-me-app/core';
 import { useParams } from 'next/navigation';
-import { ChangeEvent, ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type TourGuidePlace = {
     cityId: string | undefined;
@@ -73,9 +71,6 @@ export default function TourAdd() {
     const [tourPlace, setTourPlace] = useState<TourGuidePlace>(INITIAL_TOUR_GUIDE_PLACE);
     const { isLoading, withLoading } = useLoading();
     const toast = useToast();
-    const { id } = useParams<Params>();
-
-    console.log(id);
 
     useEffect(() => {
         fetchAllCities();
@@ -191,7 +186,6 @@ function AddTourStop({ onSave, city }: AddStopProps) {
     };
 
     const handleSave = async (): Promise<void> => {
-        console.log(stop);
         if (stop.name.trim().length < 3 || !stop.audio.length || !stop.images.length || !stop.coordinate) {
             toast({
                 title: 'Tour Stop',
@@ -247,17 +241,12 @@ function AddTourStop({ onSave, city }: AddStopProps) {
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Spot</FormLabel>
-                            <div style={{ height: '400px' }}>
-                                <Map onDoubleClick={coordinate => updateStop({ coordinate })} markerPositions={stop.coordinate ? [stop.coordinate] : []}/>
-                            </div>
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Audio</FormLabel>
-                            <FileInput accept={'audio/*'} multiple={false} onUpload={audio => updateStop({ audio: audio.map(a => a.url) })}/>
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Image</FormLabel>
-                            <FileInput accept={'image/*'} multiple onUpload={images => updateStop({ images: images.map(a => a.url) })}/>
                         </FormControl>
                     </ModalBody>
                     <ModalFooter>
@@ -271,37 +260,3 @@ function AddTourStop({ onSave, city }: AddStopProps) {
         </>
     );
 }
-
-type Props = {
-    multiple: boolean;
-    accept: string;
-    onUpload: OnValueChangeHandler<UploadResponse[]>;
-}
-
-const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement => {
-    const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
-        const files = event.target.files;
-
-        if (!files) {
-            return;
-        }
-
-        const f = Object.values(files);
-        try {
-            if (f.length > 0) {
-                const a = await Promise.all(f.map(uploadFile));
-                const c = a.map(b => b.data);
-                onUpload(c);
-            }
-        } catch (e) {
-            console.log('Error', e);
-        }
-
-    };
-
-    return (
-        <span>
-            <input type="file" multiple={multiple} accept={accept} onChange={handleUploadFile}/>
-        </span>
-    );
-};

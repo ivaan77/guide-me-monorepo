@@ -15,13 +15,10 @@ export class CityRepository {
     async saveCity(city: SaveCityDto): Promise<CityDocument> {
         try {
             const createdCity = new this.cityModel(city);
-            const saved = await createdCity.save();
-            console.log('saved city', saved);
-            return saved;
+            return await createdCity.save();
         } catch (e) {
             console.error('Failed to save city', e);
         }
-
     };
 
     async deleteCity(id: string): Promise<void> {
@@ -34,9 +31,7 @@ export class CityRepository {
 
     async getCityById(id: string): Promise<CityDocument> {
         try {
-            const result = await this.cityModel.findById(id) as CityDocument;
-            console.log('city', result);
-            return result;
+            return await this.cityModel.findById(id) as CityDocument;
         } catch (e) {
             console.error('Failed to fetch city', e);
         }

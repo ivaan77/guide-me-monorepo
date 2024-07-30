@@ -8,9 +8,11 @@ type Props = {
     multiple: boolean;
     accept: string;
     onUpload: OnValueChangeHandler<UploadResponse[]>;
+    folder?: string;
+    disabled?: boolean;
 }
 
-export const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement => {
+export const FileInput = ({ accept, onUpload, multiple, folder, disabled }: Props): ReactElement => {
     const toast = useToast();
     const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
         const fileList = event.target.files;
@@ -22,7 +24,7 @@ export const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement =
         const files = Object.values(fileList);
         try {
             if (files.length > 0) {
-                const uploads = await Promise.all(files.map(uploadFile));
+                const uploads = await Promise.all(files.map(file => uploadFile(file, folder)));
                 const allUploads = uploads.map(upload => upload.data);
                 onUpload(allUploads);
             }
@@ -39,7 +41,7 @@ export const FileInput = ({ accept, onUpload, multiple }: Props): ReactElement =
 
     return (
         <span>
-            <input type="file" multiple={multiple} accept={accept} onChange={handleUploadFile}/>
+            <input disabled={disabled} type="file" multiple={multiple} accept={accept} onChange={handleUploadFile}/>
         </span>
     );
 };

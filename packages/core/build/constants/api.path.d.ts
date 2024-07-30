@@ -8,8 +8,10 @@ export declare const AdminPath: {
         deleteCityById: (id: string) => string;
     };
     Tour: {
+        byId: string;
         getAll: string;
         save: string;
+        getTourById: (id: string) => string;
     };
     TourSpot: {
         save: string;
