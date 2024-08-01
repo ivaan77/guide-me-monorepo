@@ -8,9 +8,10 @@ import { ReactElement, useState } from 'react';
 type Props = {
     onSave: OnValueChangeHandler<Coordinates[]>;
     place: TourGuidePlace;
+    initialCoordinates?: Coordinates;
 }
 
-export const EditDirectionsModal = ({ onSave, place }: Props): ReactElement => {
+export const EditDirectionsModal = ({ onSave, place, initialCoordinates }: Props): ReactElement => {
     const [directions, setDirections] = useState<Coordinates[]>(() => place.directions);
     const { isOpen, onOpen, onClose } = useDisclosure();
     const toast = useToast();
@@ -40,6 +41,8 @@ export const EditDirectionsModal = ({ onSave, place }: Props): ReactElement => {
         });
     };
 
+    const initialCenter = initialCoordinates ? CoordinateMapper.fromCoordinateToGoogle(initialCoordinates) : undefined;
+
     return (
         <>
             <Button isDisabled={stops.length == 0} onClick={onOpen}>Add Directions</Button>
@@ -52,6 +55,7 @@ export const EditDirectionsModal = ({ onSave, place }: Props): ReactElement => {
                         <div style={{ height: '400px' }}>
                             <Map
                                 zoom={12}
+                                initialCenter={initialCenter}
                                 onDoubleClick={addDirection}
                                 polylines={CoordinateMapper.fromCoordinatesToGoogle(directions)}
                                 markers={CoordinateMapper.fromGoogleToMarkerInfos(stopsCoordinates)}/>

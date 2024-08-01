@@ -11,10 +11,14 @@ export declare const AdminPath: {
         byId: string;
         getAll: string;
         save: string;
+        delete: string;
+        deleteTourById: (id: string) => string;
         getTourById: (id: string) => string;
     };
     TourSpot: {
         save: string;
         getAll: string;
+        delete: string;
+        deleteSpotById: (id: string) => string;
     };
 };

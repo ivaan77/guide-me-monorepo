@@ -50,6 +50,8 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
         });
     };
 
+    const initialCenter = city?.location ? CoordinateMapper.fromCoordinateToGoogle(city.location) : undefined;
+
     const handleSave = async (): Promise<void> => {
         if (stop.name.trim().length < 3 || !stop.audio.length || !stop.images.length || !stop.coordinate) {
             toast({
@@ -109,17 +111,20 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
                         <FormControl isRequired>
                             <FormLabel>Spot</FormLabel>
                             <div style={{ height: '400px' }}>
-                                <Map zoom={12} onDoubleClick={coordinate => updateStop({ coordinate })}
-                                     markers={stop.coordinate ? [CoordinateMapper.fromGoogleToMarkerInfo(stop.coordinate)] : []}/>
+                                <Map
+                                    initialCenter={initialCenter}
+                                    zoom={12}
+                                    onDoubleClick={coordinate => updateStop({ coordinate })}
+                                    markers={stop.coordinate ? [CoordinateMapper.fromGoogleToMarkerInfo(stop.coordinate)] : []}/>
                             </div>
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Audio</FormLabel>
-                            <FileInput disabled={!city?.name || stop.name.trim().length <3} accept={'audio/*'} multiple={false} folder={`${city?.name}/${stop.name}`} onUpload={audio => updateStop({ audio: audio.map(audio => audio.url) })}/>
+                            <FileInput disabled={!city?.name || stop.name.trim().length <3} accept={'audio/*'} multiple={false} folder={`${city?.name}/${stop.name}/`} onUpload={audio => updateStop({ audio: audio.map(audio => audio.url) })}/>
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Image</FormLabel>
-                            <FileInput disabled={!city?.name || stop.name.trim().length <3 } accept={'image/*'} multiple folder={`${city?.name}/${stop.name}`} onUpload={images => updateStop({ images: images.map(image => image.url) })}/>
+                            <FileInput disabled={!city?.name || stop.name.trim().length <3 } accept={'image/*'} multiple folder={`${city?.name}/${stop.name}/`} onUpload={images => updateStop({ images: images.map(image => image.url) })}/>
                         </FormControl>
                     </ModalBody>
                     <ModalFooter>

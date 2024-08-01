@@ -18,8 +18,8 @@ export class TourSpotRepository {
         return await this.tourSpotModel.find().exec();
     }
 
-    async findByIds(ids: string[]): Promise<TourSpotDocument[]> {
-        return await this.tourSpotModel.find({ _id: { $in: ids } }).exec();
+    async deleteById(id: string): Promise<void> {
+        await this.tourSpotModel.findByIdAndDelete(id);
     }
 
 }

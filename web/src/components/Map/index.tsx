@@ -10,11 +10,12 @@ type Props = {
     onDoubleClick?: OnValueChangeHandler<google.maps.LatLngLiteral>;
     onMarkerClick?: OnValueChangeHandler<string>;
     zoom?: number;
+    initialCenter?: google.maps.LatLngLiteral;
 }
 
 const ZOOM_LEVEL = 10;
 
-export const Map = ({ markers, polylines, onDoubleClick, zoom, onMarkerClick }: Props): Nullable<ReactElement> => {
+export const Map = ({ markers, polylines, onDoubleClick, zoom, onMarkerClick, initialCenter }: Props): Nullable<ReactElement> => {
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: 'AIzaSyAiQ8YI-iQfstg5lyzJgPRo88Zqojja89E'
@@ -51,7 +52,7 @@ export const Map = ({ markers, polylines, onDoubleClick, zoom, onMarkerClick }: 
                 disableDoubleClickZoom: true
             }}
             mapContainerStyle={containerStyle}
-            center={center}
+            center={initialCenter || center}
             onLoad={onLoad}
             onUnmount={onUnmount}
             onDblClick={handleDoubleClick}>

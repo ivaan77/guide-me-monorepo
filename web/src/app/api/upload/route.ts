@@ -27,7 +27,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
 
     const buffer = await file.arrayBuffer();
 
-    const folder = resolveFolder(file.type) + folderSuffix;
+    const folder = resolveFolder(file.type) + folderSuffix.replace(' ', '_');
     const name = folder + file.name;
 
     await storage.bucket(bucketName).file(name).save(Buffer.from(buffer));

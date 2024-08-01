@@ -11,10 +11,14 @@ export const AdminPath = {
         byId: '/tour/:id',
         getAll: '/tour/all',
         save: '/tour/save',
+        delete: '/tour/delete/:id',
+        deleteTourById: (id: string): string => AdminPath.Tour.delete.replace(':id', id),
         getTourById: (id: string): string => AdminPath.Tour.byId.replace(':id', id),
     },
     TourSpot: {
         save: '/tour/spot/save',
         getAll: '/tour/spot/all',
+        delete: '/tour/spot/delete/:id',
+        deleteSpotById: (id: string): string => AdminPath.TourSpot.delete.replace(':id', id),
     }
 };

@@ -9,13 +9,15 @@ export class CityMapper {
     static fromModelToCity = (model: CityDocument): City => {
         return {
             id: model._id.toString(),
-            name: model.name
+            name: model.name,
+            location: model.location,
         };
     };
 
     static fromSaveRequestToModel = (request: SaveCityRequest): CityModel => {
         return {
             name: request.name,
+            location: request.location,
         };
     };
 }

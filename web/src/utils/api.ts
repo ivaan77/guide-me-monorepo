@@ -12,7 +12,7 @@ import axios, { AxiosResponse } from 'axios';
 
 const restClient = axios.create({ baseURL: '/api' });
 
-export const getAllCities = async ():Promise<AxiosResponse<AllCityResponse>> => {
+export const getAllCities = async (): Promise<AxiosResponse<AllCityResponse>> => {
     return await restClient.get('/city');
 };
 
@@ -35,14 +35,18 @@ export const saveTourSpot = async (request: CreateTourSpotRequest): Promise<Axio
     return await restClient.post('/tour/spot', request);
 };
 
-export const getAllTourGuides = async ():Promise<AxiosResponse<TourGuideResponse[]>> => {
-    return await restClient.get('/tour');
-}
+export const deleteTourSpot = async (id: string): Promise<AxiosResponse<void>> => {
+    return await restClient.delete(`/tour/spot/${id}`);
+};
 
-export const saveTourGuide = async (request: CreateTourGuideRequest):Promise<AxiosResponse<TourGuideResponse>> => {
+export const getAllTourGuides = async (): Promise<AxiosResponse<TourGuideResponse[]>> => {
+    return await restClient.get('/tour');
+};
+
+export const saveTourGuide = async (request: CreateTourGuideRequest): Promise<AxiosResponse<TourGuideResponse>> => {
     return await restClient.post('/tour', request);
 };
 
-export const getTourGuide = async (tourId: string):Promise<AxiosResponse<TourGuideResponse>> => {
+export const getTourGuide = async (tourId: string): Promise<AxiosResponse<TourGuideResponse>> => {
     return await restClient.get(`/tour/${tourId}`);
-}
+};

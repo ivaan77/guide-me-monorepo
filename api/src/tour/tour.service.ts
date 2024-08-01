@@ -41,4 +41,7 @@ export class TourService {
         return TourSpotMapper.fromModelToTourSpotResponse(tourSpot);
     }
 
+    async deleteSpot(id: string): Promise<void> {
+        await this.tourSpotRepository.deleteById(id);
+    }
 }

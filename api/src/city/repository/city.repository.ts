@@ -1,20 +1,17 @@
+import { SaveCityRequest } from '@guide-me-app/core';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { City, CityDocument } from '../schemas/city.schema';
-
-export type SaveCityDto = {
-    name: string;
-}
 
 @Injectable()
 export class CityRepository {
     constructor(@InjectModel(City.name) private cityModel: Model<City>) {
     }
 
-    async saveCity(city: SaveCityDto): Promise<CityDocument> {
+    async saveCity(request: SaveCityRequest): Promise<CityDocument> {
         try {
-            const createdCity = new this.cityModel(city);
+            const createdCity = new this.cityModel(request);
             return await createdCity.save();
         } catch (e) {
             console.error('Failed to save city', e);

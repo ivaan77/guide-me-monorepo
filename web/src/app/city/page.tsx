@@ -5,7 +5,7 @@ import { useLoading } from '@/components/Loading/useLoading';
 import { getAllCities } from '@/utils/api';
 import { AddIcon, CheckIcon } from '@chakra-ui/icons';
 import { Button, Center, Container, Flex, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tooltip, Tr, useToast } from '@chakra-ui/react';
-import { BRAND_COLOR, City, OnValueChangeHandler } from '@guide-me-app/core';
+import { BRAND_COLOR, City, OnClickHandler } from '@guide-me-app/core';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ReactElement, useEffect, useState } from 'react';
@@ -36,7 +36,7 @@ export default function CityPage() {
         }
     };
 
-    const onAddClick = (cityId: string): void => router.push(`/tour/${cityId}`);
+    const onAddClick = (): void => router.push(`/tour/add`);
 
     if (isLoading) {
         return <LoadingSkeleton/>;
@@ -59,7 +59,7 @@ export default function CityPage() {
 
 type TableProps = {
     cities: City[];
-    onAddClick: OnValueChangeHandler<string>;
+    onAddClick: OnClickHandler;
 }
 
 const CitiesTable = ({ cities, onAddClick }: TableProps): ReactElement => {
@@ -97,7 +97,7 @@ const CitiesTable = ({ cities, onAddClick }: TableProps): ReactElement => {
                             </Td>
                             <Td>
                                 <Tooltip hasArrow fontSize="md" label="Add tour">
-                                    <AddIcon w={4} h={4} color="green.500" onClick={() => onAddClick(city.id)}/>
+                                    <AddIcon w={4} h={4} color="green.500" onClick={onAddClick}/>
                                 </Tooltip>
                             </Td>
                         </Tr>

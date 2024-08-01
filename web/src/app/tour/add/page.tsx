@@ -5,7 +5,7 @@ import { useLoading } from '@/components/Loading/useLoading';
 import { EditDirectionsModal } from '@/components/TourStop/EditDirectionsModal';
 import { EditTourStopModal } from '@/components/TourStop/EditTourStopModal';
 import { TourStopTable } from '@/components/TourStop/TourStopTable';
-import { getAllCities, saveTourGuide } from '@/utils/api';
+import { deleteTourSpot, getAllCities, saveTourGuide } from '@/utils/api';
 import { Button, Flex, FormControl, FormLabel, Input, Select, useToast } from '@chakra-ui/react';
 import { BRAND_COLOR, City, Coordinates, CreateTourGuideRequest, Nullable, OnClickHandler } from '@guide-me-app/core';
 import { useRouter } from 'next/navigation';
@@ -40,6 +40,8 @@ export default function TourGuideAdd() {
     const toast = useToast();
     const router = useRouter();
 
+
+    console.log(tourPlace);
     useEffect(() => {
         fetchAllCities();
     }, []);
@@ -116,6 +118,17 @@ export default function TourGuideAdd() {
             return;
         }
 
+        if (tourPlace.directions.length == 0) {
+            toast({
+                title: 'Tour',
+                description: 'Missing tour place directions',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
         try {
             const request: CreateTourGuideRequest = {
                 name: tourPlace.name,
@@ -150,6 +163,38 @@ export default function TourGuideAdd() {
         return <LoadingSkeleton/>;
     }
 
+    const initialCoordinates = cities.find(city => city.id == tourPlace.cityId)?.location;
+
+    const onDeleteSpot = async (spotId: string): Promise<void> => {
+        try {
+            await withLoading(deleteTourSpot(spotId));
+
+            toast({
+                title: 'Tour Spot',
+                description: 'Successfully deleted spot',
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+            });
+
+            setTourPlace(prevState => {
+                return {
+                    ...prevState,
+                    stops: prevState.stops.filter(stop => stop.id != spotId),
+                };
+            });
+        } catch (e) {
+            toast({
+                title: 'Tour',
+                description: 'Error deleting spot',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    };
+
+
     return (
         <Flex flexDirection="column" padding={16}>
             <h3>Add Tour Guide</h3>
@@ -168,9 +213,9 @@ export default function TourGuideAdd() {
                 </FormControl>
             </Flex>
             <Flex flexDirection="column" gap={4}>
-                <TourStopTable stops={tourPlace.stops}/>
+                <TourStopTable stops={tourPlace.stops} onDeleteSpotClick={onDeleteSpot}/>
                 <EditTourStopModal onSave={addStop} city={cities.find(city => city.id == tourPlace.cityId)}/>
-                <EditDirectionsModal onSave={addDirections} place={tourPlace} />
+                <EditDirectionsModal onSave={addDirections} place={tourPlace} initialCoordinates={initialCoordinates}/>
             </Flex>
             <Footer onSave={onSave} onCancel={onCancel}/>
         </Flex>

@@ -11,12 +11,12 @@ type Props = {
 }
 
 export const ViewMapModal = ({ isOpen, onClose, coordinates }: Props): ReactElement => (
-    <Modal isOpen={isOpen} onClose={onClose} >
+    <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay/>
         <ModalContent minWidth={600}>
             <ModalBody>
-                <div style={{ height: '500px'}}>
-                    <Map markers={CoordinateMapper.fromGoogleToMarkerInfos(coordinates)} zoom={12} onMarkerClick={console.log}/>
+                <div style={{ height: '500px' }}>
+                    <Map initialCenter={coordinates[0]} markers={CoordinateMapper.fromGoogleToMarkerInfos(coordinates)} zoom={12} onMarkerClick={console.log}/>
                 </div>
             </ModalBody>
             <ModalFooter>

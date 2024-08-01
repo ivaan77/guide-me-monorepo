@@ -1,9 +1,11 @@
 export type SaveCityRequest = {
     name: string;
+    location: Coordinates;
 };
 export type City = {
     id: string;
     name: string;
+    location: Coordinates;
 };
 export type AllCityResponse = {
     cities: City[];
