@@ -88,12 +88,24 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
         try {
             const { data } = await withLoading(saveTourSpot(req));
             onSave({ ...stop, id: data.id });
+            toast({
+                title: 'Tour Stop',
+                description: 'Tour stop added',
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+            });
         } catch (e) {
+            toast({
+                title: 'Tour Stop',
+                description: 'Failed to add tour stop',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
             console.log(e);
         }
     };
-
-    console.log(stop.coordinate)
 
     return (
         <>
@@ -120,21 +132,27 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Audio</FormLabel>
-                            <FileInput disabled={!city?.name || stop.name.trim().length <3} accept={'audio/*'} multiple={false} folder={`${city?.name}/${stop.name}/`} onUpload={audio => updateStop({ audio: audio.map(audio => audio.url) })}/>
+                            <FileInput disabled={!city?.name || stop.name.trim().length < 3} accept={'audio/*'} multiple={false}
+                                       folder={`${city?.name}/${stop.name}/`} onUpload={audio => updateStop({ audio: audio.map(audio => audio.url) })}/>
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Image</FormLabel>
-                            <FileInput disabled={!city?.name || stop.name.trim().length <3 } accept={'image/*'} multiple folder={`${city?.name}/${stop.name}/`} onUpload={images => updateStop({ images: images.map(image => image.url) })}/>
+                            <FileInput disabled={!city?.name || stop.name.trim().length < 3} accept={'image/*'} multiple folder={`${city?.name}/${stop.name}/`}
+                                       onUpload={images => updateStop({ images: images.map(image => image.url) })}/>
                         </FormControl>
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="ghost" mr={3} onClick={onClose}>
                             Close
                         </Button>
-                        <Button colorScheme="blue" onClick={handleSave}>Save</Button>
+                        <Button isDisabled={isSaveDisabled(stop)} colorScheme="blue" onClick={handleSave}>Save</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
         </>
     );
+};
+
+const isSaveDisabled = (stop: TourGuideStop): boolean => {
+    return stop.name.trim().length < 3 || stop.images.length == 0 || stop.audio.length == 0 || !stop.coordinate;
 };

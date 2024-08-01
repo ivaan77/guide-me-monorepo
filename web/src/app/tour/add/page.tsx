@@ -217,7 +217,7 @@ export default function TourGuideAdd() {
                 <EditTourStopModal onSave={addStop} city={cities.find(city => city.id == tourPlace.cityId)}/>
                 <EditDirectionsModal onSave={addDirections} place={tourPlace} initialCoordinates={initialCoordinates}/>
             </Flex>
-            <Footer onSave={onSave} onCancel={onCancel}/>
+            <Footer tourPlace={tourPlace} onSave={onSave} onCancel={onCancel}/>
         </Flex>
     );
 }
@@ -225,13 +225,19 @@ export default function TourGuideAdd() {
 type FooterProps = {
     onSave: OnClickHandler;
     onCancel: OnClickHandler;
+    tourPlace: TourGuidePlace;
 }
 
-const Footer = ({ onSave, onCancel }: FooterProps): ReactElement => (
+const Footer = ({ tourPlace, onSave, onCancel }: FooterProps): ReactElement => (
     <section style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: 16, background: '#F7FAFC' }}>
         <Flex flexDirection="row-reverse" gap={8}>
-            <Button type="submit" background={BRAND_COLOR} onClick={onSave}>Save</Button>
+            <Button isDisabled={isSaveDisabled(tourPlace)} type="submit" background={BRAND_COLOR} onClick={onSave}>Save</Button>
             <Button type="button" onClick={onCancel}>Back</Button>
         </Flex>
     </section>
 );
+
+const isSaveDisabled = (place: TourGuidePlace): boolean => {
+    console.log(place);
+    return !place?.cityId || place.name.trim().length < 3 || place.stops.length == 0 || place.directions.length == 0;
+};
