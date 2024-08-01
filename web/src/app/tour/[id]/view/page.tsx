@@ -89,6 +89,7 @@ export default function ViewTourPage() {
                                                 {stop.images.map((image, index) => {
                                                     return (
                                                         <Image
+                                                            key={image}
                                                             boxSize="40px"
                                                             objectFit="cover"
                                                             src={image}
