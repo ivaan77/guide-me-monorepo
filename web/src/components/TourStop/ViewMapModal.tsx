@@ -16,7 +16,7 @@ export const ViewMapModal = ({ isOpen, onClose, coordinates }: Props): ReactElem
         <ModalContent minWidth={600}>
             <ModalBody>
                 <div style={{ height: '500px' }}>
-                    <Map initialCenter={coordinates[0]} markers={CoordinateMapper.fromGoogleToMarkerInfos(coordinates)} zoom={12} onMarkerClick={console.log}/>
+                    <Map initialCenter={coordinates[0]} markers={CoordinateMapper.fromGoogleToMarkerInfos(coordinates)} zoom={12}/>
                 </div>
             </ModalBody>
             <ModalFooter>

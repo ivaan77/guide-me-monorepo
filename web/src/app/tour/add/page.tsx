@@ -40,8 +40,6 @@ export default function TourGuideAdd() {
     const toast = useToast();
     const router = useRouter();
 
-
-    console.log(tourPlace);
     useEffect(() => {
         fetchAllCities();
     }, []);
@@ -238,6 +236,5 @@ const Footer = ({ tourPlace, onSave, onCancel }: FooterProps): ReactElement => (
 );
 
 const isSaveDisabled = (place: TourGuidePlace): boolean => {
-    console.log(place);
     return !place?.cityId || place.name.trim().length < 3 || place.stops.length == 0 || place.directions.length == 0;
 };
