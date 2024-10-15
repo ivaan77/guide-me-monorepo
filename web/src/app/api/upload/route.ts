@@ -1,8 +1,9 @@
 import { Storage } from '@google-cloud/storage';
 import { NextRequest, NextResponse } from 'next/server';
+import path from "node:path"
 
 const storage = new Storage({
-    keyFilename: './guide-me-415010-7d3fae089328.json',
+    keyFilename: path.join(process.cwd(), 'guide-me-415010-7d3fae089328.json'),
 });
 
 const bucketName = 'guide-me-app';
