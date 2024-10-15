@@ -6,20 +6,20 @@ import { TourSpot, TourSpotDocument } from '../schemas/tour.spot.schema';
 
 @Injectable()
 export class TourSpotRepository {
-    constructor(@InjectModel(TourSpot.name) private tourSpotModel: Model<TourSpot>) {
-    }
+  constructor(
+    @InjectModel(TourSpot.name) private tourSpotModel: Model<TourSpot>,
+  ) {}
 
-    async create(request: CreateTourSpotRequest): Promise<TourSpotDocument> {
-        const createdTourSpot = new this.tourSpotModel(request);
-        return await createdTourSpot.save();
-    }
+  async create(request: CreateTourSpotRequest): Promise<TourSpotDocument> {
+    const createdTourSpot = new this.tourSpotModel(request);
+    return await createdTourSpot.save();
+  }
 
-    async findAll(): Promise<TourSpotDocument[]> {
-        return await this.tourSpotModel.find().exec();
-    }
+  async findAll(): Promise<TourSpotDocument[]> {
+    return await this.tourSpotModel.find().exec();
+  }
 
-    async deleteById(id: string): Promise<void> {
-        await this.tourSpotModel.findByIdAndDelete(id);
-    }
-
+  async deleteById(id: string): Promise<void> {
+    await this.tourSpotModel.findByIdAndDelete(id);
+  }
 }

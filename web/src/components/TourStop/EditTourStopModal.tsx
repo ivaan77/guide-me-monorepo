@@ -15,10 +15,10 @@ import {
     ModalContent,
     ModalFooter,
     ModalHeader,
-    ModalOverlay,
+    ModalOverlay, Text,
     useDisclosure,
-    useToast
-} from '@chakra-ui/react';
+    useToast,
+} from "@chakra-ui/react"
 import { City, CreateTourSpotRequest, OnValueChangeHandler } from '@guide-me-app/core';
 import { ReactElement, useState } from 'react';
 
@@ -130,6 +130,8 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
                                     markers={stop.coordinate ? [CoordinateMapper.fromGoogleToMarkerInfo(stop.coordinate)] : []}/>
                             </div>
                         </FormControl>
+                        <section style={{marginTop: '1rem'}}>
+                            <Text fontSize='sm'>To be able to upload files add stop name first</Text>
                         <FormControl isRequired>
                             <FormLabel>Audio</FormLabel>
                             <FileInput disabled={!city?.name || stop.name.trim().length < 3} accept={'audio/*'} multiple={false}
@@ -137,9 +139,11 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
                         </FormControl>
                         <FormControl isRequired>
                             <FormLabel>Image</FormLabel>
-                            <FileInput disabled={!city?.name || stop.name.trim().length < 3} accept={'image/*'} multiple folder={`${city?.name}/${stop.name}/`}
+                            <FileInput multiple disabled={!city?.name || stop.name.trim().length < 3} accept={'image/*'} folder={`${city?.name}/${stop.name}/`}
                                        onUpload={images => updateStop({ images: images.map(image => image.url) })}/>
                         </FormControl>
+                        </section>
+
                     </ModalBody>
                     <ModalFooter>
                         <Button variant="ghost" mr={3} onClick={onClose}>

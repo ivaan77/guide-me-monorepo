@@ -6,11 +6,14 @@ export type CityDocument = HydratedDocument<City>;
 
 @Schema()
 export class City {
-    @Prop({ required: true })
-    name: string;
+  @Prop({ required: true })
+  name: string;
 
-    @Prop({ required: true, type: { latitude: { type: Number }, longitude: { type: Number } } })
-    location: Coordinates;
+  @Prop({
+    required: true,
+    type: { latitude: { type: Number }, longitude: { type: Number } },
+  })
+  location: Coordinates;
 }
 
 export const CitySchema = SchemaFactory.createForClass(City);

@@ -7,9 +7,8 @@ import { TourModule } from './tour/tour.module';
 const dbUrl = process.env.MONGODB_URL;
 
 @Module({
-    imports: [MongooseModule.forRoot(dbUrl), TourModule, CityModule],
-    controllers: [],
-    providers: [],
+  imports: [MongooseModule.forRoot(dbUrl), TourModule, CityModule],
+  controllers: [],
+  providers: [],
 })
-export class AppModule {
-}
+export class AppModule {}

@@ -35,7 +35,6 @@ export type TourSpotResponse = {
 export type CreateTourGuideRequest = {
     name: string;
     city: string;
-    video: string;
     directions: Coordinates[];
     tourSpots: string[];
 }
@@ -44,7 +43,6 @@ export type TourGuideResponse = {
     id: string;
     name: string;
     city: City;
-    video: string;
     directions: Coordinates[];
     tourSpots: TourSpotResponse[];
 }

@@ -133,7 +133,6 @@ export default function TourGuideAdd() {
                 city: tourPlace.cityId!,
                 tourSpots: tourPlace.stops.map(stop => stop.id!) as string[],
                 directions: tourPlace.directions,
-                video: '',
             };
             await withLoading(saveTourGuide(request));
 

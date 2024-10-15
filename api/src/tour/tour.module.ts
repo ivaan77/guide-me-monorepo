@@ -8,9 +8,13 @@ import { TourController } from './tour.controller';
 import { TourService } from './tour.service';
 
 @Module({
-    imports: [MongooseModule.forFeature([{ name: TourSpot.name, schema: TourSpotSchema }, { name: Tour.name, schema: TourSchema }])],
-    controllers: [TourController],
-    providers: [TourSpotRepository, TourRepository, TourService],
+  imports: [
+    MongooseModule.forFeature([
+      { name: TourSpot.name, schema: TourSpotSchema },
+      { name: Tour.name, schema: TourSchema },
+    ]),
+  ],
+  controllers: [TourController],
+  providers: [TourSpotRepository, TourRepository, TourService],
 })
-export class TourModule {
-}
+export class TourModule {}

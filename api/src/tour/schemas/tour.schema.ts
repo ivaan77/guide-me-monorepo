@@ -6,23 +6,20 @@ import { TourSpot, TourSpotDocument } from './tour.spot.schema';
 
 @Schema()
 export class Tour {
-    @Prop({ required: true })
-    name: string;
+  @Prop({ required: true })
+  name: string;
 
-    @Prop({ required: true, type: mongoose.Types.ObjectId, ref: City.name })
-    city: CityDocument;
+  @Prop({ required: true, type: mongoose.Types.ObjectId, ref: City.name })
+  city: CityDocument;
 
-    @Prop({
-        required: true,
-        type: [{ latitude: { type: Number }, longitude: { type: Number } }]
-    })
-    directions: Coordinates[];
+  @Prop({
+    required: true,
+    type: [{ latitude: { type: Number }, longitude: { type: Number } }],
+  })
+  directions: Coordinates[];
 
-    @Prop({ required: true, type: [mongoose.Types.ObjectId], ref: TourSpot.name })
-    tourSpots: TourSpotDocument[];
-
-    @Prop()
-    video: string;
+  @Prop({ required: true, type: [mongoose.Types.ObjectId], ref: TourSpot.name })
+  tourSpots: TourSpotDocument[];
 }
 
 export const TourSchema = SchemaFactory.createForClass(Tour);

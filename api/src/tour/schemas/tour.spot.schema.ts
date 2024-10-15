@@ -6,17 +6,20 @@ export type TourSpotDocument = HydratedDocument<TourSpot>;
 
 @Schema()
 export class TourSpot {
-    @Prop({ required: true })
-    name: string;
+  @Prop({ required: true })
+  name: string;
 
-    @Prop([String])
-    images: string[];
+  @Prop([String])
+  images: string[];
 
-    @Prop({ required: true })
-    audio: string;
+  @Prop({ required: true })
+  audio: string;
 
-    @Prop({ required: true, type: { latitude: { type: Number }, longitude: { type: Number } } })
-    location: Coordinates;
+  @Prop({
+    required: true,
+    type: { latitude: { type: Number }, longitude: { type: Number } },
+  })
+  location: Coordinates;
 }
 
 export const TourSpotSchema = SchemaFactory.createForClass(TourSpot);

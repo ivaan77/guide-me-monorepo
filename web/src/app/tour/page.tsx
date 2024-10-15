@@ -87,7 +87,6 @@ const TourGuidesTable = ({ tourGuides, onEditClick, onViewClick }: TableProps): 
                         <Th>City Name</Th>
                         <Th>Spots count</Th>
                         <Th>Directions count</Th>
-                        <Th>Video</Th>
                         <Th>Actions</Th>
                     </Tr>
                 </Thead>
@@ -99,7 +98,6 @@ const TourGuidesTable = ({ tourGuides, onEditClick, onViewClick }: TableProps): 
                             <Td>{tourGuide.city.name}</Td>
                             <Td>{tourGuide.tourSpots.length}</Td>
                             <Td>{tourGuide.directions.length}</Td>
-                            <Td>{tourGuide.video}</Td>
                             <Td>
                                 <Flex gap={2}>
                                     <Tooltip hasArrow fontSize="md" label="Edit tour guide">
