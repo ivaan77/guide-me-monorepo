@@ -125,7 +125,7 @@ type FooterProps = {
 }
 
 const Footer = ({ onBack }: FooterProps): ReactElement => (
-    <section style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: 16, marginTop:12, background: '#F7FAFC' }}>
+    <section style={{ position: 'fixed', borderTop: '1px solid #ededed', bottom: 0, left: 0, width: '100%', padding: 16, marginTop:12, background: '#f9f9f9' }}>
         <Flex flexDirection="row-reverse" gap={8}>
             <Button type="button" onClick={onBack}>Back</Button>
         </Flex>

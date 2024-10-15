@@ -22,7 +22,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             <Providers>
                 <Flex flex={1} flexDirection="column">
                     <Header/>
-                    {children}
+                    <section style={{ margin: '2rem'}}>
+                        {children}
+                    </section>
                 </Flex>
             </Providers>
         </LoadingProvider>
