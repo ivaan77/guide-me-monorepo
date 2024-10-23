@@ -3,12 +3,14 @@ import { Nullable } from "../../common"
 export type SaveCityRequest = {
     name: string
     location: Coordinates;
+    infoAudio: Nullable<string>;
 }
 
 export type City = {
     id: string;
     name: string;
     location: Coordinates;
+    infoAudio: Nullable<string>;
 }
 
 export type AllCityResponse = {

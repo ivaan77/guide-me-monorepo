@@ -14,6 +14,9 @@ export class City {
     type: { latitude: { type: Number }, longitude: { type: Number } },
   })
   location: Coordinates;
+
+  @Prop({ required: false })
+  infoAudio: string;
 }
 
 export const CitySchema = SchemaFactory.createForClass(City);

@@ -1,4 +1,4 @@
-import { Coordinates, Nullable } from '@guide-me-app/core';
+import { Coordinates } from '@guide-me-app/core';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
