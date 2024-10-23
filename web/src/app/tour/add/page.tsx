@@ -22,6 +22,7 @@ export type TourGuideStop = {
     id: Nullable<string>;
     name: string;
     coordinate: Nullable<google.maps.LatLngLiteral>;
+    infoAudio: Nullable<string>;
     audio: string[];
     images: string[];
 }

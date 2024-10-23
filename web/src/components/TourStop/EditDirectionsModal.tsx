@@ -63,7 +63,7 @@ export const EditDirectionsModal = ({ onSave, place, initialCoordinates }: Props
     setDirections([])
   }
 
-  const initialCenter = initialCoordinates ? CoordinateMapper.fromCoordinateToGoogle(initialCoordinates) : undefined
+  const initialCenter = resolveInitialCenter(directions, initialCoordinates);
 
   return (
     <>
@@ -78,7 +78,7 @@ export const EditDirectionsModal = ({ onSave, place, initialCoordinates }: Props
           <ModalBody>
             <div style={{ height: "400px" }}>
               <Map
-                zoom={12}
+                zoom={17}
                 initialCenter={initialCenter}
                 onDoubleClick={addDirection}
                 polylines={CoordinateMapper.fromCoordinatesToGoogle(directions)}
@@ -110,4 +110,12 @@ export const EditDirectionsModal = ({ onSave, place, initialCoordinates }: Props
       </Modal>
     </>
   )
+}
+
+const resolveInitialCenter = (directions: Coordinates[], initialCoordinates?: Coordinates) => {
+  if (directions && directions.length > 0) {
+    return CoordinateMapper.fromCoordinateToGoogle(directions[directions.length - 1])
+  }
+
+  return initialCoordinates ? CoordinateMapper.fromCoordinateToGoogle(initialCoordinates) : undefined
 }

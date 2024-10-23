@@ -12,5 +12,5 @@ export const Polyline = ({ path }: Props): Nullable<ReactElement> => {
     }
 
 
-    return <PolylineView path={path} options={{ strokeColor: BRAND_COLOR}}/>
+    return <PolylineView path={path} options={{ strokeColor: BRAND_COLOR }}/>
 };
