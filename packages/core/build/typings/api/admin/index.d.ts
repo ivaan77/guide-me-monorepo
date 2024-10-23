@@ -1,3 +1,4 @@
+import { Nullable } from "../../common";
 export type SaveCityRequest = {
     name: string;
     location: Coordinates;
@@ -17,6 +18,7 @@ export type CreateTourSpotRequest = {
     name: string;
     images: string[];
     audio: string;
+    infoAudio: Nullable<string>;
     location: Coordinates;
 };
 export type TourSpotResponse = {
@@ -24,6 +26,7 @@ export type TourSpotResponse = {
     name: string;
     images: string[];
     audio: string;
+    infoAudio: Nullable<string>;
     location: Coordinates;
 };
 export type CreateTourGuideRequest = {

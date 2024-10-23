@@ -1,4 +1,4 @@
-import { Coordinates } from '@guide-me-app/core';
+import { Coordinates, Nullable } from '@guide-me-app/core';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
@@ -14,6 +14,9 @@ export class TourSpot {
 
   @Prop({ required: true })
   audio: string;
+
+  @Prop({ required: false })
+  infoAudio: string;
 
   @Prop({
     required: true,
