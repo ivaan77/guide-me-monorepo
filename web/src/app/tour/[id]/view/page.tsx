@@ -77,7 +77,8 @@ export default function ViewTourPage() {
                                     <Th>Name</Th>
                                     <Th>Images</Th>
                                     <Th>Audio</Th>
-                                    <Th>Info Audio</Th>
+                                    <Th>Intro Audio</Th>
+                                    <Th>Outro Audio</Th>
                                 </Tr>
                             </Thead>
                             <Tbody>
@@ -100,7 +101,8 @@ export default function ViewTourPage() {
                                             </Flex>
                                         </Td>
                                         <Td>{stop.audio}</Td>
-                                        <Td>{stop.infoAudio ? stop.infoAudio : 'No info audio'}</Td>
+                                        <Td>{stop.introAudio ? stop.introAudio : 'No intro audio'}</Td>
+                                        <Td>{stop.outroAudio ? stop.outroAudio : 'No outro audio'}</Td>
                                         <Td></Td>
                                     </Tr>
                                 ))}

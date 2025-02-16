@@ -43,7 +43,8 @@ const INITIAL_TOUR_GUIDE_STOP: TourGuideStop = {
     name: '',
     coordinate: null,
     audio: [],
-    infoAudio: null,
+    introAudio: null,
+    outroAudio: null,
     images: [],
 };
 
@@ -51,7 +52,8 @@ type TourGuideStop = {
     id: Nullable<string>;
     name: string;
     coordinate: Nullable<google.maps.LatLngLiteral>;
-    infoAudio: Nullable<string>;
+    introAudio: Nullable<string>;
+    outroAudio: Nullable<string>;
     audio: string[];
     images: string[];
 }
@@ -208,7 +210,8 @@ function AddTourStop({ onSave, city }: AddStopProps) {
             audio: stop.audio[0]!,
             name: stop.name!,
             images: stop.images!,
-            infoAudio: stop.infoAudio,
+            introAudio: stop.introAudio,
+            outroAudio: stop.outroAudio,
             location: {
                 longitude: stop.coordinate.lng,
                 latitude: stop.coordinate.lat

@@ -37,6 +37,8 @@ export const TourStopTable = ({ stops, onDeleteSpotClick }: Props): ReactElement
                                 <Th>Coordinates</Th>
                                 <Th>Images</Th>
                                 <Th>Audio</Th>
+                                <Th>Intro</Th>
+                                <Th>Outro</Th>
                                 <Th>Actions</Th>
                             </Tr>
                         </Thead>
@@ -50,6 +52,8 @@ export const TourStopTable = ({ stops, onDeleteSpotClick }: Props): ReactElement
                                     </Td>
                                     <Td>{stop.images.length} image{stop.images.length > 1 ? 's' : ''}</Td>
                                     <Td>{stop.audio.length} audio{stop.audio.length > 1 ? 's' : ''}</Td>
+                                    <Td>{stop.introAudio ? "Yes" : "No"}</Td>
+                                    <Td>{stop.outroAudio ? "Yes" : "No"}</Td>
                                     <Td>
                                         <Tooltip hasArrow fontSize="md" label="Delete spot">
                                             <DeleteIcon w={4} h={4} color="red.500" onClick={() => onDeleteSpotClick(stop.id!)}/>
