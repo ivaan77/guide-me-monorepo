@@ -10,19 +10,24 @@ import { Button, Flex, FormControl, FormLabel, Input, Select, useToast } from '@
 import { BRAND_COLOR, City, Coordinates, CreateTourGuideRequest, Nullable, OnClickHandler } from '@guide-me-app/core';
 import { useRouter } from 'next/navigation';
 import { ReactElement, useEffect, useState } from 'react';
+import { IntroOutroUploader } from "@/components/AudioUploader"
+import { UploadResponse } from "@/app/api/upload/route"
 
 export type TourGuidePlace = {
     cityId: string | undefined;
     name: string;
     stops: TourGuideStop[];
     directions: Coordinates[];
+    introAudio: Nullable<string>;
+    outroAudio: Nullable<string>;
 }
 
 export type TourGuideStop = {
     id: Nullable<string>;
     name: string;
     coordinate: Nullable<google.maps.LatLngLiteral>;
-    infoAudio: Nullable<string>;
+    introAudio: Nullable<string>;
+    outroAudio: Nullable<string>;
     audio: string[];
     images: string[];
 }
@@ -32,6 +37,8 @@ const INITIAL_TOUR_GUIDE_PLACE: TourGuidePlace = {
     name: '',
     stops: [],
     directions: [],
+    introAudio: null,
+    outroAudio: null,
 };
 
 export default function TourGuideAdd() {
@@ -134,12 +141,14 @@ export default function TourGuideAdd() {
                 city: tourPlace.cityId!,
                 tourSpots: tourPlace.stops.map(stop => stop.id!) as string[],
                 directions: tourPlace.directions,
+                introAudio: tourPlace.introAudio,
+                outroAudio: tourPlace.outroAudio,
             };
             await withLoading(saveTourGuide(request));
 
             toast({
                 title: 'Tour',
-                description: 'Sucessfully saved tour guide',
+                description: 'Successfully saved tour guide',
                 status: 'success',
                 duration: 3000,
                 isClosable: true,
@@ -192,6 +201,23 @@ export default function TourGuideAdd() {
         }
     };
 
+    const onUploadedIntroAudio = (audio: UploadResponse[]) => {
+        setTourPlace((prevState) => {
+            return {
+                ...prevState,
+                introAudio: audio.length ? audio[0].url : null,
+            }
+        });
+    }
+
+    const onUploadedOutroAudio = (audio: UploadResponse[]) => {
+        setTourPlace((prevState) => {
+            return {
+                ...prevState,
+                outroAudio: audio.length ? audio[0].url : null,
+            }
+        });
+    }
 
     return (
         <Flex flexDirection="column" padding={16}>
@@ -208,6 +234,9 @@ export default function TourGuideAdd() {
                 <FormControl isRequired>
                     <FormLabel>Tour name</FormLabel>
                     <Input value={tourPlace.name} onChange={event => updatePlace({ name: event.target.value })} placeholder="Tour name"/>
+                </FormControl>
+                <FormControl>
+                    <IntroOutroUploader disabled={tourPlace.name.length < 3} folder={tourPlace.name} onUploadIntro={onUploadedIntroAudio} onUploadOutro={onUploadedOutroAudio} />
                 </FormControl>
             </Flex>
             <Flex flexDirection="column" gap={4}>

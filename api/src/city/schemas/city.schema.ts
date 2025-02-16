@@ -16,7 +16,10 @@ export class City {
   location: Coordinates;
 
   @Prop({ required: false })
-  infoAudio: string;
+  introAudio: string;
+
+  @Prop({ required: false })
+  outroAudio: string;
 }
 
 export const CitySchema = SchemaFactory.createForClass(City);

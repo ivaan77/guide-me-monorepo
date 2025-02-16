@@ -28,7 +28,8 @@ const INITIAL_TOUR_GUIDE_STOP: TourGuideStop = {
   name: "",
   coordinate: null,
   audio: [],
-  infoAudio: null,
+  introAudio: null,
+  outroAudio: null,
   images: [],
 }
 
@@ -79,7 +80,8 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
 
     const req: CreateTourSpotRequest = {
       audio: stop.audio[0]!,
-      infoAudio: stop.infoAudio,
+      introAudio: stop.introAudio,
+      outroAudio: stop.outroAudio,
       name: stop.name!,
       images: stop.images!,
       location: {
@@ -153,13 +155,23 @@ export const EditTourStopModal = ({ onSave, city }: Props): ReactElement => {
                 />
               </FormControl>
               <FormControl>
-                <FormLabel>Audio to play until nex stop reached</FormLabel>
+                <FormLabel>Audio to play until next stop reached</FormLabel>
                 <FileInput
                   disabled={!city?.name || stop.name.trim().length < 3}
                   accept={"audio/*"}
                   multiple={false}
-                  folder={`${city?.name}/${stop.name}/infoAudio/`}
-                  onUpload={(infoAudio) => updateStop({ infoAudio: infoAudio.length ? infoAudio[0].url : null })}
+                  folder={`${city?.name}/${stop.name}/introAudio/`}
+                  onUpload={(introAudio) => updateStop({ introAudio: introAudio.length ? introAudio[0].url : null })}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Audio to play before leaving stop</FormLabel>
+                <FileInput
+                  disabled={!city?.name || stop.name.trim().length < 3}
+                  accept={"audio/*"}
+                  multiple={false}
+                  folder={`${city?.name}/${stop.name}/outroAudio/`}
+                  onUpload={(outroAudio) => updateStop({ outroAudio: outroAudio.length ? outroAudio[0].url : null })}
                 />
               </FormControl>
               <FormControl isRequired>

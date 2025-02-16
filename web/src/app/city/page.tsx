@@ -84,7 +84,8 @@ const CitiesTable = ({ cities, onAddClick }: TableProps): ReactElement => {
                         <Th>Id</Th>
                         <Th>Name</Th>
                         <Th>Is active</Th>
-                        <Th>Audio</Th>
+                        <Th>Intro</Th>
+                        <Th>Outro</Th>
                         <Th>Actions</Th>
                     </Tr>
                 </Thead>
@@ -96,7 +97,8 @@ const CitiesTable = ({ cities, onAddClick }: TableProps): ReactElement => {
                             <Td align="center">
                                 <CheckIcon w={4} h={4} color="green.500"/>
                             </Td>
-                            <Td>{city.infoAudio ? city.infoAudio : 'No audio'}</Td>
+                            <Td>{city.introAudio ? city.introAudio : 'No audio'}</Td>
+                            <Td>{city.outroAudio ? city.outroAudio : 'No audio'}</Td>
                             <Td>
                                 <Tooltip hasArrow fontSize="md" label="Add tour">
                                     <AddIcon w={4} h={4} color="green.500" onClick={onAddClick}/>

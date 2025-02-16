@@ -19,6 +19,8 @@ export class TourMapper {
       tourSpots: TourSpotMapper.fromModelsToTourSpotResponses(model.tourSpots),
       city: CityMapper.fromModelToCity(model.city),
       directions: model.directions,
+      introAudio: model.introAudio,
+      outroAudio: model.outroAudio,
     };
   };
 }

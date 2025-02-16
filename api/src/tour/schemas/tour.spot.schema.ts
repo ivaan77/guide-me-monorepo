@@ -16,7 +16,10 @@ export class TourSpot {
   audio: string;
 
   @Prop({ required: false })
-  infoAudio: string;
+  introAudio: string;
+
+  @Prop({ required: false })
+  outroAudio: string;
 
   @Prop({
     required: true,

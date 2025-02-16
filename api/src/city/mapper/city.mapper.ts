@@ -11,7 +11,8 @@ export class CityMapper {
       id: model._id.toString(),
       name: model.name,
       location: model.location,
-      infoAudio: model.infoAudio,
+      introAudio: model.introAudio,
+      outroAudio: model.outroAudio,
     };
   };
 
@@ -19,7 +20,8 @@ export class CityMapper {
     return {
       name: request.name,
       location: request.location,
-      infoAudio: request.infoAudio,
+      introAudio: request.introAudio,
+      outroAudio: request.outroAudio,
     };
   };
 }

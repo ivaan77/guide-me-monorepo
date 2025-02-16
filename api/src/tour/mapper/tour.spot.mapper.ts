@@ -15,7 +15,8 @@ export class TourSpotMapper {
       id: model.id,
       name: model.name,
       audio: model.audio,
-      infoAudio: model.infoAudio,
+      introAudio: model.introAudio,
+      outroAudio: model.outroAudio,
       images: model.images,
       location: model.location,
     };

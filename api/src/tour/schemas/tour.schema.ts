@@ -20,6 +20,12 @@ export class Tour {
 
   @Prop({ required: true, type: [mongoose.Types.ObjectId], ref: TourSpot.name })
   tourSpots: TourSpotDocument[];
+
+  @Prop({ required: false })
+  introAudio: string;
+
+  @Prop({ required: false })
+  outroAudio: string;
 }
 
 export const TourSchema = SchemaFactory.createForClass(Tour);

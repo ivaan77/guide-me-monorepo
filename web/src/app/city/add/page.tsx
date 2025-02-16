@@ -7,13 +7,14 @@ import { Box, Button, Center, Flex, FormLabel, Input, useToast } from "@chakra-u
 import { BRAND_COLOR, SaveCityRequest } from "@guide-me-app/core"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { FileInput } from "@/components/FileUpload"
 import { UploadResponse } from "@/app/api/upload/route"
+import { IntroOutroUploader } from "@/components/AudioUploader"
 
 const SAVE_CITY_REQUEST: SaveCityRequest = {
   location: { latitude: 0, longitude: 0 },
   name: "",
-  infoAudio: null,
+  introAudio: null,
+  outroAudio: null,
 }
 
 export default function AddCityPage() {
@@ -85,14 +86,25 @@ export default function AddCityPage() {
     })
   }
 
-  const onUploadedInfoAudio = (audio: UploadResponse[]) => {
+  const onUploadedIntroAudio = (audio: UploadResponse[]) => {
     setCity((prevState) => {
       return {
         ...prevState,
-        infoAudio: audio.length ? audio[0].url : null,
+        introAudio: audio.length ? audio[0].url : null,
       }
     })
   }
+
+  const onUploadedOutroAudio = (audio: UploadResponse[]) => {
+    setCity((prevState) => {
+      return {
+        ...prevState,
+        outroAudio: audio.length ? audio[0].url : null,
+      }
+    })
+  }
+
+  const introOutroDisabled = !city?.name || city.name.length < 3;
 
   return (
     <Flex flex={1} gap={4} justifyContent="center" flexDirection="column">
@@ -105,16 +117,7 @@ export default function AddCityPage() {
           <Input type="text" value={city.name} onChange={(e) => handleCityNameChanged(e.target.value)} />
         </Box>
       </Center>
-      <Center>
-          <FormLabel>Audio</FormLabel>
-          <FileInput
-            disabled={!city?.name || city.name.length < 3}
-            accept={"audio/*"}
-            multiple={false}
-            folder={`${city?.name}/info/`}
-            onUpload={onUploadedInfoAudio}
-          />
-      </Center>
+      <IntroOutroUploader disabled={introOutroDisabled} folder={city.name} onUploadIntro={onUploadedIntroAudio} onUploadOutro={onUploadedOutroAudio} />
       <Center>
         <div style={{ height: "500px", width: "600px" }}>
           <Map

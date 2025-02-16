@@ -1,16 +1,19 @@
 import { Nullable } from "../../common"
 
-export type SaveCityRequest = {
-    name: string
-    location: Coordinates;
-    infoAudio: Nullable<string>;
+export type WithExtendedAudio = {
+    introAudio: Nullable<string>;
+    outroAudio: Nullable<string>;
 }
 
-export type City = {
+export type SaveCityRequest = WithExtendedAudio & {
+    name: string
+    location: Coordinates;
+}
+
+export type City = WithExtendedAudio & {
     id: string;
     name: string;
     location: Coordinates;
-    infoAudio: Nullable<string>;
 }
 
 export type AllCityResponse = {
@@ -21,31 +24,29 @@ export type CityByIdResponse = {
     city: City;
 }
 
-export type CreateTourSpotRequest = {
+export type CreateTourSpotRequest = WithExtendedAudio & {
     name: string;
     images: string[];
     audio: string;
-    infoAudio: Nullable<string>;
     location: Coordinates;
 }
 
-export type TourSpotResponse = {
+export type TourSpotResponse = WithExtendedAudio & {
     id: string;
     name: string;
     images: string[];
     audio: string;
-    infoAudio: Nullable<string>;
     location: Coordinates;
 }
 
-export type CreateTourGuideRequest = {
+export type CreateTourGuideRequest = WithExtendedAudio & {
     name: string;
     city: string;
     directions: Coordinates[];
     tourSpots: string[];
 }
 
-export type TourGuideResponse = {
+export type TourGuideResponse = WithExtendedAudio & {
     id: string;
     name: string;
     city: City;
