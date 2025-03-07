@@ -4,5 +4,19 @@
     "trailingComma": "all",
     "printWidth": 100,
     "tabWidth": 4,
-    "endOfLine": "lf"
+    "endOfLine": "lf",
+    "overrides": [
+        {
+            "files": ["*.ts", "*.tsx", "*.js"],
+            "options": {
+                "tabWidth": 4
+            }
+        },
+        {
+            "files": ["*.json"],
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
 }
