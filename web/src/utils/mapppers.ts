@@ -1,7 +1,7 @@
 import { MarkerInfo } from '@/components/Map/Marker'
 import { Coordinates, Nullable, TourGuideResponse, TourSpotResponse } from '@guide-me-app/core'
-import { TourGuidePlace, TourGuideStop } from '@/app/tour/add/page'
-import { INITIAL_TOUR_GUIDE_PLACE } from '@/constants/tour'
+import { TourGuidePlace, TourGuideStop } from '@/types'
+import { INITIAL_TOUR_GUIDE_PLACE } from '@/constants/tour';
 
 type MarkerInfoOptions = {
     id?: string

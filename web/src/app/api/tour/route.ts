@@ -12,7 +12,7 @@ export async function GET(): Promise<Response> {
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
     try {
         const body = (await request.json()) as CreateTourGuideRequest
         const { data } = await restClient.post<TourGuideResponse>(AdminPath.Tour.save, body)

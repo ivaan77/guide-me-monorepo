@@ -1,11 +1,11 @@
 import { BRAND_COLOR, OnClickHandler } from '@guide-me-app/core'
 import { ReactElement } from 'react'
 import { Button, Flex } from '@chakra-ui/react'
-import { TourGuidePlace } from '@/app/tour/add/page'
+import { TourGuidePlace } from '@/types'
 
 type Props = {
-    onSave: OnClickHandler
     onCancel: OnClickHandler
+    onSave: OnClickHandler
     tourPlace: TourGuidePlace
 }
 

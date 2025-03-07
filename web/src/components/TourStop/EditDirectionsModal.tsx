@@ -1,4 +1,4 @@
-import { TourGuidePlace } from '@/app/tour/add/page'
+import { TourGuidePlace } from '@/types'
 import { Map } from '@/components/Map'
 import { CoordinateMapper } from '@/utils/mapppers'
 import {

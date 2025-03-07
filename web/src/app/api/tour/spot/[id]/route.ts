@@ -6,7 +6,7 @@ type Params = {
     id: string
 }
 
-export async function DELETE(request: Request, context: { params: Params }) {
+export async function DELETE(request: Request, context: { params: Params }): Promise<Response> {
     const { id } = context.params
     try {
         await restClient.delete(AdminPath.TourSpot.deleteSpotById(id))
@@ -17,7 +17,7 @@ export async function DELETE(request: Request, context: { params: Params }) {
     }
 }
 
-export async function PUT(request: Request, context: { params: Params }) {
+export async function PUT(request: Request, context: { params: Params }): Promise<Response> {
     const { id } = context.params
 
     try {

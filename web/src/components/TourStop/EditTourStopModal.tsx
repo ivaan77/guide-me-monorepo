@@ -1,4 +1,4 @@
-import { TourGuideStop } from '@/app/tour/add/page'
+import { TourGuideStop } from '@/types'
 import { FileInput } from '@/components/FileUpload'
 import { useLoading } from '@/components/Loading/useLoading'
 import { Map } from '@/components/Map'

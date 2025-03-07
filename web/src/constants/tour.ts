@@ -1,4 +1,4 @@
-import { TourGuidePlace } from '@/app/tour/add/page'
+import { TourGuidePlace } from '@/types'
 
 export const INITIAL_TOUR_GUIDE_PLACE: TourGuidePlace = {
     id: undefined,

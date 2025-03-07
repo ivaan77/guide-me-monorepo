@@ -15,7 +15,7 @@ import {
 import { DeleteIcon, EditIcon, CloseIcon } from '@chakra-ui/icons'
 import { EditTourStopModal } from '@/components/TourStop/EditTourStopModal'
 import { BRAND_COLOR, City, OnValueChangeHandler } from '@guide-me-app/core'
-import { TourGuidePlace, TourGuideStop } from '@/app/tour/add/page'
+import { TourGuidePlace, TourGuideStop } from '@/types'
 import { getCity } from '@/utils/resolvers'
 import { ViewMapModal } from '@/components/TourStop/ViewMapModal'
 import { ListenSoundLink } from '@/components/ActionButtons/ListenSoundLink'

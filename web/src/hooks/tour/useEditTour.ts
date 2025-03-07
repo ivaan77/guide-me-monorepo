@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TourGuidePlace, TourGuideStop } from '@/app/tour/add/page'
+import { TourGuidePlace, TourGuideStop } from '@/types'
 import { Coordinates, CreateTourGuideRequest, EditTourGuideRequest } from '@guide-me-app/core'
 import { UploadResponse } from '@/app/api/upload/route'
 import { deleteTourSpot, editTourGuide, saveTourGuide } from '@/utils/api'
