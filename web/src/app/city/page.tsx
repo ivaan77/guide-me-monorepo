@@ -2,7 +2,7 @@
 
 import { LoadingSkeleton } from '@/components/Loading/LoadingSkeleton'
 import { useLoading } from '@/components/Loading/useLoading'
-import { getAllCities } from '@/utils/api'
+import { getAllCities } from '@/utils/api';
 import { AddIcon, CloseIcon } from '@chakra-ui/icons';
 import {
     Button,
