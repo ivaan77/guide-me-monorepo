@@ -1,3 +1,3 @@
-import 'dotenv/config';
+import 'dotenv/config'
 
-export const API_URL: string = process.env.API_URL || 'http://localhost:3001';
+export const API_URL: string = process.env.API_URL || 'http://localhost:3001'

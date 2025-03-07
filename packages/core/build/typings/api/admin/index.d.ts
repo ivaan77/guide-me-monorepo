@@ -24,6 +24,9 @@ export type CreateTourSpotRequest = WithExtendedAudio & {
     audio: string;
     location: Coordinates;
 };
+export type EditTourSpotRequest = CreateTourSpotRequest & {
+    id: string;
+};
 export type TourSpotResponse = WithExtendedAudio & {
     id: string;
     name: string;
@@ -36,6 +39,9 @@ export type CreateTourGuideRequest = WithExtendedAudio & {
     city: string;
     directions: Coordinates[];
     tourSpots: string[];
+};
+export type EditTourGuideRequest = CreateTourGuideRequest & {
+    id: string;
 };
 export type TourGuideResponse = WithExtendedAudio & {
     id: string;

@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { Text } from '@chakra-ui/react';
+import { Text } from '@chakra-ui/react'
 
 export default function Dashboard() {
     return (
@@ -8,9 +8,9 @@ export default function Dashboard() {
             <header>Dashboard</header>
             <main>
                 <div style={{ width: '80%', height: '600px' }}>
-                   <Text>Nothing to see here just yet</Text>
+                    <Text>Nothing to see here just yet</Text>
                 </div>
             </main>
         </section>
-    );
+    )
 }

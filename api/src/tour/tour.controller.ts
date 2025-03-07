@@ -2,10 +2,20 @@ import {
   AdminPath,
   CreateTourGuideRequest,
   CreateTourSpotRequest,
+  EditTourGuideRequest,
+  EditTourSpotRequest,
   TourGuideResponse,
   TourSpotResponse,
 } from '@guide-me-app/core';
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { TourService } from './tour.service';
 
 @Controller()
@@ -29,6 +39,13 @@ export class TourController {
     await this.tourService.deleteSpot(id);
   }
 
+  @Put(AdminPath.TourSpot.edit)
+  async editSpotById(
+    @Body() request: EditTourSpotRequest,
+  ): Promise<TourSpotResponse> {
+    return await this.tourService.editSpot(request);
+  }
+
   @Get(AdminPath.Tour.getAll)
   async getAllTours(): Promise<TourGuideResponse[]> {
     return await this.tourService.getAllTours();
@@ -44,5 +61,12 @@ export class TourController {
   @Get(AdminPath.Tour.byId)
   async getCityById(@Param('id') id: string): Promise<TourGuideResponse> {
     return await this.tourService.getTourById(id);
+  }
+
+  @Put(AdminPath.Tour.edit)
+  async editTourGuide(
+    @Body() request: EditTourGuideRequest,
+  ): Promise<TourGuideResponse> {
+    return await this.tourService.editTourGuide(request);
   }
 }

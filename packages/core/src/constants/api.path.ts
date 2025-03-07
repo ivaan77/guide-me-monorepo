@@ -12,13 +12,17 @@ export const AdminPath = {
         getAll: '/tour/all',
         save: '/tour/save',
         delete: '/tour/delete/:id',
+        edit: '/tour/edit/:id',
         deleteTourById: (id: string): string => AdminPath.Tour.delete.replace(':id', id),
         getTourById: (id: string): string => AdminPath.Tour.byId.replace(':id', id),
+        editTourById: (id: string): string => AdminPath.Tour.edit.replace(':id', id),
     },
     TourSpot: {
         save: '/tour/spot/save',
         getAll: '/tour/spot/all',
         delete: '/tour/spot/delete/:id',
+        edit: '/tour/spot/edit/:id',
         deleteSpotById: (id: string): string => AdminPath.TourSpot.delete.replace(':id', id),
+        editSpotById: (id: string): string => AdminPath.TourSpot.edit.replace(':id', id),
     }
 };

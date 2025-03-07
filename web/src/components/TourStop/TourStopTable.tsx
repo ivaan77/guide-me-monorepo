@@ -1,71 +1,127 @@
-import { TourGuideStop } from '@/app/tour/add/page';
-import { ViewMapModal } from '@/components/TourStop/ViewMapModal';
-import { DeleteIcon } from '@chakra-ui/icons';
-import { Button, FormLabel, Table, TableCaption, TableContainer, Tbody, Td, Text, Th, Thead, Tooltip, Tr } from '@chakra-ui/react';
-import { Nullable, OnValueChangeHandler } from '@guide-me-app/core';
-import { ReactElement, useState } from 'react';
+import {
+    Button,
+    Flex,
+    Table,
+    TableCaption,
+    TableContainer,
+    Tbody,
+    Td,
+    Text,
+    Th,
+    Thead,
+    Tooltip,
+    Tr,
+} from '@chakra-ui/react'
+import { DeleteIcon, EditIcon, CloseIcon } from '@chakra-ui/icons'
+import { EditTourStopModal } from '@/components/TourStop/EditTourStopModal'
+import { BRAND_COLOR, City, OnValueChangeHandler } from '@guide-me-app/core'
+import { TourGuidePlace, TourGuideStop } from '@/app/tour/add/page'
+import { getCity } from '@/utils/resolvers'
+import { ViewMapModal } from '@/components/TourStop/ViewMapModal'
+import { ListenSoundLink } from '@/components/ActionButtons/ListenSoundLink'
+import { ImagePreview } from '@/components/ActionButtons/ImagePreview'
 
 type Props = {
-    stops: TourGuideStop[];
-    onDeleteSpotClick: OnValueChangeHandler<string>;
+    tourPlace: TourGuidePlace
+    cities: City[]
+    removeStop?: OnValueChangeHandler<string>
+    editStop?: OnValueChangeHandler<TourGuideStop>
 }
 
-export const TourStopTable = ({ stops, onDeleteSpotClick }: Props): ReactElement => {
-    const [displayMapModal, setDisplayMapModal] = useState<boolean>(false);
-    const [coordinates, setCoordinates] = useState<google.maps.LatLngLiteral[]>([]);
+export const TourStopTable = ({ tourPlace, cities, editStop, removeStop }: Props) => {
+    if (!tourPlace.tourSpots.length) {
+        return <Text fontSize="md">No stops</Text>
+    }
 
-    const handleDisplayModal = (coordinate: Nullable<google.maps.LatLngLiteral>): void => {
-        if (!coordinate) {
-            return;
-        }
-
-        setCoordinates(Array.of(coordinate));
-        setDisplayMapModal(true);
-    };
+    const displayActions = removeStop || editStop
 
     return (
-        <>
-            <FormLabel>Tour stops</FormLabel>
-            {stops.length == 0 ? (<Text fontSize="md">No stops</Text>) : (
-                <TableContainer>
-                    <Table variant="simple">
-                        <TableCaption>Tour guide stops</TableCaption>
-                        <Thead>
-                            <Tr>
-                                <Th>Id</Th>
-                                <Th>Name</Th>
-                                <Th>Coordinates</Th>
-                                <Th>Images</Th>
-                                <Th>Audio</Th>
-                                <Th>Intro</Th>
-                                <Th>Outro</Th>
-                                <Th>Actions</Th>
-                            </Tr>
-                        </Thead>
-                        <Tbody>
-                            {stops.map(stop => (
-                                <Tr key={stop.id}>
-                                    <Td>{stop.id}</Td>
-                                    <Td>{stop.name}</Td>
-                                    <Td>
-                                        <Button onClick={() => handleDisplayModal(stop.coordinate)}>View on Map</Button>
-                                    </Td>
-                                    <Td>{stop.images.length} image{stop.images.length > 1 ? 's' : ''}</Td>
-                                    <Td>{stop.audio.length} audio{stop.audio.length > 1 ? 's' : ''}</Td>
-                                    <Td>{stop.introAudio ? "Yes" : "No"}</Td>
-                                    <Td>{stop.outroAudio ? "Yes" : "No"}</Td>
-                                    <Td>
+        <TableContainer>
+            <Table variant="simple">
+                <TableCaption>Tour guide stops</TableCaption>
+                <Thead>
+                    <Tr>
+                        <Th>Id</Th>
+                        <Th>Name</Th>
+                        <Th>Coordinates</Th>
+                        <Th>Images</Th>
+                        <Th>Audio</Th>
+                        <Th>Intro</Th>
+                        <Th>Outro</Th>
+                        {displayActions && <Th>Actions</Th>}
+                    </Tr>
+                </Thead>
+                <Tbody>
+                    {tourPlace.tourSpots.map((stop: TourGuideStop) => (
+                        <Tr key={stop.id}>
+                            <Td>{stop.id}</Td>
+                            <Td>{stop.name}</Td>
+                            <Td>
+                                {stop.coordinate && (
+                                    <ViewMapModal
+                                        coordinates={[stop.coordinate]}
+                                        renderActivator={(onOpen) => (
+                                            <Button onClick={onOpen}>View on Map</Button>
+                                        )}
+                                    />
+                                )}
+                            </Td>
+                            <Td>
+                                {stop.images.map((image) => (
+                                    <ImagePreview key={image} image={image} alt={stop.name} />
+                                ))}
+                            </Td>
+                            <Td>
+                                <ListenSoundLink audio={stop.audio} />
+                            </Td>
+                            <Td>
+                                {stop.introAudio ? (
+                                    <ListenSoundLink audio={stop.introAudio} />
+                                ) : (
+                                    <CloseIcon w={4} h={4} color="red.500" />
+                                )}
+                            </Td>
+                            <Td>
+                                {stop.outroAudio ? (
+                                    <ListenSoundLink audio={stop.outroAudio} />
+                                ) : (
+                                    <CloseIcon w={4} h={4} color="red.500" />
+                                )}
+                            </Td>
+                            <Td>
+                                <Flex flexDirection="row" gap={2}>
+                                    {stop.id && removeStop && (
                                         <Tooltip hasArrow fontSize="md" label="Delete spot">
-                                            <DeleteIcon w={4} h={4} color="red.500" onClick={() => onDeleteSpotClick(stop.id!)}/>
+                                            <DeleteIcon
+                                                w={4}
+                                                h={4}
+                                                color="red.500"
+                                                onClick={() => removeStop(stop.id!)}
+                                            />
                                         </Tooltip>
-                                    </Td>
-                                </Tr>
-                            ))}
-                        </Tbody>
-                    </Table>
-                </TableContainer>
-            )}
-            <ViewMapModal coordinates={coordinates} isOpen={displayMapModal} onClose={() => setDisplayMapModal(false)}/>
-        </>
-    );
-};
+                                    )}
+                                    {editStop && (
+                                        <EditTourStopModal
+                                            onEdit={editStop}
+                                            stop={stop}
+                                            city={getCity(cities, tourPlace.cityId)}
+                                            renderActivator={(onOpen) => (
+                                                <Tooltip hasArrow fontSize="md" label="Edit spot">
+                                                    <EditIcon
+                                                        color={BRAND_COLOR}
+                                                        cursor="pointer"
+                                                        onClick={onOpen}
+                                                    />
+                                                </Tooltip>
+                                            )}
+                                        />
+                                    )}
+                                </Flex>
+                            </Td>
+                        </Tr>
+                    ))}
+                </Tbody>
+            </Table>
+        </TableContainer>
+    )
+}

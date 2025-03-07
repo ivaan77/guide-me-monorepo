@@ -15,13 +15,17 @@ exports.AdminPath = {
         getAll: '/tour/all',
         save: '/tour/save',
         delete: '/tour/delete/:id',
+        edit: '/tour/edit/:id',
         deleteTourById: (id) => exports.AdminPath.Tour.delete.replace(':id', id),
         getTourById: (id) => exports.AdminPath.Tour.byId.replace(':id', id),
+        editTourById: (id) => exports.AdminPath.Tour.edit.replace(':id', id),
     },
     TourSpot: {
         save: '/tour/spot/save',
         getAll: '/tour/spot/all',
         delete: '/tour/spot/delete/:id',
+        edit: '/tour/spot/edit/:id',
         deleteSpotById: (id) => exports.AdminPath.TourSpot.delete.replace(':id', id),
+        editSpotById: (id) => exports.AdminPath.TourSpot.edit.replace(':id', id),
     }
 };

@@ -1,6 +1,8 @@
 import {
   CreateTourGuideRequest,
   CreateTourSpotRequest,
+  EditTourGuideRequest,
+  EditTourSpotRequest,
   TourGuideResponse,
   TourSpotResponse,
 } from '@guide-me-app/core';
@@ -21,6 +23,13 @@ export class TourService {
     request: CreateTourGuideRequest,
   ): Promise<TourGuideResponse> {
     const tour = await this.tourRepository.create(request);
+    return TourMapper.fromModelToTourGuideResponse(tour);
+  }
+
+  async editTourGuide(
+    request: EditTourGuideRequest,
+  ): Promise<TourGuideResponse> {
+    const tour = await this.tourRepository.edit(request);
     return TourMapper.fromModelToTourGuideResponse(tour);
   }
 
@@ -51,5 +60,10 @@ export class TourService {
 
   async deleteSpot(id: string): Promise<void> {
     await this.tourSpotRepository.deleteById(id);
+  }
+
+  async editSpot(request: EditTourSpotRequest): Promise<TourSpotResponse> {
+    const tourSpot = await this.tourSpotRepository.edit(request);
+    return TourSpotMapper.fromModelToTourSpotResponse(tourSpot);
   }
 }

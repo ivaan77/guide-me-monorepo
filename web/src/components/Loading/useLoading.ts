@@ -1,11 +1,11 @@
-import { useContext } from 'react';
+import { useContext } from 'react'
 
-import { LoadingContext } from './LoadingContext';
+import { LoadingContext } from './LoadingContext'
 
 export const useLoading = () => {
-    const loading = useContext(LoadingContext);
+    const loading = useContext(LoadingContext)
 
     return {
         ...loading,
-    };
-};
+    }
+}

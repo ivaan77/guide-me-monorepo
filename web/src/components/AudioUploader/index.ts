@@ -1,1 +1,1 @@
-export * from './IntroOutroUploader';
+export * from './IntroOutroUploader'
