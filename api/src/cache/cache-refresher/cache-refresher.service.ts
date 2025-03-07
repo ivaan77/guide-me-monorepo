@@ -10,7 +10,7 @@ export class CacheRefresherService implements OnModuleInit {
     await this.refreshCache();
   }
 
-  @Cron('0 * * * * *')
+  @Cron('0 0 * * * *')
   async refreshCache() {
     const data = {};
     await this.cacheService.setCache('your_data_key', data);
