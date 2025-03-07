@@ -12,7 +12,7 @@ export async function GET(): Promise<Response> {
     }
 }
 
-export async function POST(request: NextRequest):  Promise<Response> {
+export async function POST(request: NextRequest): Promise<Response> {
     try {
         const body = (await request.json()) as SaveCityRequest
         const { data } = await restClient.post<CityByIdResponse>(AdminPath.City.save, body)
