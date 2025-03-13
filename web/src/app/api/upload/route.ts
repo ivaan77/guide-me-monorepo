@@ -1,9 +1,17 @@
 import { Storage } from '@google-cloud/storage'
 import { NextRequest, NextResponse } from 'next/server'
-import path from 'node:path'
+
+const base64Key = process.env.GOOGLE_CLOUD_SERVICE_KEY;
+
+if (!base64Key) {
+    throw new Error("Missing Google cloud service key");
+}
+
+const decodedKey = Buffer.from(base64Key, 'base64').toString('utf-8');
+const credentials = JSON.parse(decodedKey);
 
 const storage = new Storage({
-    keyFilename: path.join(process.cwd(), 'guide-me-415010-7d3fae089328.json'),
+    credentials,
 })
 
 const bucketName = 'guide-me-app'

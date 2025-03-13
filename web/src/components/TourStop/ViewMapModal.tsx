@@ -17,7 +17,6 @@ type Props = {
     renderActivator: (onOpen: OnClickHandler) => ReactElement
 }
 
-//TODO: listen to intro/outro music in table
 //TODO: test add, view, edit, view scenario
 //TODO: leave one simple route, delete everything else
 //TODO: setup caching on api

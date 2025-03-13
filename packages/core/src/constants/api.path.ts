@@ -26,3 +26,13 @@ export const AdminPath = {
         editSpotById: (id: string): string => AdminPath.TourSpot.edit.replace(':id', id),
     }
 };
+
+export const PublicPath = {
+    City: {
+        getAll: '/public/cities'
+    },
+    Tour: {
+        getToursInCity:'/public/tours/:cityId',
+        getTour: '/public/tour/:id',
+    }
+}
