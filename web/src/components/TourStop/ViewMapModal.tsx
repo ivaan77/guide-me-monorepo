@@ -17,11 +17,6 @@ type Props = {
     renderActivator: (onOpen: OnClickHandler) => ReactElement
 }
 
-//TODO: test add, view, edit, view scenario
-//TODO: leave one simple route, delete everything else
-//TODO: setup caching on api
-//TODO: check mobile endpoints
-
 export const ViewMapModal = ({ coordinates, renderActivator }: Props): ReactElement => {
     const { isOpen, onOpen, onClose } = useDisclosure()
 
