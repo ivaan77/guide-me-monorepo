@@ -1,6 +1,7 @@
 import { Header } from '@/components/Header'
 import { LoadingProvider } from '@/components/Loading/LoadingContext'
 import { Flex } from '@chakra-ui/react'
+import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ReactNode } from 'react'
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                             <section style={{ margin: '2rem' }}>{children}</section>
                         </Flex>
                     </Providers>
+                    <Analytics/>
                 </LoadingProvider>
             </body>
         </html>

@@ -18,6 +18,7 @@
     "@google-cloud/storage": "^7.11.2",
     "@guide-me-app/core": "*",
     "@react-google-maps/api": "^2.19.3",
+    "@vercel/analytics": "^1.5.0",
     "axios": "^1.7.2",
     "dotenv": "^16.4.5",
     "eslint-plugin-prettier": "^5.2.3",
