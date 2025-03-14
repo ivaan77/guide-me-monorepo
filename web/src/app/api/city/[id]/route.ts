@@ -13,7 +13,6 @@ export async function GET(request: Request, context: { params: Params }): Promis
         const { data } = await restClient.get<CityByIdResponse>(AdminPath.City.getCityById(id))
         return NextResponse.json(data)
     } catch (e) {
-        console.log(e)
         return new Promise(NextResponse.error)
     }
 }

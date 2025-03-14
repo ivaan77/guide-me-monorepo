@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation'
 import { useLoading } from '@/components/Loading/useLoading'
 import { useExistingTour } from '@/hooks/tour/useExistingTour'
 import { TourStopTable } from '@/components/TourStop/TourStopTable'
-import { useCities } from '@/hooks/city/useCities'
 import { ListenSoundLink } from '@/components/ActionButtons/ListenSoundLink'
 import { CloseIcon } from '@chakra-ui/icons'
 
@@ -18,15 +17,14 @@ export default function ViewTourPage() {
     const router = useRouter()
     const { isLoading } = useLoading()
     const { tourGuide } = useExistingTour()
-    const { cities } = useCities()
 
     const onBack = (): void => router.back()
 
-    if (isLoading || !tourGuide || !cities) {
+    if (isLoading || !tourGuide) {
         return <LoadingSkeleton />
     }
 
-    if (!isLoading && !tourGuide && !cities) {
+    if (!isLoading && !tourGuide) {
         return <section>No guide</section>
     }
 
@@ -72,7 +70,6 @@ export default function ViewTourPage() {
                     </Heading>
                     <TourStopTable
                         tourPlace={TourMapper.fromTourGuideResponseToTourPlace(tourGuide)}
-                        cities={cities}
                     />
                     <Divider mb={4} mt={4} />
                 </Flex>

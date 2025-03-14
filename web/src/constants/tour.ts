@@ -2,7 +2,7 @@ import { TourGuidePlace } from '@/types'
 
 export const INITIAL_TOUR_GUIDE_PLACE: TourGuidePlace = {
     id: undefined,
-    cityId: undefined,
+    city: undefined,
     name: '',
     tourSpots: [],
     directions: [],

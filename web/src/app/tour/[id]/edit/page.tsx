@@ -5,17 +5,17 @@ import { useLoading } from '@/components/Loading/useLoading'
 import { Box, Flex, FormControl, FormLabel, Input, Select } from '@chakra-ui/react'
 
 import { useExistingTour } from '@/hooks/tour/useExistingTour'
-import { useCities } from '@/hooks/city/useCities'
 import { useEditTour } from '@/hooks/tour/useEditTour'
 import { TourMapper } from '@/utils/mapppers'
 import { AddTourStopModal } from '@/components/TourStop/AddTourStopModal'
 import { TourActionsFooter } from '@/components/Tour/TourActionsFooter'
 import { EditDirectionsModal } from '@/components/TourStop/EditDirectionsModal'
 import { TourStopTable } from '@/components/TourStop/TourStopTable'
-import { getCity } from '@/utils/resolvers'
 import { FileInput } from '@/components/FileUpload'
 import { EDITED_SUFFIX } from '@/constants/tour'
 import { ListenSoundLink } from '@/components/ActionButtons/ListenSoundLink'
+import { useCities } from '@/hooks/city/useCities'
+import { getCity } from '@/utils/resolvers'
 
 export default function TourEdit() {
     const { isLoading } = useLoading()
@@ -32,11 +32,9 @@ export default function TourEdit() {
         removeStop,
     } = useEditTour(TourMapper.fromTourGuideResponseToTourPlace(tourGuide))
 
-    if (isLoading || !cities.length) {
+    if (isLoading) {
         return <LoadingSkeleton />
     }
-
-    const city = getCity(cities, tourPlace.cityId)
 
     return (
         <Flex flexDirection="column" padding={16} pb={32}>
@@ -47,21 +45,25 @@ export default function TourEdit() {
                 justifyContent="space-around"
                 flex={1}
             >
-                <h3>Cities</h3>
-                <FormControl isRequired>
-                    <FormLabel>Tour city</FormLabel>
-                    <Select
-                        value={tourPlace.cityId}
-                        placeholder="Select option"
-                        onChange={(event) => updatePlace({ cityId: event.target.value })}
-                    >
-                        {cities.map((city) => (
-                            <option key={city.id} value={city.id}>
-                                {city.name}
-                            </option>
-                        ))}
-                    </Select>
-                </FormControl>
+                {cities.length > 0 && (
+                    <>
+                        <h3>Cities</h3>
+                        <FormControl isRequired>
+                            <FormLabel>Tour city</FormLabel>
+                            <Select
+                                value={tourPlace.city?.id}
+                                placeholder="Select option"
+                                onChange={(event) => updatePlace({ city: getCity(cities, event.target.value )})}
+                            >
+                                {cities.map((city) => (
+                                    <option key={city.id} value={city.id}>
+                                        {city.name}
+                                    </option>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </>
+                )}
                 <FormControl isRequired>
                     <FormLabel>Tour name</FormLabel>
                     <Input
@@ -75,10 +77,10 @@ export default function TourEdit() {
                         <FormLabel>Intro</FormLabel>
                         {tourPlace.introAudio && <ListenSoundLink audio={tourPlace.introAudio} />}
                         <FileInput
-                            disabled={!city?.name || stop.name.trim().length < 3}
+                            disabled={!tourPlace?.name || stop.name.trim().length < 3}
                             accept={'audio/*'}
                             multiple={false}
-                            folder={`${city?.name}/${stop.name}/introAudio/${EDITED_SUFFIX}/`}
+                            folder={`${tourPlace.city?.name}/${stop.name}/introAudio/${EDITED_SUFFIX}/`}
                             onUpload={(introAudio) =>
                                 updatePlace({
                                     introAudio: introAudio.length ? introAudio[0].url : null,
@@ -92,10 +94,10 @@ export default function TourEdit() {
                         <FormLabel>Outro</FormLabel>
                         {tourPlace.outroAudio && <ListenSoundLink audio={tourPlace.outroAudio} />}
                         <FileInput
-                            disabled={!city?.name || stop.name.trim().length < 3}
+                            disabled={!tourPlace?.name || stop.name.trim().length < 3}
                             accept={'audio/*'}
                             multiple={false}
-                            folder={`${city?.name}/${stop.name}/outroAudio/${EDITED_SUFFIX}/`}
+                            folder={`${tourPlace?.name}/${stop.name}/outroAudio/${EDITED_SUFFIX}/`}
                             onUpload={(outroAudio) =>
                                 updatePlace({
                                     outroAudio: outroAudio.length ? outroAudio[0].url : null,
@@ -108,11 +110,10 @@ export default function TourEdit() {
                     <FormLabel>Tour stops</FormLabel>
                     <TourStopTable
                         tourPlace={tourPlace}
-                        cities={cities}
                         editStop={editStop}
                         removeStop={removeStop}
                     />
-                    <AddTourStopModal onSave={addStop} city={getCity(cities, tourPlace.cityId)} />
+                    <AddTourStopModal onSave={addStop} city={tourPlace.city} />
                     <EditDirectionsModal
                         onSave={addDirections}
                         place={tourPlace}

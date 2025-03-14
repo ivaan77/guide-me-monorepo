@@ -11,6 +11,7 @@ import { useEditTour } from '@/hooks/tour/useEditTour'
 import { INITIAL_TOUR_GUIDE_PLACE } from '@/constants/tour'
 import { TourActionsFooter } from '@/components/Tour/TourActionsFooter'
 import { TourStopTable } from '@/components/TourStop/TourStopTable'
+import { getCity } from '@/utils/resolvers'
 
 export default function TourGuideAdd() {
     const { isLoading } = useLoading()
@@ -31,18 +32,20 @@ export default function TourGuideAdd() {
         return <LoadingSkeleton />
     }
 
-    const initialCoordinates = cities.find((city) => city.id == tourPlace.cityId)?.location
+    const initialCoordinates = cities.find((city) => city.id == tourPlace.city?.id)?.location
 
     return (
         <Flex flexDirection="column" padding={16} pb={32}>
             <h3>Add Tour Guide</h3>
             <Flex flexDirection="column">
-                <FormControl isRequired>
+                {cities.length > 0 && (
+                    <>
+                    <FormControl isRequired>
                     <FormLabel>Tour city</FormLabel>
                     <Select
-                        value={tourPlace?.cityId}
+                        value={tourPlace?.city?.id}
                         placeholder="Select city"
-                        onChange={(event) => updatePlace({ cityId: event.target.value })}
+                        onChange={(event) => updatePlace({ city: getCity(cities, event.target.value) })}
                     >
                         {cities.map((city) => (
                             <option key={city.id} value={city.id}>
@@ -51,6 +54,8 @@ export default function TourGuideAdd() {
                         ))}
                     </Select>
                 </FormControl>
+                    </>
+                    )}
                 <FormControl isRequired>
                     <FormLabel>Tour name</FormLabel>
                     <Input
@@ -69,10 +74,10 @@ export default function TourGuideAdd() {
                 </FormControl>
             </Flex>
             <Flex flexDirection="column" gap={4}>
-                <TourStopTable tourPlace={tourPlace} cities={cities} removeStop={onDeleteSpot} />
+                <TourStopTable tourPlace={tourPlace} removeStop={onDeleteSpot} />
                 <AddTourStopModal
                     onSave={addStop}
-                    city={cities.find((city) => city.id == tourPlace.cityId)}
+                    city={cities.find((city) => city.id == tourPlace.city?.id)}
                 />
                 <EditDirectionsModal
                     onSave={addDirections}

@@ -14,21 +14,19 @@ import {
 } from '@chakra-ui/react'
 import { DeleteIcon, EditIcon, CloseIcon } from '@chakra-ui/icons'
 import { EditTourStopModal } from '@/components/TourStop/EditTourStopModal'
-import { BRAND_COLOR, City, OnValueChangeHandler } from '@guide-me-app/core'
+import { BRAND_COLOR, OnValueChangeHandler } from '@guide-me-app/core'
 import { TourGuidePlace, TourGuideStop } from '@/types'
-import { getCity } from '@/utils/resolvers'
 import { ViewMapModal } from '@/components/TourStop/ViewMapModal'
 import { ListenSoundLink } from '@/components/ActionButtons/ListenSoundLink'
 import { ImagePreview } from '@/components/ActionButtons/ImagePreview'
 
 type Props = {
     tourPlace: TourGuidePlace
-    cities: City[]
     removeStop?: OnValueChangeHandler<string>
     editStop?: OnValueChangeHandler<TourGuideStop>
 }
 
-export const TourStopTable = ({ tourPlace, cities, editStop, removeStop }: Props) => {
+export const TourStopTable = ({ tourPlace, editStop, removeStop }: Props) => {
     if (!tourPlace.tourSpots.length) {
         return <Text fontSize="md">No stops</Text>
     }
@@ -104,7 +102,7 @@ export const TourStopTable = ({ tourPlace, cities, editStop, removeStop }: Props
                                         <EditTourStopModal
                                             onEdit={editStop}
                                             stop={stop}
-                                            city={getCity(cities, tourPlace.cityId)}
+                                            city={tourPlace.city!}
                                             renderActivator={(onOpen) => (
                                                 <Tooltip hasArrow fontSize="md" label="Edit spot">
                                                     <EditIcon

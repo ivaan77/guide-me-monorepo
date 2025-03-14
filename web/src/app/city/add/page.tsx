@@ -77,7 +77,6 @@ export default function AddCityPage() {
 
     const onAddMarker = (latlng: google.maps.LatLngLiteral): void => {
         const location = CoordinateMapper.fromGoogleToCoordinate(latlng)
-
         setCity((prevState) => {
             return {
                 ...prevState,

@@ -116,15 +116,15 @@ export const useEditTour = (initialValue: TourGuidePlace) => {
         try {
             const request: CreateTourGuideRequest = {
                 name: tourPlace.name,
-                city: tourPlace.cityId!,
+                city: tourPlace.city?.id!,
                 tourSpots: tourPlace.tourSpots.map((stop) => stop.id!) as string[],
                 directions: tourPlace.directions,
                 introAudio: tourPlace.introAudio,
                 outroAudio: tourPlace.outroAudio,
             }
 
-            await withLoading(saveTourGuide(request))
-
+            const {data} = await withLoading(saveTourGuide(request))
+            router.replace(`/tour/${data.id}/view`);
             toast({
                 title: 'Tour',
                 description: 'Successfully saved tour guide',
@@ -156,7 +156,7 @@ export const useEditTour = (initialValue: TourGuidePlace) => {
             const request: EditTourGuideRequest = {
                 id: tourPlace.id,
                 name: tourPlace.name,
-                city: tourPlace.cityId!,
+                city: tourPlace.city?.id!,
                 tourSpots: tourPlace.tourSpots.map((stop) => stop.id!) as string[],
                 directions: tourPlace.directions,
                 introAudio: tourPlace.introAudio,
@@ -195,7 +195,7 @@ export const useEditTour = (initialValue: TourGuidePlace) => {
             return false
         }
 
-        if (!tourPlace.cityId) {
+        if (!tourPlace.city) {
             toast({
                 title: 'Tour',
                 description: 'Missing city',

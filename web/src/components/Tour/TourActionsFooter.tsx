@@ -40,7 +40,7 @@ export const TourActionsFooter = ({ tourPlace, onSave, onCancel }: Props): React
 
 const isSaveDisabled = (place: TourGuidePlace): boolean => {
     return (
-        !place?.cityId ||
+        !place?.city?.id ||
         place.name.trim().length < 3 ||
         place.tourSpots.length == 0 ||
         place.directions.length == 0

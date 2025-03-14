@@ -74,7 +74,7 @@ export class TourMapper {
 
         return {
             id: response.id,
-            cityId: response.city.id,
+            city: response.city,
             name: response.name,
             introAudio: response.introAudio,
             outroAudio: response.outroAudio,

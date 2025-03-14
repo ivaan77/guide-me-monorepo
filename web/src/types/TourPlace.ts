@@ -1,8 +1,8 @@
-import { Coordinates, Nullable } from '@guide-me-app/core'
+import { City, Coordinates, Nullable } from '@guide-me-app/core'
 
 export type TourGuidePlace = {
     id: string | undefined
-    cityId: string | undefined
+    city: City | undefined
     name: string
     tourSpots: TourGuideStop[]
     directions: Coordinates[]
