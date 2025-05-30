@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AdminPath = void 0;
+exports.PublicPath = exports.AdminPath = void 0;
 exports.AdminPath = {
     City: {
         getAll: '/city/all',
@@ -27,5 +27,14 @@ exports.AdminPath = {
         edit: '/tour/spot/edit/:id',
         deleteSpotById: (id) => exports.AdminPath.TourSpot.delete.replace(':id', id),
         editSpotById: (id) => exports.AdminPath.TourSpot.edit.replace(':id', id),
+    }
+};
+exports.PublicPath = {
+    City: {
+        getAll: '/public/cities'
+    },
+    Tour: {
+        getToursInCity: '/public/tours/:cityId',
+        getTour: '/public/tour/:id',
     }
 };

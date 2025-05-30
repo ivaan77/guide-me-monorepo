@@ -26,3 +26,12 @@ export declare const AdminPath: {
         editSpotById: (id: string) => string;
     };
 };
+export declare const PublicPath: {
+    City: {
+        getAll: string;
+    };
+    Tour: {
+        getToursInCity: string;
+        getTour: string;
+    };
+};

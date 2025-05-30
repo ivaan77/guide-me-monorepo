@@ -2,6 +2,7 @@ import {
   AdminPath,
   AllCityResponse,
   CityByIdResponse,
+  PublicPath,
   SaveCityRequest,
 } from '@guide-me-app/core';
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
@@ -29,5 +30,10 @@ export class CityController {
   @Delete(AdminPath.City.delete)
   async deleteCity(@Param('id') id: string): Promise<void> {
     return await this.cityService.delete(id);
+  }
+
+  @Get(PublicPath.City.getAll)
+  async getCities(): Promise<AllCityResponse> {
+    return await this.cityService.getAll();
   }
 }
