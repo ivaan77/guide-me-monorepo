@@ -36,5 +36,8 @@ exports.PublicPath = {
     Tour: {
         getToursInCity: '/public/tours/:cityId',
         getTour: '/public/tour/:id',
+    },
+    Directions: {
+        walk: '/public/directions/walk',
     }
 };

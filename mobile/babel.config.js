@@ -13,8 +13,8 @@ module.exports = (api) => {
         },
       ],
 
-      // NOTE: this is only necessary if you are using reanimated for animations
-      'react-native-reanimated/plugin',
+      // Required by react-native-reanimated v4+ (SDK 54+).
+      'react-native-worklets/plugin',
     ],
   }
 }

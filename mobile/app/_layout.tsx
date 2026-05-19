@@ -1,31 +1,29 @@
 import { useEffect } from 'react'
-import { useColorScheme } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
 import { SplashScreen, Stack } from 'expo-router'
-import { Provider } from './Provider'
-import { useTheme } from 'tamagui'
+import { AppProvider } from '../providers/AppProvider'
+import { useAppTheme } from '../providers/ThemeContext'
 
 export { ErrorBoundary } from 'expo-router'
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 }
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
   const [interLoaded, interError] = useFonts({
-    Inter: require('@tamagui/font-inter/otf/Inter-Medium.otf'),
+    Inter: require('@tamagui/font-inter/otf/Inter-Regular.otf'),
+    InterMedium: require('@tamagui/font-inter/otf/Inter-Medium.otf'),
+    InterSemiBold: require('@tamagui/font-inter/otf/Inter-SemiBold.otf'),
     InterBold: require('@tamagui/font-inter/otf/Inter-Bold.otf'),
   })
 
   useEffect(() => {
     if (interLoaded || interError) {
-      // Hide the splash screen after the fonts have loaded (or an error was returned) and the UI is ready.
       SplashScreen.hideAsync()
     }
   }, [interLoaded, interError])
@@ -35,43 +33,43 @@ export default function RootLayout() {
   }
 
   return (
-    <Providers>
+    <AppProvider>
       <RootLayoutNav />
-    </Providers>
+    </AppProvider>
   )
 }
 
-const Providers = ({ children }: { children: React.ReactNode }) => {
-  return <Provider>{children}</Provider>
-}
-
 function RootLayoutNav() {
-  const colorScheme = useColorScheme()
-  const theme = useTheme()
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <Stack>
-        <Stack.Screen
-          name="(tabs)"
-          options={{
-            headerShown: false,
-          }}
-        />
+  const { resolved, c } = useAppTheme()
+  const isDark = resolved === 'dark'
 
-        <Stack.Screen
-          name="modal"
-          options={{
-            title: 'Tamagui + Expo',
-            presentation: 'modal',
-            animation: 'slide_from_right',
-            gestureEnabled: true,
-            gestureDirection: 'horizontal',
-            contentStyle: {
-              backgroundColor: theme.background.val,
-            },
-          }}
-        />
+  const navTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme : DefaultTheme).colors,
+      background: c.background,
+      card: c.background,
+      text: c.text,
+      border: c.border,
+      primary: c.primary,
+      notification: c.accent,
+    },
+  }
+
+  return (
+    <ThemeProvider value={navTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: c.background },
+          headerTintColor: c.text,
+          headerTitleStyle: { fontFamily: 'InterSemiBold' },
+          contentStyle: { backgroundColor: c.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="city/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="excursion/[id]" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   )

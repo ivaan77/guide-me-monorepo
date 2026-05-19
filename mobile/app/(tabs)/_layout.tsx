@@ -1,39 +1,20 @@
-import { Link, Tabs } from 'expo-router'
-import { Button, useTheme } from 'tamagui'
-import { Atom, AudioWaveform } from '@tamagui/lucide-icons'
+import { NativeTabs } from 'expo-router/unstable-native-tabs'
 
-export default function TabLayout() {
-  const theme = useTheme()
-
+export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: theme.red10.val,
-        tabBarStyle: {
-          backgroundColor: theme.background.val,
-          borderTopColor: theme.borderColor.val,
-        },
-        headerStyle: {
-          backgroundColor: theme.background.val,
-          borderBottomColor: theme.borderColor.val,
-        },
-        headerTintColor: theme.color.val,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <Atom color={color as any} />,
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <AudioWaveform color={color as any} />,
-        }}
-      />
-    </Tabs>
+    <NativeTabs>
+      <NativeTabs.Trigger name="index" disableAutomaticContentInsets>
+        <NativeTabs.Trigger.Label>Discover</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="map.fill" md="map" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="favorites">
+        <NativeTabs.Trigger.Label>Favorites</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="heart.fill" md="favorite" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="person.fill" md="person" />
+      </NativeTabs.Trigger>
+    </NativeTabs>
   )
 }

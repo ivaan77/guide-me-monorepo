@@ -34,4 +34,7 @@ export declare const PublicPath: {
         getToursInCity: string;
         getTour: string;
     };
+    Directions: {
+        walk: string;
+    };
 };

@@ -1,0 +1,190 @@
+import { Image, Pressable, ScrollView, useWindowDimensions } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
+import { LinearGradient } from 'expo-linear-gradient'
+import {
+  ChevronLeft,
+  Compass,
+  ShoppingBag,
+  UtensilsCrossed,
+  Wine,
+} from '@tamagui/lucide-icons'
+import type { IconProps } from '@tamagui/helpers-icon'
+import { H1, SizableText, XStack, YStack } from 'tamagui'
+import { type CategoryItem, getCityById } from '../../data/cities'
+import { EmptyState } from '../discover/EmptyState'
+import { Accordion } from './Accordion'
+import { CategoryListItem } from './CategoryListItem'
+import { EditorsPickBanner } from './EditorsPickBanner'
+
+type Props = {
+  id: string
+}
+
+const HERO_RATIO = 0.85
+const H_PADDING = 20
+const TAB_BAR_HEIGHT = 49
+
+export function CityDetailScreen({ id }: Props) {
+  const { width } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const city = getCityById(id)
+
+  const goBack = () => {
+    if (router.canGoBack()) router.back()
+    else router.replace('/')
+  }
+
+  if (!city) {
+    return (
+      <YStack flex={1} bg="$background" pt={insets.top + 56}>
+        <BackButton topInset={insets.top} onPress={goBack} />
+        <EmptyState
+          variant="error"
+          message="We couldn't find that city."
+          onRetry={goBack}
+        />
+      </YStack>
+    )
+  }
+
+  const heroHeight = width * HERO_RATIO
+  const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 24
+
+  return (
+    <YStack flex={1} bg="$background">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        showsVerticalScrollIndicator={false}
+      >
+        <YStack width={width} height={heroHeight}>
+          <Image
+            source={{ uri: city.image }}
+            style={{ width, height: heroHeight }}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.75)']}
+            locations={[0, 1]}
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: heroHeight * 0.55,
+            }}
+          />
+          <XStack
+            position="absolute"
+            l={0}
+            r={0}
+            b={0}
+            px={H_PADDING}
+            pb="$5"
+            items="baseline"
+            gap="$3"
+          >
+            <H1
+              fontFamily="$body"
+              fontWeight="700"
+              fontSize="$10"
+              lineHeight="$10"
+              color="#FFFFFF"
+            >
+              {city.name}
+            </H1>
+            <SizableText
+              size="$4"
+              fontFamily="$body"
+              color="rgba(255,255,255,0.78)"
+              style={{ textTransform: 'uppercase', letterSpacing: 1 }}
+            >
+              {city.country}
+            </SizableText>
+          </XStack>
+        </YStack>
+        {city.editorPick && (
+          <YStack px={H_PADDING} mt={-14} z={5}>
+            <EditorsPickBanner pick={city.editorPick} />
+          </YStack>
+        )}
+        <YStack px={H_PADDING} pt="$5" gap="$3">
+          <CategorySection
+            title="Excursions"
+            icon={Compass}
+            items={city.excursions}
+            hrefFor={(item) => `/excursion/${item.id}`}
+          />
+          <CategorySection
+            title="Restaurants"
+            icon={UtensilsCrossed}
+            items={city.restaurants}
+          />
+          <CategorySection title="Bars" icon={Wine} items={city.bars} />
+          <CategorySection title="Shopping" icon={ShoppingBag} items={city.shopping} />
+        </YStack>
+      </ScrollView>
+      <BackButton topInset={insets.top} onPress={goBack} />
+    </YStack>
+  )
+}
+
+function CategorySection({
+  title,
+  icon,
+  items,
+  hrefFor,
+}: {
+  title: string
+  icon: React.ComponentType<IconProps>
+  items?: CategoryItem[]
+  hrefFor?: (item: CategoryItem) => string
+}) {
+  if (!items || items.length === 0) return null
+  return (
+    <Accordion title={title} icon={icon} count={items.length}>
+      {items.map((item, idx) => (
+        <CategoryListItem
+          key={item.id}
+          item={item}
+          isLast={idx === items.length - 1}
+          href={hrefFor?.(item)}
+        />
+      ))}
+    </Accordion>
+  )
+}
+
+function BackButton({
+  topInset,
+  onPress,
+}: {
+  topInset: number
+  onPress: () => void
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      style={{
+        position: 'absolute',
+        top: topInset + 8,
+        left: H_PADDING,
+        zIndex: 10,
+      }}
+    >
+      <YStack
+        width={40}
+        height={40}
+        rounded={20}
+        items="center"
+        justify="center"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+      >
+        <ChevronLeft size={22} color="#FFFFFF" />
+      </YStack>
+    </Pressable>
+  )
+}

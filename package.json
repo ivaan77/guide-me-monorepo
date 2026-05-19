@@ -1,7 +1,7 @@
 {
   "name": "@guide-me-app/monorepo",
   "version": "1.0.0",
-  "private": "true",
+  "packageManager": "yarn@4.5.0",
   "scripts": {
     "build:all": "tsc --build --verbose",
     "core:build": "yarn workspace @guide-me-app/core run build",
@@ -9,7 +9,8 @@
     "api:start:dev": "yarn workspace @guide-me-app/api run start",
     "web:build": "yarn workspace @guide-me-app/web run build",
     "web:start": "yarn workspace @guide-me-app/web run start",
-    "web:start:dev": "yarn workspace @guide-me-app/web run dev"
+    "web:start:dev": "yarn workspace @guide-me-app/web run dev",
+    "mobile:start": "yarn workspace @guide-me-app/mobile run start"
   },
   "workspaces": [
     "web",

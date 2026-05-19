@@ -1,0 +1,235 @@
+import { useMemo, useRef, useState } from 'react'
+import {
+  FlatList,
+  Image,
+  Pressable,
+  ScrollView,
+  type ViewToken,
+  useWindowDimensions,
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Pause, Play, Square } from '@tamagui/lucide-icons'
+import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
+import { BottomSheet } from '../../common/BottomSheet'
+import type { ExcursionStop } from '../../data/cities'
+
+const H_PADDING = 20
+
+type Props = {
+  visible: boolean
+  stop: ExcursionStop | null
+  onClose: () => void
+}
+
+export function StopDetailSheet({ visible, stop, onClose }: Props) {
+  if (!stop) return null
+
+  return (
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      heightRatio={0.88}
+      header={
+        <XStack px={H_PADDING} pt="$2" pb="$3" items="center">
+          <H3 fontFamily="$body" fontWeight="700" color="$color" flex={1}>
+            {stop.name}
+          </H3>
+        </XStack>
+      }
+    >
+      <StopBody stop={stop} />
+    </BottomSheet>
+  )
+}
+
+function StopBody({ stop }: { stop: ExcursionStop }) {
+  const { width: screenWidth } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+
+  const images = stop.images?.length ? stop.images : [stop.image]
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const first = viewableItems[0]
+      if (first?.index != null) setCarouselIndex(first.index)
+    },
+  ).current
+  const viewabilityConfig = useMemo(
+    () => ({ itemVisiblePercentThreshold: 60 }),
+    [],
+  )
+
+  return (
+    <>
+      <YStack>
+        <FlatList
+          data={images}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(uri, idx) => `${uri}-${idx}`}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          renderItem={({ item }) => (
+            <Image
+              source={{ uri: item }}
+              style={{ width: screenWidth, height: screenWidth * 0.7 }}
+              resizeMode="cover"
+            />
+          )}
+        />
+        {images.length > 1 && (
+          <XStack
+            position="absolute"
+            b="$3"
+            l={0}
+            r={0}
+            items="center"
+            justify="center"
+            gap="$2"
+            style={{ pointerEvents: 'none' }}
+          >
+            {images.map((_, idx) => (
+              <YStack
+                key={idx}
+                width={idx === carouselIndex ? 18 : 6}
+                height={6}
+                rounded={3}
+                bg={idx === carouselIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
+              />
+            ))}
+          </XStack>
+        )}
+      </YStack>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <YStack px={H_PADDING} pt="$4" gap="$3">
+          <AudioControls
+            hasAudio={!!stop.audioUrl}
+            isPlaying={isPlaying}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onStop={() => setIsPlaying(false)}
+          />
+          <Paragraph color="$color" fontFamily="$body" size="$4" lineHeight="$6">
+            {stop.description}
+          </Paragraph>
+        </YStack>
+      </ScrollView>
+    </>
+  )
+}
+
+function AudioControls({
+  hasAudio,
+  isPlaying,
+  onPlay,
+  onPause,
+  onStop,
+}: {
+  hasAudio: boolean
+  isPlaying: boolean
+  onPlay: () => void
+  onPause: () => void
+  onStop: () => void
+}) {
+  if (!hasAudio) {
+    return (
+      <XStack
+        items="center"
+        bg="$surfaceMuted"
+        rounded="$5"
+        px="$3"
+        py="$3"
+        gap="$3"
+        borderWidth={1}
+        borderColor="$borderColor"
+      >
+        <YStack
+          width={36}
+          height={36}
+          rounded={18}
+          bg="$background"
+          items="center"
+          justify="center"
+        >
+          <Play size={16} color="$colorPress" />
+        </YStack>
+        <YStack flex={1}>
+          <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
+            Audio guide
+          </SizableText>
+          <SizableText size="$2" color="$colorPress" fontFamily="$body">
+            No audio uploaded for this stop yet.
+          </SizableText>
+        </YStack>
+      </XStack>
+    )
+  }
+
+  return (
+    <XStack
+      items="center"
+      bg="$surfaceMuted"
+      rounded="$5"
+      px="$3"
+      py="$3"
+      gap="$3"
+      borderWidth={1}
+      borderColor="$borderColor"
+    >
+      <YStack flex={1} gap="$0.5">
+        <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
+          Audio guide
+        </SizableText>
+        <SizableText size="$2" color="$colorPress" fontFamily="$body">
+          {isPlaying ? 'Playing…' : 'Tap play to listen'}
+        </SizableText>
+      </YStack>
+      <XStack gap="$2">
+        {isPlaying ? (
+          <CircleButton icon={Pause} onPress={onPause} />
+        ) : (
+          <CircleButton icon={Play} onPress={onPlay} primary />
+        )}
+        <CircleButton icon={Square} onPress={onStop} disabled={!isPlaying} />
+      </XStack>
+    </XStack>
+  )
+}
+
+function CircleButton({
+  icon: Icon,
+  onPress,
+  primary,
+  disabled,
+}: {
+  icon: typeof Play
+  onPress: () => void
+  primary?: boolean
+  disabled?: boolean
+}) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} hitSlop={6}>
+      <YStack
+        width={40}
+        height={40}
+        rounded={20}
+        bg={primary ? '$primary' : '$background'}
+        borderWidth={primary ? 0 : 1}
+        borderColor="$borderColor"
+        items="center"
+        justify="center"
+        opacity={disabled ? 0.4 : 1}
+      >
+        <Icon size={16} color={primary ? '#FFFFFF' : '$color'} />
+      </YStack>
+    </Pressable>
+  )
+}
