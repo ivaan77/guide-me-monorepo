@@ -9,7 +9,8 @@ import {
 import { Coordinates, WalkingDirectionsResponse } from '@guide-me-app/core';
 import { CacheService } from '../cache/cache.service';
 
-const GOOGLE_DIRECTIONS_URL = 'https://maps.googleapis.com/maps/api/directions/json';
+const GOOGLE_DIRECTIONS_URL =
+  'https://maps.googleapis.com/maps/api/directions/json';
 
 // Round to 5 decimal places (~1.1m precision at the equator) so near-identical
 // requests share a cache slot. Higher precision multiplies cache miss rate
@@ -62,7 +63,9 @@ export class DirectionsService {
       json = await res.json();
     } catch (err) {
       this.logger.error(`Directions fetch failed: ${err}`);
-      throw new ServiceUnavailableException('Upstream directions provider unreachable.');
+      throw new ServiceUnavailableException(
+        'Upstream directions provider unreachable.',
+      );
     }
 
     if (json.status === 'ZERO_RESULTS') {
@@ -78,7 +81,9 @@ export class DirectionsService {
         `Directions returned ${json.status}: ${json.error_message ?? '(no message)'}`,
       );
       // Don't leak Google's error messages to the client.
-      throw new InternalServerErrorException('Failed to compute walking route.');
+      throw new InternalServerErrorException(
+        'Failed to compute walking route.',
+      );
     }
 
     const route = json.routes[0];

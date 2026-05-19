@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Query,
-} from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { PublicPath, WalkingDirectionsResponse } from '@guide-me-app/core';
 import { DirectionsService } from './directions.service';
@@ -33,7 +28,12 @@ export class DirectionsController {
   }
 }
 
-function parseCoord(raw: string, name: string, min: number, max: number): number {
+function parseCoord(
+  raw: string,
+  name: string,
+  min: number,
+  max: number,
+): number {
   const value = Number(raw);
   if (!Number.isFinite(value) || value < min || value > max) {
     throw new BadRequestException(`Invalid ${name}: ${raw}`);
