@@ -18,8 +18,8 @@ const GOOGLE_DIRECTIONS_URL =
 const COORD_PRECISION = 5;
 
 // Walking routes are stable for a given pair of points; cache aggressively.
-// 30 days is fine — roads don't move.
-const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+// 30 days is fine — roads don't move. cache-manager v6 uses milliseconds.
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class DirectionsService {
@@ -95,7 +95,7 @@ export class DirectionsService {
       cached: false,
     };
 
-    await this.cache.setCache(cacheKey, response, CACHE_TTL_SECONDS);
+    await this.cache.setCache(cacheKey, response, CACHE_TTL_MS);
     return response;
   }
 

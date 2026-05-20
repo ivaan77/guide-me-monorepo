@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CacheModule } from '../cache/cache.module';
 import { DiscoverController } from './discover.controller';
+import { DiscoverCacheInterceptor } from './discover.interceptor';
 import { DiscoverRepository } from './discover.repository';
 import { DiscoverService } from './discover.service';
 import {
@@ -18,6 +20,7 @@ import {
 
 @Module({
   imports: [
+    CacheModule,
     MongooseModule.forFeature([
       { name: DiscoverCity.name, schema: DiscoverCitySchema },
       { name: DiscoverExcursion.name, schema: DiscoverExcursionSchema },
@@ -25,7 +28,7 @@ import {
     ]),
   ],
   controllers: [DiscoverController],
-  providers: [DiscoverService, DiscoverRepository],
+  providers: [DiscoverService, DiscoverRepository, DiscoverCacheInterceptor],
   exports: [DiscoverRepository], // exposed so the seed script can use it
 })
 export class DiscoverModule {}

@@ -1,4 +1,10 @@
-import { Controller, Get, Headers, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  Param,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   AllPublicCitiesResponse,
   PublicCityDetailResponse,
@@ -6,10 +12,12 @@ import {
   PublicPath,
   PublicPlaceResponse,
 } from '@guide-me-app/core';
+import { DiscoverCacheInterceptor } from './discover.interceptor';
 import { DiscoverService } from './discover.service';
 import { parseAcceptLanguage } from './locale.util';
 
 @Controller()
+@UseInterceptors(DiscoverCacheInterceptor)
 export class DiscoverController {
   constructor(private readonly discoverService: DiscoverService) {}
 
