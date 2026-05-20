@@ -1,4 +1,7 @@
-import { Coordinates } from '../admin'
+export type Coordinates = {
+    latitude: number
+    longitude: number
+}
 
 export type WalkingDirectionsRequest = {
     originLat: number

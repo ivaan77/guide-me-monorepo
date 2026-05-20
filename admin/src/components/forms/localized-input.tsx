@@ -48,7 +48,7 @@ export function LocalizedInput<T extends FieldValues>({
             <Controller
               control={control}
               name={`${name}.${l.value}` as FieldPath<T>}
-              render={({ field, fieldState }) =>
+              render={({ field }) =>
                 multiline ? (
                   <Textarea
                     {...field}
