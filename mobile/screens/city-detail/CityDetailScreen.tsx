@@ -1,6 +1,7 @@
 import { Image, Pressable, ScrollView, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
   ChevronLeft,
@@ -29,6 +30,7 @@ export function CityDetailScreen({ id }: Props) {
   const { width } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const { t } = useTranslation()
   const city = getCityById(id)
 
   const goBack = () => {
@@ -42,7 +44,7 @@ export function CityDetailScreen({ id }: Props) {
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
-          message="We couldn't find that city."
+          message={t('city.notFound')}
           onRetry={goBack}
         />
       </YStack>
@@ -112,18 +114,29 @@ export function CityDetailScreen({ id }: Props) {
         )}
         <YStack px={H_PADDING} pt="$5" gap="$3">
           <CategorySection
-            title="Excursions"
+            title={t('city.sections.excursions')}
             icon={Compass}
             items={city.excursions}
             hrefFor={(item) => `/excursion/${item.id}`}
           />
           <CategorySection
-            title="Restaurants"
+            title={t('city.sections.restaurants')}
             icon={UtensilsCrossed}
             items={city.restaurants}
+            hrefFor={(item) => `/place/${item.id}`}
           />
-          <CategorySection title="Bars" icon={Wine} items={city.bars} />
-          <CategorySection title="Shopping" icon={ShoppingBag} items={city.shopping} />
+          <CategorySection
+            title={t('city.sections.bars')}
+            icon={Wine}
+            items={city.bars}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.shopping')}
+            icon={ShoppingBag}
+            items={city.shopping}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
         </YStack>
       </ScrollView>
       <BackButton topInset={insets.top} onPress={goBack} />

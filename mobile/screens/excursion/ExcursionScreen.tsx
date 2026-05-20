@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Image, Platform, Pressable, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import * as Location from 'expo-location'
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import { ChevronLeft, Info, MapPin, Navigation, Play } from '@tamagui/lucide-icons'
@@ -45,6 +46,7 @@ export function ExcursionScreen({ id }: Props) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const theme = useTheme()
+  const { t } = useTranslation()
   const mapRef = useRef<MapView>(null)
 
   const data = getExcursionById(id)
@@ -60,7 +62,7 @@ export function ExcursionScreen({ id }: Props) {
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
-          message="We couldn't find that excursion."
+          message={t('excursion.notFound')}
           onRetry={goBack}
         />
       </YStack>
@@ -317,7 +319,7 @@ function ExcursionBody({
                 rounded={16}
                 bg="#FFFFFF"
                 borderWidth={2}
-                borderColor={meta.color}
+                borderColor={meta.color as any}
                 items="center"
                 justify="center"
                 style={{
@@ -328,7 +330,7 @@ function ExcursionBody({
                   elevation: 3,
                 }}
               >
-                <Icon size={16} color={meta.color} />
+                <Icon size={16} color={meta.color as any} />
               </YStack>
             </Marker>
           )
@@ -406,6 +408,7 @@ function BottomPanel({
   onFinish: () => void
   onMoreInfo: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <YStack
       bg="$surface"
@@ -424,7 +427,7 @@ function BottomPanel({
     >
       {permissionDenied && (
         <SizableText size="$3" color="$colorPress" fontFamily="$body">
-          Location access denied. Enable it in Settings to be guided to each stop.
+          {t('excursion.locationDenied')}
         </SizableText>
       )}
 
@@ -461,15 +464,20 @@ function BottomPanel({
 }
 
 function PreviewPanel({ total, onStart }: { total: number; onStart: () => void }) {
+  const { t } = useTranslation()
   return (
     <YStack gap="$2">
       <H3 fontFamily="$body" fontWeight="700" color="$color">
-        Ready to explore?
+        {t('excursion.preview.title')}
       </H3>
       <Paragraph color="$colorPress" fontFamily="$body" size="$3">
-        {total} stops · we'll guide you between each.
+        {t('excursion.preview.subtitle', { count: total })}
       </Paragraph>
-      <ActionButton label="Start" icon={Play} onPress={onStart} />
+      <ActionButton
+        label={t('excursion.preview.start')}
+        icon={Play}
+        onPress={onStart}
+      />
     </YStack>
   )
 }
@@ -489,6 +497,7 @@ function NavigatingPanel({
   liveRouteInfo: { remainingMeters: number; remainingSeconds: number } | null
   onSkip: () => void
 }) {
+  const { t } = useTranslation()
   const straightLineMeters = userLocation
     ? haversineMeters(userLocation, stop.coords)
     : null
@@ -513,7 +522,7 @@ function NavigatingPanel({
           fontWeight="600"
           style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
         >
-          Stop {index + 1} of {total}
+          {t('excursion.navigating.stopOf', { index: index + 1, total })}
         </SizableText>
         <SizableText size="$5" color="$color" fontFamily="$body" fontWeight="600">
           {stop.name}
@@ -540,7 +549,7 @@ function NavigatingPanel({
             fontFamily="$body"
             fontWeight="600"
           >
-            Skip
+            {t('common.skip')}
           </SizableText>
         </YStack>
       </Pressable>
@@ -561,6 +570,7 @@ function ArrivedPanel({
   onContinue: () => void
   onMoreInfo: () => void
 }) {
+  const { t } = useTranslation()
   const isLast = index + 1 === total
   return (
     <YStack gap="$3">
@@ -578,7 +588,7 @@ function ArrivedPanel({
             fontWeight="700"
             style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
           >
-            You've arrived · Stop {index + 1} of {total}
+            {t('excursion.arrived.arrivedLabel', { index: index + 1, total })}
           </SizableText>
           <SizableText size="$5" color="$color" fontFamily="$body" fontWeight="600">
             {stop.name}
@@ -609,13 +619,17 @@ function ArrivedPanel({
               fontFamily="$body"
               fontWeight="600"
             >
-              More info
+              {t('excursion.arrived.moreInfo')}
             </SizableText>
           </XStack>
         </Pressable>
         <YStack flex={1}>
           <ActionButton
-            label={isLast ? 'Finish' : 'Continue'}
+            label={
+              isLast
+                ? t('excursion.arrived.finish')
+                : t('excursion.arrived.continue')
+            }
             icon={isLast ? MapPin : Navigation}
             onPress={onContinue}
           />
@@ -626,15 +640,20 @@ function ArrivedPanel({
 }
 
 function CompletePanel({ total, onFinish }: { total: number; onFinish: () => void }) {
+  const { t } = useTranslation()
   return (
     <YStack gap="$3">
       <H2 color="$color" fontFamily="$body" fontWeight="700" fontSize="$8">
-        Tour complete
+        {t('excursion.complete.title')}
       </H2>
       <Paragraph color="$colorPress" fontFamily="$body" size="$3">
-        You visited all {total} stops. Hope it was worth the walk.
+        {t('excursion.complete.body', { total })}
       </Paragraph>
-      <ActionButton label="Done" icon={MapPin} onPress={onFinish} />
+      <ActionButton
+        label={t('excursion.complete.done')}
+        icon={MapPin}
+        onPress={onFinish}
+      />
     </YStack>
   )
 }

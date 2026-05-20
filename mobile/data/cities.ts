@@ -3,11 +3,15 @@ export type EditorPick = {
   tagline: string
 }
 
+export type PlaceCategory = 'restaurant' | 'bar' | 'shopping'
+
 export type CategoryItem = {
   id: string
   name: string
   meta: string
   image: string
+  description?: string
+  images?: string[]
 }
 
 export type LatLng = {
@@ -75,6 +79,20 @@ export function getExcursionById(id: string): { excursion: Excursion; city: City
   for (const city of cities) {
     const excursion = city.excursions?.find((e) => e.id === id)
     if (excursion) return { excursion, city }
+  }
+  return undefined
+}
+
+export function getPlaceById(
+  id: string,
+): { place: CategoryItem; category: PlaceCategory; city: City } | undefined {
+  for (const city of cities) {
+    const restaurant = city.restaurants?.find((p) => p.id === id)
+    if (restaurant) return { place: restaurant, category: 'restaurant', city }
+    const bar = city.bars?.find((p) => p.id === id)
+    if (bar) return { place: bar, category: 'bar', city }
+    const shop = city.shopping?.find((p) => p.id === id)
+    if (shop) return { place: shop, category: 'shopping', city }
   }
   return undefined
 }
@@ -257,16 +275,84 @@ export const cities: City[] = [
       },
     ],
     restaurants: [
-      { id: 'time-out', name: 'Time Out Market', meta: 'Food hall · €€', image: u('photo-1414235077428-338989a2e8c0') },
-      { id: 'cervejaria', name: 'Cervejaria Ramiro', meta: 'Seafood · €€€', image: u('photo-1559339352-11d035aa65de') },
+      {
+        id: 'time-out',
+        name: 'Time Out Market',
+        meta: 'Food hall · €€',
+        image: u('photo-1414235077428-338989a2e8c0'),
+        description:
+          'Twenty-four kitchens curated by Time Out food critics inside the 19th-century Mercado da Ribeira. One bill, one big communal table, dozens of Lisbon chefs under a single iron roof. Best off-peak: arrive before 12:30 or after 9.',
+        images: [
+          u('photo-1414235077428-338989a2e8c0', 800),
+          u('photo-1559339352-11d035aa65de', 800),
+          u('photo-1551024709-8f23befc6f87', 800),
+        ],
+      },
+      {
+        id: 'cervejaria',
+        name: 'Cervejaria Ramiro',
+        meta: 'Seafood · €€€',
+        image: u('photo-1559339352-11d035aa65de'),
+        description:
+          'A Lisbon institution since 1956. Order by weight from the live tank — clams, prawns, percebes, lobster — chased with cold Sagres. Finish with the prego, a garlicky steak sandwich.',
+        images: [
+          u('photo-1559339352-11d035aa65de', 800),
+          u('photo-1414235077428-338989a2e8c0', 800),
+        ],
+      },
     ],
     bars: [
-      { id: 'park', name: 'Park Bar', meta: 'Rooftop · Cocktails', image: u('photo-1551024709-8f23befc6f87') },
-      { id: 'pensao', name: 'Pensão Amor', meta: 'Cabaret · Late', image: u('photo-1470337458703-46ad1756a187') },
+      {
+        id: 'park',
+        name: 'Park Bar',
+        meta: 'Rooftop · Cocktails',
+        image: u('photo-1551024709-8f23befc6f87'),
+        description:
+          'A rooftop bar hidden on top of a Bairro Alto parking garage. Take the lift to the top floor, climb one flight of stairs, and emerge into pine trees, fairy lights, and a sunset view across the river.',
+        images: [
+          u('photo-1551024709-8f23befc6f87', 800),
+          u('photo-1470337458703-46ad1756a187', 800),
+          u('photo-1514362545857-3bc16c4c7d1b', 800),
+        ],
+      },
+      {
+        id: 'pensao',
+        name: 'Pensão Amor',
+        meta: 'Cabaret · Late',
+        image: u('photo-1470337458703-46ad1756a187'),
+        description:
+          'A former pensão (boarding house) turned baroque bar and burlesque venue down by Cais do Sodré. Velvet, gilt, plush sofas, cocktails strong enough to remember and weak enough to repeat.',
+        images: [
+          u('photo-1470337458703-46ad1756a187', 800),
+          u('photo-1551024709-8f23befc6f87', 800),
+        ],
+      },
     ],
     shopping: [
-      { id: 'embaixada', name: 'Embaixada', meta: 'Concept store', image: u('photo-1481437156560-3205f6a55735') },
-      { id: 'feira', name: 'Feira da Ladra', meta: 'Flea market · Tue/Sat', image: u('photo-1483985988355-763728e1935b') },
+      {
+        id: 'embaixada',
+        name: 'Embaixada',
+        meta: 'Concept store',
+        image: u('photo-1481437156560-3205f6a55735'),
+        description:
+          'A 19th-century neo-Moorish palace in Príncipe Real reborn as a multi-brand concept gallery. Independent Portuguese designers, ceramics, fragrance, jewellery, and a courtyard café for between-floors espressos.',
+        images: [
+          u('photo-1481437156560-3205f6a55735', 800),
+          u('photo-1483985988355-763728e1935b', 800),
+        ],
+      },
+      {
+        id: 'feira',
+        name: 'Feira da Ladra',
+        meta: 'Flea market · Tue/Sat',
+        image: u('photo-1483985988355-763728e1935b'),
+        description:
+          'Lisbon’s oldest flea market, spread across Campo de Santa Clara behind São Vicente. Tiles, azulejos, old maps, vinyl, soldered tin lanterns. Bring small bills, haggle politely, get there before noon.',
+        images: [
+          u('photo-1483985988355-763728e1935b', 800),
+          u('photo-1481437156560-3205f6a55735', 800),
+        ],
+      },
     ],
   },
   {

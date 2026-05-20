@@ -1,4 +1,5 @@
 import { Pressable, TextInput } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { XStack, YStack, useTheme } from 'tamagui'
 import { Search, X } from '@tamagui/lucide-icons'
 
@@ -11,6 +12,7 @@ type Props = {
 
 export function SearchBar({ value, onChange, hPadding, disabled }: Props) {
   const theme = useTheme()
+  const { t } = useTranslation()
   return (
     <YStack
       bg="$background"
@@ -34,7 +36,7 @@ export function SearchBar({ value, onChange, hPadding, disabled }: Props) {
         <TextInput
           value={value}
           onChangeText={onChange}
-          placeholder="Search cities or countries"
+          placeholder={t('discover.searchPlaceholder')}
           placeholderTextColor={theme.colorPress.val}
           autoCorrect={false}
           autoCapitalize="none"

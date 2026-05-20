@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTranslation } from 'react-i18next'
 import { Pause, Play, Square } from '@tamagui/lucide-icons'
 import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
@@ -139,6 +140,7 @@ function AudioControls({
   onPause: () => void
   onStop: () => void
 }) {
+  const { t } = useTranslation()
   if (!hasAudio) {
     return (
       <XStack
@@ -163,10 +165,10 @@ function AudioControls({
         </YStack>
         <YStack flex={1}>
           <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
-            Audio guide
+            {t('excursion.stopSheet.audioTitle')}
           </SizableText>
           <SizableText size="$2" color="$colorPress" fontFamily="$body">
-            No audio uploaded for this stop yet.
+            {t('excursion.stopSheet.audioMissing')}
           </SizableText>
         </YStack>
       </XStack>
@@ -186,10 +188,12 @@ function AudioControls({
     >
       <YStack flex={1} gap="$0.5">
         <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
-          Audio guide
+          {t('excursion.stopSheet.audioTitle')}
         </SizableText>
         <SizableText size="$2" color="$colorPress" fontFamily="$body">
-          {isPlaying ? 'Playing…' : 'Tap play to listen'}
+          {isPlaying
+            ? t('excursion.stopSheet.audioPlaying')
+            : t('excursion.stopSheet.audioPrompt')}
         </SizableText>
       </YStack>
       <XStack gap="$2">

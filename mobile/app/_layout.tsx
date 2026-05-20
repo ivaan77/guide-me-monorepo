@@ -70,6 +70,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="city/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="excursion/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="place/[id]" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   )

@@ -3,15 +3,18 @@ import { ToastProvider, ToastViewport } from '@tamagui/toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { config } from '../tamagui.config'
 import { CurrentToast } from './CurrentToast'
+import { LanguageProvider } from './LanguageContext'
 import { ThemeProvider, useAppTheme } from './ThemeContext'
 
 const queryClient = new QueryClient()
 
 export function AppProvider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   return (
-    <ThemeProvider>
-      <TamaguiInner {...rest}>{children}</TamaguiInner>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <TamaguiInner {...rest}>{children}</TamaguiInner>
+      </ThemeProvider>
+    </LanguageProvider>
   )
 }
 

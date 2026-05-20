@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   FlatList,
   Image,
@@ -13,12 +14,6 @@ import type { Poi, PoiCategory } from '../../data/cities'
 
 const H_PADDING = 20
 
-const CATEGORY_LABEL: Record<PoiCategory, string> = {
-  restaurant: 'Restaurant',
-  bar: 'Bar',
-  shopping: 'Shopping',
-}
-
 const CATEGORY_EMOJI: Record<PoiCategory, string> = {
   restaurant: '🍴',
   bar: '🍸',
@@ -32,6 +27,7 @@ type Props = {
 }
 
 export function PoiDetailSheet({ visible, poi, onClose }: Props) {
+  const { t } = useTranslation()
   if (!poi) return null
 
   return (
@@ -50,7 +46,7 @@ export function PoiDetailSheet({ visible, poi, onClose }: Props) {
               fontWeight="700"
               style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
             >
-              {CATEGORY_LABEL[poi.category]}
+              {t(`place.category.${poi.category}` as const)}
             </SizableText>
           </XStack>
           <H3 fontFamily="$body" fontWeight="700" color="$color">

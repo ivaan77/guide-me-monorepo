@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Image, Pressable, ScrollView } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { Check } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
 import type { ExcursionStop, Poi } from '../../data/cities'
@@ -82,6 +83,7 @@ function StopRow({
   stopIndex: number
   status: Status
 }) {
+  const { t } = useTranslation()
   const isVisited = status === 'visited'
   const isCurrent = status === 'current'
 
@@ -144,7 +146,7 @@ function StopRow({
             color="$primary"
             style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
           >
-            Current
+            {t('excursion.list.current')}
           </SizableText>
         )}
       </YStack>
@@ -153,6 +155,7 @@ function StopRow({
 }
 
 function PoiRow({ poi, onPress }: { poi: Poi; onPress: () => void }) {
+  const { t } = useTranslation()
   const meta = POI_CATEGORY_META[poi.category]
   const Icon = meta.icon
   return (
@@ -166,9 +169,9 @@ function PoiRow({ poi, onPress }: { poi: Poi; onPress: () => void }) {
           justify="center"
           bg="#FFFFFF"
           borderWidth={2}
-          borderColor={meta.color}
+          borderColor={meta.color as any}
         >
-          <Icon size={14} color={meta.color} />
+          <Icon size={14} color={meta.color as any} />
         </YStack>
 
         <Image
@@ -191,10 +194,10 @@ function PoiRow({ poi, onPress }: { poi: Poi; onPress: () => void }) {
             size="$2"
             fontFamily="$body"
             fontWeight="700"
-            color={meta.color}
+            color={meta.color as any}
             style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
           >
-            {meta.label}
+            {t(`place.category.${poi.category}` as const)}
           </SizableText>
         </YStack>
       </XStack>

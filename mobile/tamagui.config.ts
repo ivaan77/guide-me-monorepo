@@ -3,7 +3,6 @@ import { createTamagui } from 'tamagui'
 import { palette } from './constants/Colors'
 //:TODO when user clicks rest bars shopping to route to specific page, should be the same, structure of the data should be the same
 //: TODO: login
-//: todo language preference for app strings and for content from api
 //: todo: favorites
 //: todo: move data to api, define types, endpoints for it
 // todo: save dummy data into mongo

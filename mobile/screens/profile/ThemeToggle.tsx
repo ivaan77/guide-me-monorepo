@@ -1,15 +1,21 @@
 import { Pressable } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { SizableText, XStack } from 'tamagui'
 import { Monitor, Moon, Sun } from '@tamagui/lucide-icons'
 import { type ThemeMode, useAppTheme } from '../../providers/ThemeContext'
 
-const OPTIONS: { value: ThemeMode; label: string; Icon: typeof Sun }[] = [
-  { value: 'system', label: 'System', Icon: Monitor },
-  { value: 'light', label: 'Light', Icon: Sun },
-  { value: 'dark', label: 'Dark', Icon: Moon },
+const OPTIONS: {
+  value: ThemeMode
+  labelKey: 'profile.themeSystem' | 'profile.themeLight' | 'profile.themeDark'
+  Icon: typeof Sun
+}[] = [
+  { value: 'system', labelKey: 'profile.themeSystem', Icon: Monitor },
+  { value: 'light', labelKey: 'profile.themeLight', Icon: Sun },
+  { value: 'dark', labelKey: 'profile.themeDark', Icon: Moon },
 ]
 
 export function ThemeToggle() {
+  const { t } = useTranslation()
   const { mode, setMode } = useAppTheme()
 
   return (
@@ -21,7 +27,7 @@ export function ThemeToggle() {
       p="$1"
       gap="$1"
     >
-      {OPTIONS.map(({ value, label, Icon }) => {
+      {OPTIONS.map(({ value, labelKey, Icon }) => {
         const active = mode === value
         return (
           <Pressable
@@ -47,7 +53,7 @@ export function ThemeToggle() {
                 fontWeight={active ? '600' : '500'}
                 color={active ? '$color' : '$colorPress'}
               >
-                {label}
+                {t(labelKey)}
               </SizableText>
             </XStack>
           </Pressable>
