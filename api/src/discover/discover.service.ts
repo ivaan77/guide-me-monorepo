@@ -56,10 +56,7 @@ export class DiscoverService {
     throw new NotFoundException(`Excursion not found: ${id}`);
   }
 
-  async getPlaceById(
-    id: string,
-    locale: Locale,
-  ): Promise<PublicPlaceResponse> {
+  async getPlaceById(id: string, locale: Locale): Promise<PublicPlaceResponse> {
     for (const city of CITY_RECORDS) {
       const restaurant = city.restaurants?.find((p) => p.slug === id);
       if (restaurant)
@@ -106,7 +103,9 @@ export class DiscoverService {
         this.toPublicCategoryItem(p, locale),
       ),
       bars: record.bars?.map((p) => this.toPublicCategoryItem(p, locale)),
-      shopping: record.shopping?.map((p) => this.toPublicCategoryItem(p, locale)),
+      shopping: record.shopping?.map((p) =>
+        this.toPublicCategoryItem(p, locale),
+      ),
     };
   }
 

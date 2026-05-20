@@ -70,10 +70,7 @@ export type CityRecord = {
   shopping?: CategoryItemRecord[];
 };
 
-export function pickLocalized(
-  field: LocalizedString,
-  locale: Locale,
-): string {
+export function pickLocalized(field: LocalizedString, locale: Locale): string {
   return field[locale] ?? field.en;
 }
 
@@ -186,7 +183,7 @@ export const CITY_RECORDS: CityRecord[] = [
             name: en("Darwin's Café"),
             category: 'restaurant',
             description: en(
-              "Modern bistro hidden inside the Champalimaud Centre, with floor-to-ceiling windows over the Tagus. Lunch menu rotates weekly; the polvo (octopus) is a quiet local favorite.",
+              'Modern bistro hidden inside the Champalimaud Centre, with floor-to-ceiling windows over the Tagus. Lunch menu rotates weekly; the polvo (octopus) is a quiet local favorite.',
             ),
             coords: { latitude: 38.6932, longitude: -9.2173 },
             image: u('photo-1414235077428-338989a2e8c0', 400),
@@ -550,7 +547,9 @@ export const CITY_RECORDS: CityRecord[] = [
             slug: 'souks-stop',
             order: 2,
             name: en('Souk Semmarine'),
-            description: en('A labyrinth of lanterns, spices, leather, and textiles.'),
+            description: en(
+              'A labyrinth of lanterns, spices, leather, and textiles.',
+            ),
             coords: { latitude: 31.6304, longitude: -7.987 },
             image: u('photo-1483985988355-763728e1935b', 400),
           },
@@ -690,7 +689,9 @@ export const CITY_RECORDS: CityRecord[] = [
             slug: 'hallgrim',
             order: 0,
             name: en('Hallgrímskirkja'),
-            description: en('A basalt-inspired church rising 74 m over the city.'),
+            description: en(
+              'A basalt-inspired church rising 74 m over the city.',
+            ),
             coords: { latitude: 64.1418, longitude: -21.9266 },
             image: u('photo-1531168556467-80aace0d0144', 400),
           },
