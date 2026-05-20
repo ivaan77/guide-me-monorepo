@@ -40,8 +40,12 @@ export class UsersService {
     return {
       clerkUserId: user.clerkUserId,
       favorites: user.favorites,
-      createdAt: ((user as unknown as { createdAt: Date }).createdAt ?? new Date()).toISOString(),
-      updatedAt: ((user as unknown as { updatedAt: Date }).updatedAt ?? new Date()).toISOString(),
+      createdAt: (
+        (user as unknown as { createdAt: Date }).createdAt ?? new Date()
+      ).toISOString(),
+      updatedAt: (
+        (user as unknown as { updatedAt: Date }).updatedAt ?? new Date()
+      ).toISOString(),
     };
   }
 }
