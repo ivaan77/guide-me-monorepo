@@ -2,8 +2,13 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Guide Me',
-  description: 'Audio-guided city tours and curated picks. Coming soon.',
+  title: 'GuideMe — audio-guided city tours',
+  description:
+    'Discover cities through curated walking tours, hand-picked restaurants, bars, and shops — narrated, mapped, and ready when you are.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -8,11 +8,6 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   scheme: 'guideme',
   userInterfaceStyle: 'automatic',
-  splash: {
-    image: './assets/images/splash.png',
-    resizeMode: 'contain',
-    backgroundColor: '#FAF7F2',
-  },
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
@@ -29,7 +24,7 @@ const config: ExpoConfig = {
     package: 'com.guide.me',
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
-      backgroundColor: '#FAF7F2',
+      backgroundColor: '#0B1F3A',
     },
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
     config: {
@@ -49,6 +44,22 @@ const config: ExpoConfig = {
     'expo-web-browser',
     'expo-localization',
     'expo-audio',
+    [
+      'expo-splash-screen',
+      {
+        // Gradient + centered mark are baked into splash.png so resizeMode
+        // 'cover' fills the device edge-to-edge with the artwork.
+        // backgroundColor is the gradient's top color and shows on any
+        // letterbox gap from odd aspect ratios.
+        image: './assets/images/splash.png',
+        resizeMode: 'cover',
+        backgroundColor: '#0B1F3A',
+        dark: {
+          image: './assets/images/splash.png',
+          backgroundColor: '#0B1F3A',
+        },
+      },
+    ],
     [
       'expo-location',
       {

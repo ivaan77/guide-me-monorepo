@@ -4,8 +4,12 @@ import { Toaster } from 'sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Guide Me · Admin',
-  description: 'Manage Discover content for the Guide Me app.',
+  title: 'GuideMe · Admin',
+  description: 'Manage Discover content for the GuideMe app.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

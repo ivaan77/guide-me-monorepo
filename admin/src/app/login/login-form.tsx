@@ -12,6 +12,28 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+function Mark({ size }: { size: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="GuideMe mark"
+    >
+      <path
+        d="M10 50 C 22 50, 30 46, 36 34 S 46 14, 54 14"
+        fill="none"
+        stroke="var(--color-primary)"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+      <circle cx="54" cy="14" r="6.5" fill="var(--color-brand-amber)" />
+      <circle cx="10" cy="50" r="2.5" fill="var(--color-primary)" opacity=".85" />
+    </svg>
+  )
+}
+
 export function LoginForm() {
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
@@ -38,7 +60,13 @@ export function LoginForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Guide Me · Admin</CardTitle>
+        <div className="flex items-center gap-2 mb-2">
+          <Mark size={28} />
+          <CardTitle>
+            Guide<em className="not-italic text-[var(--color-primary)]">Me</em>
+            <span className="text-[var(--color-muted-foreground)]"> · Admin</span>
+          </CardTitle>
+        </div>
         <CardDescription>Sign in to manage Discover content.</CardDescription>
       </CardHeader>
       <CardContent>
