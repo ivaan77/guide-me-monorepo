@@ -28,7 +28,9 @@ export class ClerkAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const auth: string | undefined = request.headers['authorization'];
     if (!auth?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing or malformed Authorization header.');
+      throw new UnauthorizedException(
+        'Missing or malformed Authorization header.',
+      );
     }
     const token = auth.slice('Bearer '.length).trim();
 
