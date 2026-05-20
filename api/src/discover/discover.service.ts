@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   AllPublicCitiesResponse,
   Locale,
-  PoiCategory,
   PublicCategoryItem,
   PublicCity,
   PublicCityDetail,
@@ -15,21 +14,20 @@ import {
   PublicPlaceResponse,
   PublicPoi,
 } from '@guide-me-app/core';
-import {
-  CategoryItemRecord,
-  CITY_RECORDS,
-  CityRecord,
-  ExcursionRecord,
-  ExcursionStopRecord,
-  PoiRecord,
-  pickLocalized,
-} from './discover.data';
+import { DiscoverRepository } from './discover.repository';
+import { DiscoverCityDocument } from './schemas/discover-city.schema';
+import { DiscoverExcursionDocument } from './schemas/discover-excursion.schema';
+import { DiscoverPlaceDocument } from './schemas/discover-place.schema';
+import { pickLocalized } from './locale.util';
 
 @Injectable()
 export class DiscoverService {
+  constructor(private readonly repo: DiscoverRepository) {}
+
   async getAllCities(locale: Locale): Promise<AllPublicCitiesResponse> {
+    const cities = await this.repo.findAllCities();
     return {
-      cities: CITY_RECORDS.map((record) => this.toPublicCity(record, locale)),
+      cities: cities.map((doc) => this.toPublicCity(doc, locale)),
       locale,
     };
   }
@@ -38,82 +36,70 @@ export class DiscoverService {
     id: string,
     locale: Locale,
   ): Promise<PublicCityDetailResponse> {
-    const record = CITY_RECORDS.find((c) => c.slug === id);
-    if (!record) throw new NotFoundException(`City not found: ${id}`);
-    return { city: this.toPublicCityDetail(record, locale), locale };
+    const city = await this.repo.findCityBySlug(id);
+    if (!city) throw new NotFoundException(`City not found: ${id}`);
+
+    // 4 parallel queries: excursions summary + 3 place categories.
+    const [excursions, restaurants, bars, shopping] = await Promise.all([
+      this.repo.findExcursionSummariesForCity(id),
+      this.repo.findPlacesForCity(id, 'restaurant'),
+      this.repo.findPlacesForCity(id, 'bar'),
+      this.repo.findPlacesForCity(id, 'shopping'),
+    ]);
+
+    const detail: PublicCityDetail = {
+      ...this.toPublicCity(city, locale),
+      excursions: excursions.map((e) => ({
+        id: e.slug,
+        name: pickLocalized(e.name, locale),
+        meta: pickLocalized(e.meta, locale),
+        image: e.image,
+      })),
+
+      restaurants: restaurants.map((p) => this.toPublicCategoryItem(p, locale)),
+      bars: bars.map((p) => this.toPublicCategoryItem(p, locale)),
+      shopping: shopping.map((p) => this.toPublicCategoryItem(p, locale)),
+    };
+
+    return { city: detail, locale };
   }
 
   async getExcursionById(
     id: string,
     locale: Locale,
   ): Promise<PublicExcursionResponse> {
-    for (const city of CITY_RECORDS) {
-      const excursion = city.excursions?.find((e) => e.slug === id);
-      if (excursion) {
-        return { excursion: this.toPublicExcursion(excursion, locale), locale };
-      }
-    }
-    throw new NotFoundException(`Excursion not found: ${id}`);
-  }
-
-  async getPlaceById(id: string, locale: Locale): Promise<PublicPlaceResponse> {
-    for (const city of CITY_RECORDS) {
-      const restaurant = city.restaurants?.find((p) => p.slug === id);
-      if (restaurant)
-        return {
-          place: this.toPublicPlace(restaurant, 'restaurant', locale),
-          locale,
-        };
-      const bar = city.bars?.find((p) => p.slug === id);
-      if (bar)
-        return {
-          place: this.toPublicPlace(bar, 'bar', locale),
-          locale,
-        };
-      const shop = city.shopping?.find((p) => p.slug === id);
-      if (shop)
-        return {
-          place: this.toPublicPlace(shop, 'shopping', locale),
-          locale,
-        };
-    }
-    throw new NotFoundException(`Place not found: ${id}`);
-  }
-
-  private toPublicCity(record: CityRecord, locale: Locale): PublicCity {
+    const excursion = await this.repo.findExcursionBySlug(id);
+    if (!excursion) throw new NotFoundException(`Excursion not found: ${id}`);
     return {
-      id: record.slug,
-      image: record.image,
-      name: pickLocalized(record.name, locale),
-      country: pickLocalized(record.country, locale),
-      editorPick: this.resolveEditorPick(record.editorPick, locale),
+      excursion: this.toPublicExcursion(excursion, locale),
+      locale,
     };
   }
 
-  private toPublicCityDetail(
-    record: CityRecord,
-    locale: Locale,
-  ): PublicCityDetail {
+  async getPlaceById(id: string, locale: Locale): Promise<PublicPlaceResponse> {
+    const place = await this.repo.findPlaceBySlug(id);
+    if (!place) throw new NotFoundException(`Place not found: ${id}`);
+    return { place: this.toPublicPlace(place, locale), locale };
+  }
+
+  // ----- Mappers -----
+
+  private toPublicCity(doc: DiscoverCityDocument, locale: Locale): PublicCity {
     return {
-      ...this.toPublicCity(record, locale),
-      excursions: record.excursions?.map((e) =>
-        this.toCategoryItemFromExcursion(e, locale),
-      ),
-      restaurants: record.restaurants?.map((p) =>
-        this.toPublicCategoryItem(p, locale),
-      ),
-      bars: record.bars?.map((p) => this.toPublicCategoryItem(p, locale)),
-      shopping: record.shopping?.map((p) =>
-        this.toPublicCategoryItem(p, locale),
-      ),
+      id: doc.slug,
+      image: doc.image,
+      name: pickLocalized(doc.name, locale),
+      country: pickLocalized(doc.country, locale),
+      editorPick: doc.editorPick
+        ? this.resolveEditorPick(doc.editorPick, locale)
+        : undefined,
     };
   }
 
   private resolveEditorPick(
-    pick: CityRecord['editorPick'],
+    pick: NonNullable<DiscoverCityDocument['editorPick']>,
     locale: Locale,
-  ): PublicEditorPick | undefined {
-    if (!pick) return undefined;
+  ): PublicEditorPick {
     return {
       headline: pickLocalized(pick.headline, locale),
       tagline: pickLocalized(pick.tagline, locale),
@@ -121,93 +107,81 @@ export class DiscoverService {
   }
 
   private toPublicCategoryItem(
-    record: CategoryItemRecord,
+    doc: DiscoverPlaceDocument,
     locale: Locale,
   ): PublicCategoryItem {
     return {
-      id: record.slug,
-      name: pickLocalized(record.name, locale),
-      meta: pickLocalized(record.meta, locale),
-      image: record.image,
-      description: record.description
-        ? pickLocalized(record.description, locale)
+      id: doc.slug,
+      name: pickLocalized(doc.name, locale),
+      meta: pickLocalized(doc.meta, locale),
+      image: doc.image,
+      description: doc.description
+        ? pickLocalized(doc.description, locale)
         : undefined,
-      images: record.images,
-    };
-  }
-
-  // The excursion summary in a city detail uses CategoryItem shape (id, name,
-  // meta, image) — we omit stops/pois at the list level.
-  private toCategoryItemFromExcursion(
-    record: ExcursionRecord,
-    locale: Locale,
-  ): PublicCategoryItem {
-    return {
-      id: record.slug,
-      name: pickLocalized(record.name, locale),
-      meta: pickLocalized(record.meta, locale),
-      image: record.image,
+      images: doc.images,
     };
   }
 
   private toPublicExcursion(
-    record: ExcursionRecord,
+    doc: DiscoverExcursionDocument,
     locale: Locale,
   ): PublicExcursion {
     return {
-      id: record.slug,
-      name: pickLocalized(record.name, locale),
-      meta: pickLocalized(record.meta, locale),
-      image: record.image,
-      stops: record.stops.map((stop) => this.toPublicStop(stop, locale)),
-      pois: record.pois?.map((poi) => this.toPublicPoi(poi, locale)),
+      id: doc.slug,
+      name: pickLocalized(doc.name, locale),
+      meta: pickLocalized(doc.meta, locale),
+      image: doc.image,
+      stops: doc.stops.map((stop) => this.toPublicStop(stop, locale)),
+      pois: doc.pois?.map((poi) => this.toPublicPoi(poi, locale)),
     };
   }
 
   private toPublicStop(
-    record: ExcursionStopRecord,
+    stop: DiscoverExcursionDocument['stops'][number],
     locale: Locale,
   ): PublicExcursionStop {
     return {
-      id: record.slug,
-      order: record.order,
-      name: pickLocalized(record.name, locale),
-      description: pickLocalized(record.description, locale),
-      coords: record.coords,
-      image: record.image,
-      images: record.images,
-      audioUrl: record.audioUrl,
+      id: stop.slug,
+      order: stop.order,
+      name: pickLocalized(stop.name, locale),
+      description: pickLocalized(stop.description, locale),
+      coords: stop.coords,
+      image: stop.image,
+      images: stop.images,
+      audioUrl: stop.audioUrl,
     };
   }
 
-  private toPublicPoi(record: PoiRecord, locale: Locale): PublicPoi {
+  private toPublicPoi(
+    poi: NonNullable<DiscoverExcursionDocument['pois']>[number],
+    locale: Locale,
+  ): PublicPoi {
     return {
-      id: record.slug,
-      order: record.order,
-      name: pickLocalized(record.name, locale),
-      category: record.category,
-      description: pickLocalized(record.description, locale),
-      coords: record.coords,
-      image: record.image,
-      images: record.images,
+      id: poi.slug,
+      order: poi.order,
+      name: pickLocalized(poi.name, locale),
+      category: poi.category,
+      description: pickLocalized(poi.description, locale),
+      coords: poi.coords,
+      image: poi.image,
+      images: poi.images,
     };
   }
 
   private toPublicPlace(
-    record: CategoryItemRecord,
-    category: PoiCategory,
+    doc: DiscoverPlaceDocument,
     locale: Locale,
   ): PublicPlaceDetail {
     return {
-      id: record.slug,
-      name: pickLocalized(record.name, locale),
-      meta: pickLocalized(record.meta, locale),
-      category,
-      image: record.image,
-      description: record.description
-        ? pickLocalized(record.description, locale)
+      id: doc.slug,
+      name: pickLocalized(doc.name, locale),
+      meta: pickLocalized(doc.meta, locale),
+      category: doc.category,
+      image: doc.image,
+      description: doc.description
+        ? pickLocalized(doc.description, locale)
         : undefined,
-      images: record.images,
+      images: doc.images,
     };
   }
 }

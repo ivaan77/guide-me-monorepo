@@ -1,16 +1,18 @@
-import { Locale, LocalizedString, PoiCategory } from '@guide-me-app/core';
+import { LocalizedString, PoiCategory } from '@guide-me-app/core';
 
-// Data structure mirrors what we'll persist in Mongo:
-//   { _id, slug, image, name: { en, de, hr }, country: { en, de, hr }, editorPick: { ... }, excursions: [...], restaurants: [...], bars: [...], shopping: [...] }
-// The API resolves localized strings to flat strings before responding.
-// Adding a language = filling more keys under each localized object.
-// Missing translation = falls back to English at resolve time.
+// SEED DATA ONLY — consumed by scripts/seed-discover.ts to populate Mongo.
+// At runtime, DiscoverService reads from the cities/excursions/places
+// collections, not from this file.
+//
+// The CITY_RECORDS shape nests excursions and places inside each city for
+// authoring convenience. The seed script flattens that into three separate
+// collections (one document per city / excursion / place) at insert time.
 //
 // Authoring guidance:
 //   - Only `en` is required on every LocalizedString.
-//   - `de` / `hr` are optional; absent values fall back to en.
+//   - `de` / `hr` are optional; absent values fall back to en at read time.
 //   - Coordinates, image URLs, and audioUrl are never localized.
-//   - `slug` identifies the entity in URLs and is stable across re-seeds.
+//   - `slug` is stable across re-seeds and is the public identifier in URLs.
 
 export type LocalizedEditorPick = {
   headline: LocalizedString;
@@ -69,10 +71,6 @@ export type CityRecord = {
   bars?: CategoryItemRecord[];
   shopping?: CategoryItemRecord[];
 };
-
-export function pickLocalized(field: LocalizedString, locale: Locale): string {
-  return field[locale] ?? field.en;
-}
 
 const u = (id: string, w = 900): string =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;

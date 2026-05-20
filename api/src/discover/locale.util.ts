@@ -1,4 +1,9 @@
-import { DEFAULT_LOCALE, Locale, SUPPORTED_LOCALES } from '@guide-me-app/core';
+import {
+  DEFAULT_LOCALE,
+  Locale,
+  LocalizedString,
+  SUPPORTED_LOCALES,
+} from '@guide-me-app/core';
 
 const SUPPORTED = new Set<string>(SUPPORTED_LOCALES);
 
@@ -25,4 +30,13 @@ export function parseAcceptLanguage(header: string | undefined): Locale {
     .sort((a, b) => b.quality - a.quality);
 
   return (entries[0]?.primary as Locale) ?? DEFAULT_LOCALE;
+}
+
+// Resolve a localized string to the requested locale, falling back to English
+// if the target locale isn't populated for that field.
+export function pickLocalized(
+  field: LocalizedString,
+  locale: Locale,
+): string {
+  return field[locale] ?? field.en;
 }
