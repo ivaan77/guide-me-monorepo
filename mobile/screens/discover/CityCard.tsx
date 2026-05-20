@@ -1,10 +1,10 @@
 import { Image, Pressable } from 'react-native'
 import { Link } from 'expo-router'
+import type { PublicCity } from '@guide-me-app/core'
 import { SizableText, YStack } from 'tamagui'
-import type { City } from '../../data/cities'
 
 type Props = {
-  city: City
+  city: PublicCity
   width: number
 }
 

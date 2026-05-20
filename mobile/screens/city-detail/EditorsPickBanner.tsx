@@ -1,9 +1,9 @@
 import { Star } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
-import type { EditorPick } from '../../data/cities'
+import type { PublicEditorPick } from '@guide-me-app/core'
 
 type Props = {
-  pick: EditorPick
+  pick: PublicEditorPick
 }
 
 export function EditorsPickBanner({ pick }: Props) {

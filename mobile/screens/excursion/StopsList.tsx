@@ -3,7 +3,10 @@ import { Image, Pressable, ScrollView } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Check } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
-import type { ExcursionStop, Poi } from '../../data/cities'
+import type {
+  PublicExcursionStop as ExcursionStop,
+  PublicPoi as Poi,
+} from '@guide-me-app/core'
 import { POI_CATEGORY_META } from './poiCategory'
 
 type Status = 'visited' | 'current' | 'upcoming'

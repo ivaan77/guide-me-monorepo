@@ -1,4 +1,9 @@
-import { Image, Pressable, ScrollView, useWindowDimensions } from 'react-native'
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -11,11 +16,13 @@ import {
   Wine,
 } from '@tamagui/lucide-icons'
 import type { IconProps } from '@tamagui/helpers-icon'
+import type { PublicCategoryItem } from '@guide-me-app/core'
 import { H1, SizableText, XStack, YStack } from 'tamagui'
-import { type CategoryItem, getCityById } from '../../data/cities'
+import { useCity } from '../../hooks/useCity'
 import { EmptyState } from '../discover/EmptyState'
 import { Accordion } from './Accordion'
 import { CategoryListItem } from './CategoryListItem'
+import { CityDetailSkeleton } from './CityDetailSkeleton'
 import { EditorsPickBanner } from './EditorsPickBanner'
 
 type Props = {
@@ -31,21 +38,30 @@ export function CityDetailScreen({ id }: Props) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { t } = useTranslation()
-  const city = getCityById(id)
+  const { data: city, isPending, isError, refetch } = useCity(id)
 
   const goBack = () => {
     if (router.canGoBack()) router.back()
     else router.replace('/')
   }
 
-  if (!city) {
+  if (isPending) {
+    return (
+      <YStack flex={1} bg="$background">
+        <CityDetailSkeleton />
+        <BackButton topInset={insets.top} onPress={goBack} />
+      </YStack>
+    )
+  }
+
+  if (isError || !city) {
     return (
       <YStack flex={1} bg="$background" pt={insets.top + 56}>
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
           message={t('city.notFound')}
-          onRetry={goBack}
+          onRetry={() => refetch()}
         />
       </YStack>
     )
@@ -152,8 +168,8 @@ function CategorySection({
 }: {
   title: string
   icon: React.ComponentType<IconProps>
-  items?: CategoryItem[]
-  hrefFor?: (item: CategoryItem) => string
+  items?: PublicCategoryItem[]
+  hrefFor?: (item: PublicCategoryItem) => string
 }) {
   if (!items || items.length === 0) return null
   return (

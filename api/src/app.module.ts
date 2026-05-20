@@ -7,6 +7,7 @@ import { CityModule } from './city/city.module';
 import { TourModule } from './tour/tour.module';
 import { CacheModule } from './cache/cache.module';
 import { DirectionsModule } from './directions/directions.module';
+import { DiscoverModule } from './discover/discover.module';
 
 const dbUrl = process.env.MONGODB_URL;
 
@@ -18,6 +19,7 @@ const dbUrl = process.env.MONGODB_URL;
     CityModule,
     CacheModule,
     DirectionsModule,
+    DiscoverModule,
   ],
   controllers: [],
   providers: [

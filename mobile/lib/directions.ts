@@ -1,5 +1,5 @@
 import { PublicPath, type WalkingDirectionsResponse } from '@guide-me-app/core'
-import type { LatLng } from '../data/cities'
+import type { PublicLatLng as LatLng } from '@guide-me-app/core'
 import { API_URL } from '../config/env'
 
 export type Route = {

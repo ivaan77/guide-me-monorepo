@@ -1,7 +1,7 @@
 import { ShoppingBag, UtensilsCrossed, Wine } from '@tamagui/lucide-icons'
 import type { ComponentType } from 'react'
 import type { IconProps } from '@tamagui/helpers-icon'
-import type { PoiCategory } from '../../data/cities'
+import type { PoiCategory } from '@guide-me-app/core'
 
 export type PoiCategoryMeta = {
   color: string

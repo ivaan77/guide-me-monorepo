@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
-import type { Poi, PoiCategory } from '../../data/cities'
+import type { PoiCategory, PublicPoi as Poi } from '@guide-me-app/core'
 
 const H_PADDING = 20
 

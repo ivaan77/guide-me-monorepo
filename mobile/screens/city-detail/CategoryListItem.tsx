@@ -1,10 +1,10 @@
 import { Image, Pressable } from 'react-native'
 import { Link, type Href } from 'expo-router'
 import { SizableText, XStack, YStack } from 'tamagui'
-import type { CategoryItem } from '../../data/cities'
+import type { PublicCategoryItem } from '@guide-me-app/core'
 
 type Props = {
-  item: CategoryItem
+  item: PublicCategoryItem
   isLast?: boolean
   href?: string
 }

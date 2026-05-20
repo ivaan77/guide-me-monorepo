@@ -44,3 +44,88 @@ export type AllPublicCitiesResponse = {
     cities: PublicCity[]
     locale: Locale // the locale used to resolve the response
 }
+
+// --- City detail ---
+
+export type PublicCategoryItem = {
+    id: string
+    name: string
+    meta: string
+    image: string
+    description?: string
+    images?: string[]
+}
+
+export type PublicCityDetail = PublicCity & {
+    excursions?: PublicCategoryItem[]
+    restaurants?: PublicCategoryItem[]
+    bars?: PublicCategoryItem[]
+    shopping?: PublicCategoryItem[]
+}
+
+export type PublicCityDetailResponse = {
+    city: PublicCityDetail
+    locale: Locale
+}
+
+// --- Excursion detail ---
+
+export type PublicLatLng = {
+    latitude: number
+    longitude: number
+}
+
+export type PublicExcursionStop = {
+    id: string
+    order: number
+    name: string
+    description: string
+    coords: PublicLatLng
+    image: string
+    images?: string[]
+    audioUrl?: string
+}
+
+export type PoiCategory = 'restaurant' | 'bar' | 'shopping'
+
+export type PublicPoi = {
+    id: string
+    order: number
+    name: string
+    category: PoiCategory
+    description: string
+    coords: PublicLatLng
+    image: string
+    images?: string[]
+}
+
+export type PublicExcursion = {
+    id: string
+    name: string
+    meta: string
+    image: string
+    stops: PublicExcursionStop[]
+    pois?: PublicPoi[]
+}
+
+export type PublicExcursionResponse = {
+    excursion: PublicExcursion
+    locale: Locale
+}
+
+// --- Place detail (restaurant / bar / shopping) ---
+
+export type PublicPlaceDetail = {
+    id: string
+    name: string
+    meta: string
+    category: PoiCategory
+    image: string
+    description?: string
+    images?: string[]
+}
+
+export type PublicPlaceResponse = {
+    place: PublicPlaceDetail
+    locale: Locale
+}

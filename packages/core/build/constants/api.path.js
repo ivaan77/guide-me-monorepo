@@ -39,5 +39,14 @@ exports.PublicPath = {
     },
     Directions: {
         walk: '/public/directions/walk',
+    },
+    Discover: {
+        cities: '/public/discover/cities',
+        cityById: '/public/discover/cities/:id',
+        excursionById: '/public/discover/excursions/:id',
+        placeById: '/public/discover/places/:id',
+        getCityById: (id) => `/public/discover/cities/${id}`,
+        getExcursionById: (id) => `/public/discover/excursions/${id}`,
+        getPlaceById: (id) => `/public/discover/places/${id}`,
     }
 };

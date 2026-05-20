@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Image, Platform, Pressable, useWindowDimensions } from 'react-native'
+import {
+  Image,
+  Platform,
+  Pressable,
+  useWindowDimensions,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import * as Location from 'expo-location'
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import { ChevronLeft, Info, MapPin, Navigation, Play } from '@tamagui/lucide-icons'
+import type {
+  PublicExcursionStop,
+  PublicLatLng,
+  PublicPoi,
+} from '@guide-me-app/core'
 import {
   H2,
   H3,
@@ -15,12 +25,7 @@ import {
   YStack,
   useTheme,
 } from 'tamagui'
-import {
-  type ExcursionStop,
-  type LatLng,
-  type Poi,
-  getExcursionById,
-} from '../../data/cities'
+import { useExcursion } from '../../hooks/useExcursion'
 import {
   fetchWalkingRoute,
   haversineMeters,
@@ -29,9 +34,15 @@ import {
 } from '../../lib/directions'
 import { EmptyState } from '../discover/EmptyState'
 import { POI_CATEGORY_META } from './poiCategory'
+import { ExcursionSkeleton } from './ExcursionSkeleton'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
+
+// Local aliases — the screen used these names heavily.
+type ExcursionStop = PublicExcursionStop
+type LatLng = PublicLatLng
+type Poi = PublicPoi
 
 type Props = {
   id: string
@@ -48,22 +59,30 @@ export function ExcursionScreen({ id }: Props) {
   const theme = useTheme()
   const { t } = useTranslation()
   const mapRef = useRef<MapView>(null)
-
-  const data = getExcursionById(id)
+  const { data: excursion, isPending, isError, refetch } = useExcursion(id)
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()
     else router.replace('/')
   }, [router])
 
-  if (!data) {
+  if (isPending) {
+    return (
+      <YStack flex={1} bg="$background">
+        <ExcursionSkeleton />
+        <BackButton topInset={insets.top} onPress={goBack} />
+      </YStack>
+    )
+  }
+
+  if (isError || !excursion) {
     return (
       <YStack flex={1} bg="$background" pt={insets.top + 56}>
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
           message={t('excursion.notFound')}
-          onRetry={goBack}
+          onRetry={() => refetch()}
         />
       </YStack>
     )
@@ -72,9 +91,9 @@ export function ExcursionScreen({ id }: Props) {
   return (
     <ExcursionBody
       id={id}
-      stops={data.excursion.stops}
-      pois={data.excursion.pois ?? []}
-      title={data.excursion.name}
+      stops={excursion.stops}
+      pois={excursion.pois ?? []}
+      title={excursion.name}
       topInset={insets.top}
       bottomInset={insets.bottom}
       mapRef={mapRef}

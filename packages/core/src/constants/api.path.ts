@@ -37,5 +37,14 @@ export const PublicPath = {
     },
     Directions: {
         walk: '/public/directions/walk',
+    },
+    Discover: {
+        cities: '/public/discover/cities',
+        cityById: '/public/discover/cities/:id',
+        excursionById: '/public/discover/excursions/:id',
+        placeById: '/public/discover/places/:id',
+        getCityById: (id: string): string => `/public/discover/cities/${id}`,
+        getExcursionById: (id: string): string => `/public/discover/excursions/${id}`,
+        getPlaceById: (id: string): string => `/public/discover/places/${id}`,
     }
 }

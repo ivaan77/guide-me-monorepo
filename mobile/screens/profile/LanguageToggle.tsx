@@ -1,6 +1,6 @@
 import { Pressable } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { SizableText, XStack, YStack } from 'tamagui'
+import { SizableText, XStack } from 'tamagui'
 import { Globe } from '@tamagui/lucide-icons'
 import {
   type LanguageMode,

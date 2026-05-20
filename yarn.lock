@@ -2970,6 +2970,7 @@ __metadata:
     "@types/react": "npm:~19.2.10"
     burnt: "npm:^0.12.2"
     expo: "npm:~55.0.24"
+    expo-constants: "npm:~55.0.16"
     expo-font: "npm:~55.0.7"
     expo-linear-gradient: "npm:~55.0.14"
     expo-linking: "npm:~55.0.15"

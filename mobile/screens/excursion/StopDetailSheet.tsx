@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { Pause, Play, Square } from '@tamagui/lucide-icons'
 import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
-import type { ExcursionStop } from '../../data/cities'
+import type { PublicExcursionStop as ExcursionStop } from '@guide-me-app/core'
 
 const H_PADDING = 20
 

@@ -4,13 +4,14 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
 import { ChevronLeft } from '@tamagui/lucide-icons'
+import type { PoiCategory } from '@guide-me-app/core'
 import { H1, Paragraph, SizableText, XStack, YStack } from 'tamagui'
-import { type PlaceCategory, getPlaceById } from '../../data/cities'
+import { usePlace } from '../../hooks/usePlace'
 import { EmptyState } from '../discover/EmptyState'
+import { PlaceDetailSkeleton } from './PlaceDetailSkeleton'
 
 type Props = {
   id: string
-  category?: PlaceCategory
 }
 
 const HERO_RATIO = 0.85
@@ -22,8 +23,9 @@ export function PlaceDetailScreen({ id }: Props) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { t } = useTranslation()
+  const { data: place, isPending, isError, refetch } = usePlace(id)
 
-  const categoryLabel = (category: PlaceCategory): string =>
+  const categoryLabel = (category: PoiCategory): string =>
     t(`place.category.${category}` as const)
 
   const goBack = () => {
@@ -31,21 +33,28 @@ export function PlaceDetailScreen({ id }: Props) {
     else router.replace('/')
   }
 
-  const result = getPlaceById(id)
-  if (!result) {
+  if (isPending) {
+    return (
+      <YStack flex={1} bg="$background">
+        <PlaceDetailSkeleton />
+        <BackButton topInset={insets.top} onPress={goBack} />
+      </YStack>
+    )
+  }
+
+  if (isError || !place) {
     return (
       <YStack flex={1} bg="$background" pt={insets.top + 56}>
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
           message={t('place.notFound')}
-          onRetry={goBack}
+          onRetry={() => refetch()}
         />
       </YStack>
     )
   }
 
-  const { place, category } = result
   const heroHeight = width * HERO_RATIO
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 24
 
@@ -98,7 +107,7 @@ export function PlaceDetailScreen({ id }: Props) {
               color="rgba(255,255,255,0.78)"
               style={{ textTransform: 'uppercase', letterSpacing: 1 }}
             >
-              {categoryLabel(category)}
+              {categoryLabel(place.category)}
             </SizableText>
           </XStack>
         </YStack>
