@@ -35,6 +35,11 @@ export type AdminCreateCityRequest = {
 
 export type AdminUpdateCityRequest = Partial<Omit<AdminCreateCityRequest, 'slug'>>
 
+// Audio URLs are localized: editors can upload one file per locale. All entries
+// are optional — a stop may have no audio at all, or only English. The public
+// mapper resolves to a single string for the requested locale at read time.
+export type LocalizedAudio = Partial<Record<'en' | 'de' | 'hr', string>>
+
 export type AdminExcursionStop = {
     slug: string
     order: number
@@ -43,7 +48,7 @@ export type AdminExcursionStop = {
     coords: PublicLatLng
     image: string
     images?: string[]
-    audioUrl?: string
+    audioUrl?: LocalizedAudio
 }
 
 export type AdminPoi = {

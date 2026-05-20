@@ -26,8 +26,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ImageInput } from '@/components/forms/image-input'
+import { AudioInput } from '@/components/forms/audio-input'
+import { ImageListInput } from '@/components/forms/image-list-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
+import { SingleImageInput } from '@/components/forms/single-image-input'
 import { Plus, Trash2 } from 'lucide-react'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
@@ -43,6 +45,12 @@ const latLngSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180),
 })
 
+const localizedAudioSchema = z.object({
+  en: z.string().url().optional(),
+  de: z.string().url().optional(),
+  hr: z.string().url().optional(),
+})
+
 const stopSchema = z.object({
   slug: z.string().regex(SLUG_REGEX),
   order: z.coerce.number().int().min(0),
@@ -51,7 +59,7 @@ const stopSchema = z.object({
   coords: latLngSchema,
   image: z.string().url(),
   images: z.array(z.string().url()).optional(),
-  audioUrl: z.string().optional(),
+  audioUrl: localizedAudioSchema.optional(),
 })
 
 const poiSchema = z.object({
@@ -169,7 +177,13 @@ export function ExcursionForm(props: Props) {
               </SelectContent>
             </Select>
           </div>
-          <ImageInput control={form.control} name="image" label="Image URL" required />
+          <SingleImageInput
+            control={form.control}
+            name="image"
+            label="Hero image"
+            required
+            folder={`excursion/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
+          />
           <LocalizedInput control={form.control} name="name" label="Name" required />
           <LocalizedInput
             control={form.control}
@@ -221,7 +235,7 @@ export function ExcursionForm(props: Props) {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs">Slug</Label>
                     <Input {...form.register(`stops.${idx}.slug`)} placeholder="jeronimos" />
@@ -232,10 +246,6 @@ export function ExcursionForm(props: Props) {
                       type="number"
                       {...form.register(`stops.${idx}.order`, { valueAsNumber: true })}
                     />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs">Audio URL (opt)</Label>
-                    <Input {...form.register(`stops.${idx}.audioUrl`)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -260,11 +270,12 @@ export function ExcursionForm(props: Props) {
                     />
                   </div>
                 </div>
-                <ImageInput
+                <SingleImageInput
                   control={form.control}
                   name={`stops.${idx}.image`}
-                  label="Image URL"
+                  label="Hero image"
                   required
+                  folder={`excursion/${form.watch('slug') || 'untitled'}/stops/${form.watch(`stops.${idx}.slug`) || `stop-${idx}`}`}
                 />
                 <LocalizedInput
                   control={form.control}
@@ -278,6 +289,18 @@ export function ExcursionForm(props: Props) {
                   label="Description"
                   required
                   multiline
+                />
+                <ImageListInput
+                  control={form.control}
+                  name={`stops.${idx}.images`}
+                  label="Gallery images"
+                  folder={`excursion/${form.watch('slug') || 'untitled'}/stops/${form.watch(`stops.${idx}.slug`) || `stop-${idx}`}/gallery`}
+                />
+                <AudioInput
+                  control={form.control}
+                  name={`stops.${idx}.audioUrl`}
+                  label="Audio guide"
+                  folder={`excursion/${form.watch('slug') || 'untitled'}/stops/${form.watch(`stops.${idx}.slug`) || `stop-${idx}`}`}
                 />
               </CardContent>
             </Card>
@@ -379,11 +402,12 @@ export function ExcursionForm(props: Props) {
                     />
                   </div>
                 </div>
-                <ImageInput
+                <SingleImageInput
                   control={form.control}
                   name={`pois.${idx}.image`}
-                  label="Image URL"
+                  label="Hero image"
                   required
+                  folder={`excursion/${form.watch('slug') || 'untitled'}/pois/${form.watch(`pois.${idx}.slug`) || `poi-${idx}`}`}
                 />
                 <LocalizedInput
                   control={form.control}
@@ -397,6 +421,12 @@ export function ExcursionForm(props: Props) {
                   label="Description"
                   required
                   multiline
+                />
+                <ImageListInput
+                  control={form.control}
+                  name={`pois.${idx}.images`}
+                  label="Gallery images"
+                  folder={`excursion/${form.watch('slug') || 'untitled'}/pois/${form.watch(`pois.${idx}.slug`) || `poi-${idx}`}/gallery`}
                 />
               </CardContent>
             </Card>

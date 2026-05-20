@@ -11,6 +11,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { LatLngDto } from './lat-lng.dto';
+import { LocalizedAudioDto } from './localized-audio.dto';
 import { LocalizedStringDto } from './localized-string.dto';
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
@@ -46,8 +47,9 @@ class ExcursionStopDto {
   images?: string[];
 
   @IsOptional()
-  @IsString()
-  audioUrl?: string;
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
 }
 
 class PoiDto {

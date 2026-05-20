@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Image,
@@ -9,6 +9,11 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
+import {
+  type AudioStatus,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+} from 'expo-audio'
 import { Pause, Play, Square } from '@tamagui/lucide-icons'
 import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
@@ -49,7 +54,38 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
 
   const images = stop.images?.length ? stop.images : [stop.image]
   const [carouselIndex, setCarouselIndex] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
+
+  // Real audio playback via expo-audio. Player is created lazily by passing
+  // null until a URL is available, so we don't allocate native resources
+  // when this stop has no audio. The hook handles cleanup on unmount.
+  const player = useAudioPlayer(stop.audioUrl ?? null)
+  const status: AudioStatus | null = useAudioPlayerStatus(player)
+  const isPlaying = status?.playing ?? false
+
+  // Pause when the sheet unmounts (excursion screen navigates away or closes
+  // the sheet). expo-audio also auto-pauses on unmount via useAudioPlayer's
+  // own cleanup, but this is belt-and-suspenders.
+  useEffect(() => {
+    return () => {
+      try {
+        player.pause()
+      } catch {
+        // player already released
+      }
+    }
+  }, [player])
+
+  const handlePlay = () => {
+    if (!stop.audioUrl) return
+    player.play()
+  }
+  const handlePause = () => {
+    player.pause()
+  }
+  const handleStop = () => {
+    player.pause()
+    player.seekTo(0)
+  }
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -114,9 +150,9 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
           <AudioControls
             hasAudio={!!stop.audioUrl}
             isPlaying={isPlaying}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onStop={() => setIsPlaying(false)}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onStop={handleStop}
           />
           <Paragraph color="$color" fontFamily="$body" size="$4" lineHeight="$6">
             {stop.description}

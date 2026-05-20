@@ -48,6 +48,7 @@ const config: ExpoConfig = {
     'expo-font',
     'expo-web-browser',
     'expo-localization',
+    'expo-audio',
     [
       'expo-location',
       {

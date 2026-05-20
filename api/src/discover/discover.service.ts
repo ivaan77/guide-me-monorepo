@@ -14,7 +14,18 @@ import {
   PublicPlaceResponse,
   PublicPoi,
 } from '@guide-me-app/core';
+import type { LocalizedAudioSub } from './schemas/locale.subdocuments';
 import { DiscoverRepository } from './discover.repository';
+
+// Resolve a localized audio URL: prefer requested locale, fall back to en,
+// then to any other populated locale. Returns undefined if no audio at all.
+function resolveAudio(
+  audio: LocalizedAudioSub | undefined,
+  locale: Locale,
+): string | undefined {
+  if (!audio) return undefined;
+  return audio[locale] ?? audio.en ?? audio.de ?? audio.hr ?? undefined;
+}
 import { DiscoverCityDocument } from './schemas/discover-city.schema';
 import { DiscoverExcursionDocument } from './schemas/discover-excursion.schema';
 import { DiscoverPlaceDocument } from './schemas/discover-place.schema';
@@ -148,7 +159,7 @@ export class DiscoverService {
       coords: stop.coords,
       image: stop.image,
       images: stop.images,
-      audioUrl: stop.audioUrl,
+      audioUrl: resolveAudio(stop.audioUrl, locale),
     };
   }
 

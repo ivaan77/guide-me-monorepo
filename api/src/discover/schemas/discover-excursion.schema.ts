@@ -3,6 +3,8 @@ import { HydratedDocument } from 'mongoose';
 import {
   LatLngSub,
   LatLngSubSchema,
+  LocalizedAudioSub,
+  LocalizedAudioSubSchema,
   LocalizedStringSub,
   LocalizedStringSubSchema,
 } from './locale.subdocuments';
@@ -23,7 +25,9 @@ class ExcursionStopSub {
 
   @Prop({ required: true }) image: string;
   @Prop([String]) images?: string[];
-  @Prop() audioUrl?: string;
+
+  @Prop({ type: LocalizedAudioSubSchema })
+  audioUrl?: LocalizedAudioSub;
 }
 
 const ExcursionStopSubSchema = SchemaFactory.createForClass(ExcursionStopSub);

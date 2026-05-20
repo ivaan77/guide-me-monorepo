@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { ImageInput } from '@/components/forms/image-input'
+import { SingleImageInput } from '@/components/forms/single-image-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
@@ -118,7 +118,13 @@ export function CityForm(props: Props) {
 
       <Card>
         <CardContent className="pt-6 flex flex-col gap-4">
-          <ImageInput control={form.control} name="image" label="Image URL" required />
+          <SingleImageInput
+            control={form.control}
+            name="image"
+            label="Image"
+            required
+            folder={`city/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
+          />
           <LocalizedInput control={form.control} name="name" label="Name" required />
           <LocalizedInput control={form.control} name="country" label="Country" required />
         </CardContent>

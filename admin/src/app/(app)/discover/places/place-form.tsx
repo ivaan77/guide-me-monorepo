@@ -23,7 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ImageInput } from '@/components/forms/image-input'
+import { ImageListInput } from '@/components/forms/image-list-input'
+import { SingleImageInput } from '@/components/forms/single-image-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
@@ -41,6 +42,7 @@ const baseSchema = {
   meta: localizedSchema,
   image: z.string().url(),
   description: localizedSchema.optional(),
+  images: z.array(z.string().url()).optional(),
   isEnabled: z.boolean(),
 }
 
@@ -67,6 +69,7 @@ export function PlaceForm(props: Props) {
         meta: props.initialValues.meta,
         image: props.initialValues.image,
         description: props.initialValues.description,
+        images: props.initialValues.images,
         isEnabled: props.initialValues.isEnabled,
       }
     : {
@@ -77,6 +80,7 @@ export function PlaceForm(props: Props) {
         meta: { en: '' },
         image: '',
         description: undefined,
+        images: undefined,
         isEnabled: true,
       }
 
@@ -159,7 +163,13 @@ export function PlaceForm(props: Props) {
               </Select>
             </div>
           </div>
-          <ImageInput control={form.control} name="image" label="Image URL" required />
+          <SingleImageInput
+            control={form.control}
+            name="image"
+            label="Hero image"
+            required
+            folder={`place/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
+          />
           <LocalizedInput control={form.control} name="name" label="Name" required />
           <LocalizedInput
             control={form.control}
@@ -173,6 +183,12 @@ export function PlaceForm(props: Props) {
             name="description"
             label="Description (optional)"
             multiline
+          />
+          <ImageListInput
+            control={form.control}
+            name="images"
+            label="Gallery images"
+            folder={`place/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}/gallery`}
           />
         </CardContent>
       </Card>
