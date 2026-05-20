@@ -81,9 +81,7 @@ export class DiscoverRepository {
       .exec();
   }
 
-  findEnabledPlaceBySlug(
-    slug: string,
-  ): Promise<DiscoverPlaceDocument | null> {
+  findEnabledPlaceBySlug(slug: string): Promise<DiscoverPlaceDocument | null> {
     return this.placeModel
       .findOne({ slug, ...ENABLED_FILTER })
       .lean<DiscoverPlaceDocument>()

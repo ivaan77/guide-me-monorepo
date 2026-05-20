@@ -31,7 +31,9 @@ export class CacheService {
   // content changes (e.g. an admin edits a city — invalidate all
   // `discover:city:lisbon:*` variants across locales).
   async resetByPrefix(prefix: string): Promise<number> {
-    const matching = Array.from(this.knownKeys).filter((k) => k.startsWith(prefix));
+    const matching = Array.from(this.knownKeys).filter((k) =>
+      k.startsWith(prefix),
+    );
     await Promise.all(matching.map((k) => this.cache.del(k)));
     for (const k of matching) this.knownKeys.delete(k);
     return matching.length;

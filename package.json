@@ -10,12 +10,16 @@
     "web:build": "yarn workspace @guide-me-app/web run build",
     "web:start": "yarn workspace @guide-me-app/web run start",
     "web:start:dev": "yarn workspace @guide-me-app/web run dev",
+    "admin:build": "yarn workspace @guide-me-app/admin run build",
+    "admin:start": "yarn workspace @guide-me-app/admin run start",
+    "admin:start:dev": "yarn workspace @guide-me-app/admin run dev",
     "mobile:start": "yarn workspace @guide-me-app/mobile run start"
   },
   "workspaces": [
     "web",
     "mobile",
     "api",
+    "admin",
     "packages/*"
   ],
   "devDependencies": {
