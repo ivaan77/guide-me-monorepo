@@ -1,0 +1,1 @@
+export { PlaceDetailScreen } from './PlaceDetailScreen'
