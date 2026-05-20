@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, type FilterQuery, type UpdateQuery } from 'mongoose';
 import { PoiCategory } from '@guide-me-app/core';
 import {
   DiscoverCity,
@@ -23,6 +23,8 @@ export type ExcursionSummary = Pick<
   'slug' | 'name' | 'meta' | 'image'
 >;
 
+const ENABLED_FILTER = { isEnabled: true };
+
 @Injectable()
 export class DiscoverRepository {
   constructor(
@@ -34,49 +36,112 @@ export class DiscoverRepository {
     private readonly placeModel: Model<DiscoverPlace>,
   ) {}
 
-  // --- Reads ---
+  // --- Public reads (filter by isEnabled) ---
 
-  findAllCities(): Promise<DiscoverCityDocument[]> {
-    return this.cityModel.find({}).lean<DiscoverCityDocument[]>().exec();
+  findAllEnabledCities(): Promise<DiscoverCityDocument[]> {
+    return this.cityModel
+      .find(ENABLED_FILTER)
+      .lean<DiscoverCityDocument[]>()
+      .exec();
   }
 
-  findCityBySlug(slug: string): Promise<DiscoverCityDocument | null> {
-    return this.cityModel.findOne({ slug }).lean<DiscoverCityDocument>().exec();
+  findEnabledCityBySlug(slug: string): Promise<DiscoverCityDocument | null> {
+    return this.cityModel
+      .findOne({ slug, ...ENABLED_FILTER })
+      .lean<DiscoverCityDocument>()
+      .exec();
   }
 
-  findExcursionSummariesForCity(citySlug: string): Promise<ExcursionSummary[]> {
+  findEnabledExcursionSummariesForCity(
+    citySlug: string,
+  ): Promise<ExcursionSummary[]> {
     return this.excursionModel
-      .find({ citySlug })
+      .find({ citySlug, ...ENABLED_FILTER })
       .select({ slug: 1, name: 1, meta: 1, image: 1 })
       .lean<ExcursionSummary[]>()
       .exec();
   }
 
-  findPlacesForCity(
+  findEnabledPlacesForCity(
     citySlug: string,
     category: PoiCategory,
   ): Promise<DiscoverPlaceDocument[]> {
     return this.placeModel
-      .find({ citySlug, category })
+      .find({ citySlug, category, ...ENABLED_FILTER })
       .lean<DiscoverPlaceDocument[]>()
       .exec();
   }
 
-  findExcursionBySlug(slug: string): Promise<DiscoverExcursionDocument | null> {
+  findEnabledExcursionBySlug(
+    slug: string,
+  ): Promise<DiscoverExcursionDocument | null> {
+    return this.excursionModel
+      .findOne({ slug, ...ENABLED_FILTER })
+      .lean<DiscoverExcursionDocument>()
+      .exec();
+  }
+
+  findEnabledPlaceBySlug(
+    slug: string,
+  ): Promise<DiscoverPlaceDocument | null> {
+    return this.placeModel
+      .findOne({ slug, ...ENABLED_FILTER })
+      .lean<DiscoverPlaceDocument>()
+      .exec();
+  }
+
+  // --- Admin reads (no isEnabled filter) ---
+
+  findAllCitiesAdmin(): Promise<DiscoverCityDocument[]> {
+    return this.cityModel.find({}).lean<DiscoverCityDocument[]>().exec();
+  }
+
+  findCityBySlugAdmin(slug: string): Promise<DiscoverCityDocument | null> {
+    return this.cityModel.findOne({ slug }).lean<DiscoverCityDocument>().exec();
+  }
+
+  findAllExcursionsAdmin(
+    filter: FilterQuery<DiscoverExcursion> = {},
+  ): Promise<DiscoverExcursionDocument[]> {
+    return this.excursionModel
+      .find(filter)
+      .lean<DiscoverExcursionDocument[]>()
+      .exec();
+  }
+
+  findExcursionBySlugAdmin(
+    slug: string,
+  ): Promise<DiscoverExcursionDocument | null> {
     return this.excursionModel
       .findOne({ slug })
       .lean<DiscoverExcursionDocument>()
       .exec();
   }
 
-  findPlaceBySlug(slug: string): Promise<DiscoverPlaceDocument | null> {
+  findAllPlacesAdmin(
+    filter: FilterQuery<DiscoverPlace> = {},
+  ): Promise<DiscoverPlaceDocument[]> {
+    return this.placeModel.find(filter).lean<DiscoverPlaceDocument[]>().exec();
+  }
+
+  findPlaceBySlugAdmin(slug: string): Promise<DiscoverPlaceDocument | null> {
     return this.placeModel
       .findOne({ slug })
       .lean<DiscoverPlaceDocument>()
       .exec();
   }
 
-  // --- Writes (used by the seed script) ---
+  // --- Counts (used by delete-blocking) ---
+
+  countExcursionsForCity(citySlug: string): Promise<number> {
+    return this.excursionModel.countDocuments({ citySlug }).exec();
+  }
+
+  countPlacesForCity(citySlug: string): Promise<number> {
+    return this.placeModel.countDocuments({ citySlug }).exec();
+  }
+
+  // --- Writes ---
 
   async wipeAll(): Promise<void> {
     await Promise.all([
@@ -104,5 +169,56 @@ export class DiscoverRepository {
     return this.placeModel.create(
       input,
     ) as unknown as Promise<DiscoverPlaceDocument>;
+  }
+
+  updateCityBySlug(
+    slug: string,
+    update: UpdateQuery<DiscoverCity>,
+  ): Promise<DiscoverCityDocument | null> {
+    return this.cityModel
+      .findOneAndUpdate({ slug }, update, { new: true })
+      .lean<DiscoverCityDocument>()
+      .exec();
+  }
+
+  updateExcursionBySlug(
+    slug: string,
+    update: UpdateQuery<DiscoverExcursion>,
+  ): Promise<DiscoverExcursionDocument | null> {
+    return this.excursionModel
+      .findOneAndUpdate({ slug }, update, { new: true })
+      .lean<DiscoverExcursionDocument>()
+      .exec();
+  }
+
+  updatePlaceBySlug(
+    slug: string,
+    update: UpdateQuery<DiscoverPlace>,
+  ): Promise<DiscoverPlaceDocument | null> {
+    return this.placeModel
+      .findOneAndUpdate({ slug }, update, { new: true })
+      .lean<DiscoverPlaceDocument>()
+      .exec();
+  }
+
+  deleteCityBySlug(slug: string): Promise<{ deletedCount: number }> {
+    return this.cityModel
+      .deleteOne({ slug })
+      .exec()
+      .then((r) => ({ deletedCount: r.deletedCount ?? 0 }));
+  }
+
+  deleteExcursionBySlug(slug: string): Promise<{ deletedCount: number }> {
+    return this.excursionModel
+      .deleteOne({ slug })
+      .exec()
+      .then((r) => ({ deletedCount: r.deletedCount ?? 0 }));
+  }
+
+  deletePlaceBySlug(slug: string): Promise<{ deletedCount: number }> {
+    return this.placeModel
+      .deleteOne({ slug })
+      .exec()
+      .then((r) => ({ deletedCount: r.deletedCount ?? 0 }));
   }
 }

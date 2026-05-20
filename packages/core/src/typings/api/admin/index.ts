@@ -1,5 +1,7 @@
 import { Nullable } from "../../common"
 
+export * from './discover'
+
 export type WithExtendedAudio = {
     introAudio: Nullable<string>;
     outroAudio: Nullable<string>;

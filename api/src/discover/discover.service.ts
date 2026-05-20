@@ -25,7 +25,7 @@ export class DiscoverService {
   constructor(private readonly repo: DiscoverRepository) {}
 
   async getAllCities(locale: Locale): Promise<AllPublicCitiesResponse> {
-    const cities = await this.repo.findAllCities();
+    const cities = await this.repo.findAllEnabledCities();
     return {
       cities: cities.map((doc) => this.toPublicCity(doc, locale)),
       locale,
@@ -36,15 +36,15 @@ export class DiscoverService {
     id: string,
     locale: Locale,
   ): Promise<PublicCityDetailResponse> {
-    const city = await this.repo.findCityBySlug(id);
+    const city = await this.repo.findEnabledCityBySlug(id);
     if (!city) throw new NotFoundException(`City not found: ${id}`);
 
     // 4 parallel queries: excursions summary + 3 place categories.
     const [excursions, restaurants, bars, shopping] = await Promise.all([
-      this.repo.findExcursionSummariesForCity(id),
-      this.repo.findPlacesForCity(id, 'restaurant'),
-      this.repo.findPlacesForCity(id, 'bar'),
-      this.repo.findPlacesForCity(id, 'shopping'),
+      this.repo.findEnabledExcursionSummariesForCity(id),
+      this.repo.findEnabledPlacesForCity(id, 'restaurant'),
+      this.repo.findEnabledPlacesForCity(id, 'bar'),
+      this.repo.findEnabledPlacesForCity(id, 'shopping'),
     ]);
 
     const detail: PublicCityDetail = {
@@ -68,7 +68,7 @@ export class DiscoverService {
     id: string,
     locale: Locale,
   ): Promise<PublicExcursionResponse> {
-    const excursion = await this.repo.findExcursionBySlug(id);
+    const excursion = await this.repo.findEnabledExcursionBySlug(id);
     if (!excursion) throw new NotFoundException(`Excursion not found: ${id}`);
     return {
       excursion: this.toPublicExcursion(excursion, locale),
@@ -77,7 +77,7 @@ export class DiscoverService {
   }
 
   async getPlaceById(id: string, locale: Locale): Promise<PublicPlaceResponse> {
-    const place = await this.repo.findPlaceBySlug(id);
+    const place = await this.repo.findEnabledPlaceBySlug(id);
     if (!place) throw new NotFoundException(`Place not found: ${id}`);
     return { place: this.toPublicPlace(place, locale), locale };
   }

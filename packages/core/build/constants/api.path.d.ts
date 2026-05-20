@@ -25,6 +25,17 @@ export declare const AdminPath: {
         deleteSpotById: (id: string) => string;
         editSpotById: (id: string) => string;
     };
+    Discover: {
+        cities: string;
+        cityBySlug: string;
+        excursions: string;
+        excursionBySlug: string;
+        places: string;
+        placeBySlug: string;
+        getCity: (slug: string) => string;
+        getExcursion: (slug: string) => string;
+        getPlace: (slug: string) => string;
+    };
 };
 export declare const PublicPath: {
     City: {

@@ -32,6 +32,9 @@ export class DiscoverCity {
 
   @Prop({ type: EditorPickSubSchema })
   editorPick?: EditorPickSub;
+
+  @Prop({ required: true, default: true, index: true })
+  isEnabled: boolean;
 }
 
 export type DiscoverCityDocument = HydratedDocument<DiscoverCity>;

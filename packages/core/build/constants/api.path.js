@@ -27,7 +27,18 @@ exports.AdminPath = {
         edit: '/tour/spot/edit/:id',
         deleteSpotById: (id) => exports.AdminPath.TourSpot.delete.replace(':id', id),
         editSpotById: (id) => exports.AdminPath.TourSpot.edit.replace(':id', id),
-    }
+    },
+    Discover: {
+        cities: '/admin/discover/cities',
+        cityBySlug: '/admin/discover/cities/:slug',
+        excursions: '/admin/discover/excursions',
+        excursionBySlug: '/admin/discover/excursions/:slug',
+        places: '/admin/discover/places',
+        placeBySlug: '/admin/discover/places/:slug',
+        getCity: (slug) => `/admin/discover/cities/${slug}`,
+        getExcursion: (slug) => `/admin/discover/excursions/${slug}`,
+        getPlace: (slug) => `/admin/discover/places/${slug}`,
+    },
 };
 exports.PublicPath = {
     City: {

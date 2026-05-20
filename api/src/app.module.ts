@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import 'dotenv/config';
 
 mongoose.set('strictQuery', true);
+import { AdminDiscoverModule } from './admin/discover/admin-discover.module';
 import { CityModule } from './city/city.module';
 import { TourModule } from './tour/tour.module';
 import { CacheModule } from './cache/cache.module';
@@ -23,6 +24,7 @@ const dbUrl = process.env.MONGODB_URL;
     CacheModule,
     DirectionsModule,
     DiscoverModule,
+    AdminDiscoverModule,
   ],
   controllers: [],
   providers: [

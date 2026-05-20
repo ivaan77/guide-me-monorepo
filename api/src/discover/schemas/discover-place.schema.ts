@@ -34,6 +34,9 @@ export class DiscoverPlace {
 
   @Prop([String])
   images?: string[];
+
+  @Prop({ required: true, default: true, index: true })
+  isEnabled: boolean;
 }
 
 export type DiscoverPlaceDocument = HydratedDocument<DiscoverPlace>;

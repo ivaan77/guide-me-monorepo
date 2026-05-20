@@ -73,6 +73,9 @@ export class DiscoverExcursion {
 
   @Prop({ type: [PoiSubSchema] })
   pois?: PoiSub[];
+
+  @Prop({ required: true, default: true, index: true })
+  isEnabled: boolean;
 }
 
 export type DiscoverExcursionDocument = HydratedDocument<DiscoverExcursion>;
