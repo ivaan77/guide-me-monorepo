@@ -268,7 +268,7 @@ function CircleButton({
         justify="center"
         opacity={disabled ? 0.4 : 1}
       >
-        <Icon size={16} color={primary ? '#FFFFFF' : '$color'} />
+        <Icon size={16} color={primary ? '$onBrand' : '$color'} />
       </YStack>
     </Pressable>
   )

@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { ChevronLeft } from '@tamagui/lucide-icons'
 import type { PoiCategory } from '@guide-me-app/core'
 import { H1, Paragraph, SizableText, XStack, YStack } from 'tamagui'
+import { FavoriteButton } from '../../common/FavoriteButton'
 import { usePlace } from '../../hooks/usePlace'
 import { EmptyState } from '../discover/EmptyState'
 import { PlaceDetailSkeleton } from './PlaceDetailSkeleton'
@@ -97,14 +98,14 @@ export function PlaceDetailScreen({ id }: Props) {
               fontWeight="700"
               fontSize="$10"
               lineHeight="$10"
-              color="#FFFFFF"
+              color="$onMedia"
             >
               {place.name}
             </H1>
             <SizableText
               size="$4"
               fontFamily="$body"
-              color="rgba(255,255,255,0.78)"
+              color="$onMediaMuted"
               style={{ textTransform: 'uppercase', letterSpacing: 1 }}
             >
               {categoryLabel(place.category)}
@@ -134,6 +135,14 @@ export function PlaceDetailScreen({ id }: Props) {
       </ScrollView>
 
       <BackButton topInset={insets.top} onPress={goBack} />
+      <YStack
+        position="absolute"
+        t={insets.top + 8}
+        r={H_PADDING}
+        z={10}
+      >
+        <FavoriteButton refToFavorite={{ type: 'place', id: place.id }} />
+      </YStack>
     </YStack>
   )
 }
@@ -162,9 +171,9 @@ function BackButton({
         rounded={20}
         items="center"
         justify="center"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.55)' }}
+        bg="$chromeOverlay"
       >
-        <ChevronLeft size={22} color="#FFFFFF" />
+        <ChevronLeft size={22} color="$onMedia" />
       </YStack>
     </Pressable>
   )

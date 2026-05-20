@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PublicPath = exports.AdminPath = void 0;
+exports.PublicPath = exports.MePath = exports.AdminPath = void 0;
 exports.AdminPath = {
     Discover: {
         cities: '/admin/discover/cities',
@@ -13,6 +13,12 @@ exports.AdminPath = {
         getExcursion: (slug) => `/admin/discover/excursions/${slug}`,
         getPlace: (slug) => `/admin/discover/places/${slug}`,
     },
+};
+exports.MePath = {
+    me: '/me',
+    favorites: '/me/favorites',
+    favoriteByRef: '/me/favorites/:type/:id',
+    deleteFavorite: (type, id) => `/me/favorites/${type}/${id}`,
 };
 exports.PublicPath = {
     Directions: {

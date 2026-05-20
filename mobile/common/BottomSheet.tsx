@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { YStack } from 'tamagui'
+import { useAppTheme } from '../providers/ThemeContext'
 
 const SWIPE_DISMISS_THRESHOLD = 100
 
@@ -33,6 +34,7 @@ export function BottomSheet({
 }: Props) {
   const { height: screenHeight } = useWindowDimensions()
   const sheetHeight = screenHeight * heightRatio
+  const { c } = useAppTheme()
 
   // Slide + fade animations driven manually so we control the dismiss animation
   // and avoid the platform Modal's default slide flash.
@@ -116,7 +118,7 @@ export function BottomSheet({
           style={[
             StyleSheet.absoluteFillObject,
             {
-              backgroundColor: 'rgba(0, 0, 0, 0.45)',
+              backgroundColor: c.overlay,
               opacity: backdropOpacity,
             },
           ]}

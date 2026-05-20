@@ -25,6 +25,7 @@ import {
   YStack,
   useTheme,
 } from 'tamagui'
+import { FavoriteButton } from '../../common/FavoriteButton'
 import { useExcursion } from '../../hooks/useExcursion'
 import {
   fetchWalkingRoute,
@@ -104,6 +105,7 @@ export function ExcursionScreen({ id }: Props) {
 }
 
 function ExcursionBody({
+  id,
   stops,
   pois,
   title,
@@ -358,6 +360,14 @@ function ExcursionBody({
 
       <BackButton topInset={topInset} onPress={goBack} />
       <HeaderTitle topInset={topInset} title={title} />
+      <YStack
+        position="absolute"
+        t={topInset + 8}
+        r={H_PADDING}
+        z={10}
+      >
+        <FavoriteButton refToFavorite={{ type: 'excursion', id }} />
+      </YStack>
 
       <StopsList
         stops={stops}
@@ -531,7 +541,7 @@ function NavigatingPanel({
         items="center"
         justify="center"
       >
-        <Navigation size={20} color="#FFFFFF" />
+        <Navigation size={20} color="$onBrand" />
       </YStack>
       <YStack flex={1} gap="$0.5">
         <SizableText
@@ -697,10 +707,10 @@ function ActionButton({
         py="$3.5"
         px="$4"
       >
-        <Icon size={18} color="#FFFFFF" />
+        <Icon size={18} color="$onBrand" />
         <SizableText
           size="$4"
-          color="#FFFFFF"
+          color="$onBrand"
           fontFamily="$body"
           fontWeight="700"
         >
@@ -721,7 +731,7 @@ function HeaderTitle({ topInset, title }: { topInset: number; title: string }) {
       style={{ pointerEvents: 'none' }}
     >
       <YStack
-        bg="rgba(0,0,0,0.45)"
+        bg="$chromeOverlay"
         rounded={20}
         px="$3"
         py="$2"
@@ -729,7 +739,7 @@ function HeaderTitle({ topInset, title }: { topInset: number; title: string }) {
       >
         <SizableText
           size="$3"
-          color="#FFFFFF"
+          color="$onMedia"
           fontFamily="$body"
           fontWeight="600"
           numberOfLines={1}
@@ -765,9 +775,9 @@ function BackButton({
         rounded={20}
         items="center"
         justify="center"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.55)' }}
+        bg="$chromeOverlay"
       >
-        <ChevronLeft size={22} color="#FFFFFF" />
+        <ChevronLeft size={22} color="$onMedia" />
       </YStack>
     </Pressable>
   )

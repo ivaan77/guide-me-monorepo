@@ -12,6 +12,7 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.guide.me',
+    usesAppleSignIn: true,
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         'Guide Me uses your location to walk you to each stop on your excursion.',
@@ -44,6 +45,8 @@ const config: ExpoConfig = {
     'expo-web-browser',
     'expo-localization',
     'expo-audio',
+    'expo-secure-store',
+    'expo-apple-authentication',
     [
       'expo-splash-screen',
       {

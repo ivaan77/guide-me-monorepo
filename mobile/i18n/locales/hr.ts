@@ -24,17 +24,37 @@ export const hr: Translations = {
     emptyTitle: 'Još nemaš favorite',
     emptyBody:
       'Gradovi koje spremiš pojavit će se ovdje kako bi mogao planirati sljedeće putovanje.',
+    signInRequiredTitle: 'Prijavi se kako bi spremio favorite',
+    signInRequiredBody:
+      'Za spremanje gradova, izleta i mjesta potreban je račun, kako bismo ih sinkronizirali na više uređaja.',
+    sections: {
+      cities: 'Gradovi',
+      excursions: 'Izleti',
+      places: 'Mjesta',
+    },
   },
   profile: {
     guestName: 'Gost putnik',
     signInPrompt:
       'Prijavi se kako bi spremio gradove i ture sinkronizirao na više uređaja.',
+    signIn: 'Prijava',
+    signOut: 'Odjava',
     appearance: 'Izgled',
     language: 'Jezik',
     themeSystem: 'Sustav',
     themeLight: 'Svijetlo',
     themeDark: 'Tamno',
     languageSystem: 'Sustav',
+  },
+  auth: {
+    titleA: 'Odavde',
+    titleB: 'donde.',
+    subtitle:
+      'Prijavi se kako bi spremio favorite i sinkronizirao ih na više uređaja, ili nastavi kao gost.',
+    continueWithGoogle: 'Nastavi s Googleom',
+    continueWithApple: 'Nastavi s Appleom',
+    skip: 'Nastavi bez prijave',
+    signInFailedTitle: 'Prijava nije uspjela',
   },
   city: {
     notFound: 'Taj grad nismo uspjeli pronaći.',

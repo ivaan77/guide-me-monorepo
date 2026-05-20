@@ -1,7 +1,31 @@
 import { defaultConfig } from '@tamagui/config/v4'
-import { createTamagui, createFont } from 'tamagui'
+import { createTamagui, createFont, createTokens } from 'tamagui'
 import { palette } from './constants/Colors'
 
+// Tamagui v4's default config does not register a `color` token group — its
+// themes set CSS variables directly. Tamagui's "is this a valid color?"
+// validator (the one that warns "$X is not a valid color or brush") looks
+// at the `color` token group by NAME, so the token keys here must match
+// the `$tokenName` references in components verbatim. The values below are
+// the light-mode defaults; the dark theme overrides them with dark values
+// via the `darkOverrides` block below.
+const colorTokens = {
+  onBrand: '#FFFFFF',
+  chromeOverlay: 'rgba(0, 0, 0, 0.45)',
+  onMedia: '#FFFFFF',
+  onMediaMuted: 'rgba(255,255,255,0.78)',
+}
+
+const tokens = createTokens({
+  ...defaultConfig.tokens,
+  color: colorTokens,
+})
+
+// Additional GuideMe-specific theme tokens. Tamagui's standard light/dark
+// themes provide background/color/borderColor/etc.; we add semantic tokens
+// the app uses for branded UI. The custom color tokens (`onBrand`, etc.)
+// reference entries in `colorTokens` above so Tamagui resolves them as
+// real `$tokenName` color refs at runtime.
 const lightOverrides = {
   background: palette.neutral50,
   backgroundHover: palette.neutral100,
@@ -21,6 +45,11 @@ const lightOverrides = {
   accent: palette.amber,
   surface: palette.neutral100,
   surfaceMuted: palette.neutral200,
+  // White on light-mode primary (#2A5BD7) passes AA contrast.
+  onBrand: '#FFFFFF',
+  chromeOverlay: 'rgba(0, 0, 0, 0.45)',
+  onMedia: '#FFFFFF',
+  onMediaMuted: 'rgba(255,255,255,0.78)',
 }
 
 const darkOverrides = {
@@ -42,6 +71,11 @@ const darkOverrides = {
   accent: palette.amber,
   surface: palette.darkSurface,
   surfaceMuted: palette.darkSurface2,
+  // Navy on dark-mode primary (#4A8BF5) — white would fail AA.
+  onBrand: palette.navy,
+  chromeOverlay: 'rgba(0, 0, 0, 0.55)',
+  onMedia: '#FFFFFF',
+  onMediaMuted: 'rgba(255,255,255,0.78)',
 }
 
 // GuideMe display font — Bricolage Grotesque. Used for headings/UI emphasis.
@@ -90,6 +124,7 @@ const monoFont = createFont({
 
 export const config = createTamagui({
   ...defaultConfig,
+  tokens,
   fonts: {
     ...defaultConfig.fonts,
     body: bodyFont,

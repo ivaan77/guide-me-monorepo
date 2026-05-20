@@ -11,6 +11,12 @@ export declare const AdminPath: {
         getPlace: (slug: string) => string;
     };
 };
+export declare const MePath: {
+    me: string;
+    favorites: string;
+    favoriteByRef: string;
+    deleteFavorite: (type: string, id: string) => string;
+};
 export declare const PublicPath: {
     Directions: {
         walk: string;

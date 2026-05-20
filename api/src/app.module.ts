@@ -10,6 +10,7 @@ import { AdminDiscoverModule } from './admin/discover/admin-discover.module';
 import { CacheModule } from './cache/cache.module';
 import { DirectionsModule } from './directions/directions.module';
 import { DiscoverModule } from './discover/discover.module';
+import { UsersModule } from './users/users.module';
 
 const dbUrl = process.env.MONGODB_URL;
 
@@ -21,6 +22,7 @@ const dbUrl = process.env.MONGODB_URL;
     DirectionsModule,
     DiscoverModule,
     AdminDiscoverModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [

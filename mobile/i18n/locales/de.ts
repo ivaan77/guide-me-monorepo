@@ -24,17 +24,37 @@ export const de: Translations = {
     emptyTitle: 'Noch keine Favoriten',
     emptyBody:
       'Hier erscheinen die Städte, die du speicherst, damit du deine nächste Reise planen kannst.',
+    signInRequiredTitle: 'Melde dich an, um Favoriten zu speichern',
+    signInRequiredBody:
+      'Zum Speichern von Städten, Ausflügen und Orten brauchst du ein Konto, damit wir sie geräteübergreifend synchronisieren können.',
+    sections: {
+      cities: 'Städte',
+      excursions: 'Ausflüge',
+      places: 'Orte',
+    },
   },
   profile: {
     guestName: 'Gast',
     signInPrompt:
       'Melde dich an, um gespeicherte Städte und Routen geräteübergreifend zu synchronisieren.',
+    signIn: 'Anmelden',
+    signOut: 'Abmelden',
     appearance: 'Erscheinungsbild',
     language: 'Sprache',
     themeSystem: 'System',
     themeLight: 'Hell',
     themeDark: 'Dunkel',
     languageSystem: 'System',
+  },
+  auth: {
+    titleA: 'Von hier',
+    titleB: 'nach dort.',
+    subtitle:
+      'Melde dich an, um Favoriten zu speichern und geräteübergreifend zu synchronisieren – oder erkunde als Gast.',
+    continueWithGoogle: 'Mit Google fortfahren',
+    continueWithApple: 'Mit Apple fortfahren',
+    skip: 'Ohne Anmeldung fortfahren',
+    signInFailedTitle: 'Anmeldung fehlgeschlagen',
   },
   city: {
     notFound: 'Diese Stadt konnten wir nicht finden.',

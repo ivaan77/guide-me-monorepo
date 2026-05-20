@@ -18,6 +18,7 @@ import {
 import type { IconProps } from '@tamagui/helpers-icon'
 import type { PublicCategoryItem } from '@guide-me-app/core'
 import { H1, SizableText, XStack, YStack } from 'tamagui'
+import { FavoriteButton } from '../../common/FavoriteButton'
 import { useCity } from '../../hooks/useCity'
 import { EmptyState } from '../discover/EmptyState'
 import { Accordion } from './Accordion'
@@ -109,14 +110,14 @@ export function CityDetailScreen({ id }: Props) {
               fontWeight="700"
               fontSize="$10"
               lineHeight="$10"
-              color="#FFFFFF"
+              color="$onMedia"
             >
               {city.name}
             </H1>
             <SizableText
               size="$4"
               fontFamily="$body"
-              color="rgba(255,255,255,0.78)"
+              color="$onMediaMuted"
               style={{ textTransform: 'uppercase', letterSpacing: 1 }}
             >
               {city.country}
@@ -156,6 +157,14 @@ export function CityDetailScreen({ id }: Props) {
         </YStack>
       </ScrollView>
       <BackButton topInset={insets.top} onPress={goBack} />
+      <YStack
+        position="absolute"
+        t={insets.top + 8}
+        r={H_PADDING}
+        z={10}
+      >
+        <FavoriteButton refToFavorite={{ type: 'city', id: city.id }} />
+      </YStack>
     </YStack>
   )
 }
@@ -210,9 +219,9 @@ function BackButton({
         rounded={20}
         items="center"
         justify="center"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+        bg="$chromeOverlay"
       >
-        <ChevronLeft size={22} color="#FFFFFF" />
+        <ChevronLeft size={22} color="$onMedia" />
       </YStack>
     </Pressable>
   )

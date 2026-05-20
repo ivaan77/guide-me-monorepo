@@ -118,7 +118,7 @@ function StopRow({
             size="$2"
             fontFamily="$body"
             fontWeight="700"
-            color={isCurrent ? '#FFFFFF' : '$colorPress'}
+            color={isCurrent ? '$onBrand' : '$colorPress'}
           >
             {stopIndex + 1}
           </SizableText>

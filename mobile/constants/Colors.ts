@@ -50,6 +50,16 @@ const Colors = {
     text: palette.navy,
     textMuted: palette.neutral600,
     overlay: 'rgba(11, 31, 58, 0.55)',
+    // Foreground for things sitting on a primary/dark surface (e.g. a Primary
+    // button label, icon over the hero image overlay). Always light in both
+    // themes — that's the whole point.
+    onBrand: '#FFFFFF',
+    // Translucent surface for chrome over a hero image (back button, etc.).
+    // Same in both themes since it lives on top of a media background.
+    chromeOverlay: 'rgba(0, 0, 0, 0.45)',
+    // Subtitle text on a hero image overlay.
+    onMedia: '#FFFFFF',
+    onMediaMuted: 'rgba(255,255,255,0.78)',
   },
   dark: {
     background: palette.darkCanvas,
@@ -62,6 +72,10 @@ const Colors = {
     text: '#F5F7FA',
     textMuted: palette.darkInk2,
     overlay: 'rgba(0, 0, 0, 0.6)',
+    onBrand: '#0B1F3A',
+    chromeOverlay: 'rgba(0, 0, 0, 0.55)',
+    onMedia: '#FFFFFF',
+    onMediaMuted: 'rgba(255,255,255,0.78)',
   },
 }
 

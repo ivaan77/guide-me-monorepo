@@ -12,6 +12,14 @@ export const AdminPath = {
     },
 }
 
+export const MePath = {
+    me: '/me',
+    favorites: '/me/favorites',
+    favoriteByRef: '/me/favorites/:type/:id',
+    deleteFavorite: (type: string, id: string): string =>
+        `/me/favorites/${type}/${id}`,
+}
+
 export const PublicPath = {
     Directions: {
         walk: '/public/directions/walk',
