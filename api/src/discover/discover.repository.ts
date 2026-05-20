@@ -41,10 +41,7 @@ export class DiscoverRepository {
   }
 
   findCityBySlug(slug: string): Promise<DiscoverCityDocument | null> {
-    return this.cityModel
-      .findOne({ slug })
-      .lean<DiscoverCityDocument>()
-      .exec();
+    return this.cityModel.findOne({ slug }).lean<DiscoverCityDocument>().exec();
   }
 
   findExcursionSummariesForCity(citySlug: string): Promise<ExcursionSummary[]> {
@@ -65,9 +62,7 @@ export class DiscoverRepository {
       .exec();
   }
 
-  findExcursionBySlug(
-    slug: string,
-  ): Promise<DiscoverExcursionDocument | null> {
+  findExcursionBySlug(slug: string): Promise<DiscoverExcursionDocument | null> {
     return this.excursionModel
       .findOne({ slug })
       .lean<DiscoverExcursionDocument>()
@@ -92,7 +87,9 @@ export class DiscoverRepository {
   }
 
   insertCity(input: Partial<DiscoverCity>): Promise<DiscoverCityDocument> {
-    return this.cityModel.create(input) as unknown as Promise<DiscoverCityDocument>;
+    return this.cityModel.create(
+      input,
+    ) as unknown as Promise<DiscoverCityDocument>;
   }
 
   insertExcursion(
@@ -103,9 +100,7 @@ export class DiscoverRepository {
     ) as unknown as Promise<DiscoverExcursionDocument>;
   }
 
-  insertPlace(
-    input: Partial<DiscoverPlace>,
-  ): Promise<DiscoverPlaceDocument> {
+  insertPlace(input: Partial<DiscoverPlace>): Promise<DiscoverPlaceDocument> {
     return this.placeModel.create(
       input,
     ) as unknown as Promise<DiscoverPlaceDocument>;

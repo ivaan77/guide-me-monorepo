@@ -34,9 +34,6 @@ export function parseAcceptLanguage(header: string | undefined): Locale {
 
 // Resolve a localized string to the requested locale, falling back to English
 // if the target locale isn't populated for that field.
-export function pickLocalized(
-  field: LocalizedString,
-  locale: Locale,
-): string {
+export function pickLocalized(field: LocalizedString, locale: Locale): string {
   return field[locale] ?? field.en;
 }

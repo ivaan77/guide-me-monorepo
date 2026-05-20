@@ -13,7 +13,11 @@ export class DiscoverPlace {
   @Prop({ required: true, index: true })
   citySlug: string;
 
-  @Prop({ required: true, enum: ['restaurant', 'bar', 'shopping'], index: true })
+  @Prop({
+    required: true,
+    enum: ['restaurant', 'bar', 'shopping'],
+    index: true,
+  })
   category: 'restaurant' | 'bar' | 'shopping';
 
   @Prop({ type: LocalizedStringSubSchema, required: true })
