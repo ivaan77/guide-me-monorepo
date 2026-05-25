@@ -44,15 +44,12 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        // Gradient + centered mark are baked into splash.png so resizeMode
-        // 'cover' fills the device edge-to-edge with the artwork.
-        // backgroundColor is the gradient's top color and shows on any
-        // letterbox gap from odd aspect ratios.
-        image: './assets/images/splash.png',
-        resizeMode: 'cover',
+        image: './assets/images/splash-icon.png',
+        imageWidth: 200,
         backgroundColor: '#0B1F3A',
+        resizeMode: 'contain',
         dark: {
-          image: './assets/images/splash.png',
+          image: './assets/images/splash-icon.png',
           backgroundColor: '#0B1F3A',
         },
       },

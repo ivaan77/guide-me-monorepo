@@ -4,7 +4,8 @@
   "description": "",
   "main": "build/index.js",
   "scripts": {
-    "build": "tsc --build"
+    "build": "tsc --build",
+    "postinstall": "tsc --build"
   },
   "keywords": [],
   "author": "",
