@@ -3132,6 +3132,7 @@ __metadata:
     "@expo/metro-runtime": "npm:~55.0.11"
     "@guide-me-app/core": "npm:*"
     "@react-native-async-storage/async-storage": "npm:2.2.0"
+    "@react-native-community/netinfo": "npm:^12.0.1"
     "@react-navigation/native": "npm:^7.1.6"
     "@tamagui/babel-plugin": "npm:^1.126.13"
     "@tamagui/cli": "npm:^1.126.13"
@@ -5101,6 +5102,16 @@ __metadata:
   peerDependencies:
     react-native: ^0.0.0-0 || >=0.60 <1.0
   checksum: 10/5a6b7ac8bd7a9e537a53a3f2301530c284fd885a45ce4a4e0014859bc0f7c89bee5c4b5a6b3740b8d83751561159b237474d18f32fad75ea7d56d4ddb2180d91
+  languageName: node
+  linkType: hard
+
+"@react-native-community/netinfo@npm:^12.0.1":
+  version: 12.0.1
+  resolution: "@react-native-community/netinfo@npm:12.0.1"
+  peerDependencies:
+    react: "*"
+    react-native: ">=0.59"
+  checksum: 10/4eb5ee009bca74c601c65370ad95ea6f42357bb822bed15e404b1720d891ce43098432cc724dbb8a9e0d9e5f48ba70e2280732e484ba1b5f5434d4d8bacc671b
   languageName: node
   linkType: hard
 

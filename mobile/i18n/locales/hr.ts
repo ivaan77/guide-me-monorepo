@@ -7,6 +7,7 @@ export const hr: Translations = {
     done: 'Gotovo',
     skip: 'Preskoči',
     somethingWentWrong: 'Nešto je pošlo po zlu',
+    offline: 'Nema internetske veze',
   },
   tabs: {
     discover: 'Otkrij',

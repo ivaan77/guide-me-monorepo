@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: core
+            command: yarn workspace @guide-me-app/core build
+          - project: api
+            command: yarn workspace @guide-me-app/api build
+          - project: admin
+            command: yarn workspace @guide-me-app/admin exec tsc --noEmit
+          - project: web
+            command: yarn workspace @guide-me-app/web exec tsc --noEmit
+          - project: mobile
+            command: yarn workspace @guide-me-app/mobile exec tsc --noEmit
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Restore yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .yarn/cache
+            .yarn/install-state.gz
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+
+      - name: Install
+        run: yarn install --immutable
+
+      # Most workspaces need @guide-me-app/core's built output for type checking.
+      - name: Build core (prereq)
+        if: matrix.project != 'core'
+        run: yarn workspace @guide-me-app/core build
+
+      - name: Typecheck ${{ matrix.project }}
+        run: ${{ matrix.command }}

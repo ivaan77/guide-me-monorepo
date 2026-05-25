@@ -95,34 +95,36 @@ export function CityDetailScreen({ id }: Props) {
               height: heroHeight * 0.55,
             }}
           />
-          <XStack
+          <YStack
             position="absolute"
             l={0}
             r={0}
             b={0}
             px={H_PADDING}
             pb="$5"
-            items="baseline"
-            gap="$3"
+            gap="$1"
           >
             <H1
-              fontFamily="$body"
-              fontWeight="700"
-              fontSize="$10"
-              lineHeight="$10"
+              fontFamily="$heading"
+              fontWeight="800"
+              fontSize={44}
+              lineHeight={48}
               color="$onMedia"
+              numberOfLines={2}
+              style={{ letterSpacing: -1 }}
             >
               {city.name}
             </H1>
             <SizableText
-              size="$4"
+              size="$3"
               fontFamily="$body"
               color="$onMediaMuted"
               style={{ textTransform: 'uppercase', letterSpacing: 1 }}
+              numberOfLines={1}
             >
               {city.country}
             </SizableText>
-          </XStack>
+          </YStack>
         </YStack>
         {city.editorPick && (
           <YStack px={H_PADDING} mt={-14} z={5}>

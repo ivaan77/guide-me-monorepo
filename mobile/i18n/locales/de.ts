@@ -7,6 +7,7 @@ export const de: Translations = {
     done: 'Fertig',
     skip: 'Überspringen',
     somethingWentWrong: 'Etwas ist schiefgelaufen',
+    offline: 'Keine Internetverbindung',
   },
   tabs: {
     discover: 'Entdecken',

@@ -5,6 +5,7 @@ export const en = {
     done: 'Done',
     skip: 'Skip',
     somethingWentWrong: 'Something went wrong',
+    offline: 'No internet connection',
   },
   tabs: {
     discover: 'Discover',

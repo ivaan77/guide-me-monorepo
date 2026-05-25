@@ -7,6 +7,7 @@ import { config } from '../tamagui.config'
 import { AuthCacheBridge } from './AuthCacheBridge'
 import { CurrentToast } from './CurrentToast'
 import { LanguageProvider } from './LanguageContext'
+import { NetworkProvider } from './NetworkContext'
 import { ThemeProvider, useAppTheme } from './ThemeContext'
 
 const queryClient = new QueryClient()
@@ -16,11 +17,13 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
 export function AppProvider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <LanguageProvider>
-        <ThemeProvider>
-          <TamaguiInner {...rest}>{children}</TamaguiInner>
-        </ThemeProvider>
-      </LanguageProvider>
+      <NetworkProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <TamaguiInner {...rest}>{children}</TamaguiInner>
+          </ThemeProvider>
+        </LanguageProvider>
+      </NetworkProvider>
     </ClerkProvider>
   )
 }
