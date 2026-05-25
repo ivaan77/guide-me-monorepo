@@ -17,7 +17,7 @@ import {
 } from '@tamagui/lucide-icons'
 import type { IconProps } from '@tamagui/helpers-icon'
 import type { PublicCategoryItem } from '@guide-me-app/core'
-import { H1, SizableText, XStack, YStack } from 'tamagui'
+import { H1, SizableText, YStack } from 'tamagui'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { useCity } from '../../hooks/useCity'
 import { EmptyState } from '../discover/EmptyState'

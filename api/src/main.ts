@@ -22,7 +22,10 @@ async function bootstrap() {
     origin:
       !corsOriginsEnv || corsOriginsEnv === '*'
         ? true
-        : corsOriginsEnv.split(',').map((s) => s.trim()).filter(Boolean),
+        : corsOriginsEnv
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
     credentials: true,
   });
 
