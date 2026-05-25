@@ -23,6 +23,7 @@ import { useAuth } from '@clerk/clerk-expo'
 import { AppProvider } from '../providers/AppProvider'
 import { useAppTheme } from '../providers/ThemeContext'
 import { readAuthChoice } from '../providers/AuthChoice'
+import { OfflineBanner } from '../common/OfflineBanner'
 
 export { ErrorBoundary } from 'expo-router'
 
@@ -126,6 +127,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <OfflineBanner />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: c.background },

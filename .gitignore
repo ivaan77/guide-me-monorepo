@@ -2,3 +2,41 @@
 node_modules/
 .next
 dist
+build
+
+# Env files — never commit secrets. Existing tracked .env files stay tracked
+# until the user rotates and removes them (see deployment notes); these
+# patterns prevent any new ones from sneaking in.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env.local
+
+# Expo
+.expo/
+.expo-shared/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TS build artifacts
+*.tsbuildinfo
+
+# Yarn 4 (Berry) — these are local caches, never committed
+.yarn/cache
+.yarn/install-state.gz
+.yarn/build-state.yml
+.pnp.*
+
+# IDE
+.vscode/
+*.swp

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
 import { ChevronLeft } from '@tamagui/lucide-icons'
 import type { PoiCategory } from '@guide-me-app/core'
-import { H1, Paragraph, SizableText, XStack, YStack } from 'tamagui'
+import { H1, Paragraph, SizableText, YStack } from 'tamagui'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { usePlace } from '../../hooks/usePlace'
 import { EmptyState } from '../discover/EmptyState'
@@ -83,34 +83,36 @@ export function PlaceDetailScreen({ id }: Props) {
               height: heroHeight * 0.55,
             }}
           />
-          <XStack
+          <YStack
             position="absolute"
             l={0}
             r={0}
             b={0}
             px={H_PADDING}
             pb="$5"
-            items="baseline"
-            gap="$3"
+            gap="$1"
           >
             <H1
-              fontFamily="$body"
-              fontWeight="700"
-              fontSize="$10"
-              lineHeight="$10"
+              fontFamily="$heading"
+              fontWeight="800"
+              fontSize={44}
+              lineHeight={48}
               color="$onMedia"
+              numberOfLines={2}
+              style={{ letterSpacing: -1 }}
             >
               {place.name}
             </H1>
             <SizableText
-              size="$4"
+              size="$3"
               fontFamily="$body"
               color="$onMediaMuted"
               style={{ textTransform: 'uppercase', letterSpacing: 1 }}
+              numberOfLines={1}
             >
               {categoryLabel(place.category)}
             </SizableText>
-          </XStack>
+          </YStack>
         </YStack>
 
         <YStack px={H_PADDING} pt="$5" gap="$3">

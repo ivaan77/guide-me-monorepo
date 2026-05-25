@@ -1,0 +1,68 @@
+name: EAS Preview Build
+
+# Manual trigger — produces an internal-distribution dev-client style build
+# for either iOS, Android, or both. Use this for QA / install on a teammate's
+# device before shipping to TestFlight or Play.
+#
+# Required repo secrets:
+#   EXPO_TOKEN — generate from https://expo.dev/accounts/<you>/settings/access-tokens
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'all'
+        type: choice
+        options: [ios, android, all]
+      message:
+        description: 'Build description (shown in EAS dashboard)'
+        required: false
+        default: 'Preview build'
+
+jobs:
+  build:
+    name: Build (${{ github.event.inputs.platform }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install eas-cli
+        run: npm i -g eas-cli
+
+      - name: Restore yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .yarn/cache
+            .yarn/install-state.gz
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+
+      - name: Install
+        run: yarn install --immutable
+
+      - name: Build core
+        run: yarn workspace @guide-me-app/core build
+
+      - name: EAS Build (preview, no wait)
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build \
+            --platform ${{ github.event.inputs.platform }} \
+            --profile preview \
+            --non-interactive \
+            --no-wait \
+            --message "${{ github.event.inputs.message }}"
