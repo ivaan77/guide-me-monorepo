@@ -11,7 +11,7 @@ function resolveApiUrl(): string {
   if (fromEnv) return fromEnv
 
   const hostUri =
-    Constants.expoConfig?.hostUri ?? Constants.expoGoConfig?.hostUri
+    Constants.expoConfig?.hostUri ?? Constants.expoGoConfig?.debuggerHost
   const host = typeof hostUri === 'string' ? hostUri.split(':')[0] : null
 
   if (host && host !== 'localhost' && host !== '127.0.0.1') {
