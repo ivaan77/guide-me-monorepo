@@ -1,0 +1,1 @@
+export { CityDetailScreen } from './CityDetailScreen'

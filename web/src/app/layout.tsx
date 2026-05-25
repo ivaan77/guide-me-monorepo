@@ -1,34 +1,20 @@
-import { Header } from '@/components/Header'
-import { LoadingProvider } from '@/components/Loading/LoadingContext'
-import { Flex } from '@chakra-ui/react'
-import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import { ReactNode } from 'react'
-import { Providers } from './providers'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
-
 export const metadata: Metadata = {
-    title: 'GuideMe! admin app',
-    description: 'App for managing GuideMe! mobile app data',
+  title: 'GuideMe — audio-guided city tours',
+  description:
+    'Discover cities through curated walking tours, hand-picked restaurants, bars, and shops — narrated, mapped, and ready when you are.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-    return (
-        <html lang="en">
-            <body className={inter.className} suppressHydrationWarning>
-                <LoadingProvider>
-                    <Providers>
-                        <Flex flex={1} flexDirection="column">
-                            <Header />
-                            <section style={{ margin: '2rem' }}>{children}</section>
-                        </Flex>
-                    </Providers>
-                    <Analytics/>
-                </LoadingProvider>
-            </body>
-        </html>
-    )
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body className="min-h-screen">{children}</body>
+    </html>
+  )
 }

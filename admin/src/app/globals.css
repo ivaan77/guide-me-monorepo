@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* GuideMe design system v0.1 — mapped onto shadcn-style token names so all
+   existing admin components/pages pick up the new palette automatically. */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0b1f3a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0b1f3a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0b1f3a;
+  --color-primary: #2a5bd7;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f4f6fa;
+  --color-secondary-foreground: #0b1f3a;
+  --color-muted: #f4f6fa;
+  --color-muted-foreground: #475a77;
+  --color-accent: #eaf2fe;
+  --color-accent-foreground: #2a5bd7;
+  --color-destructive: #e5484d;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #d9e1ed;
+  --color-input: #d9e1ed;
+  --color-ring: #2a5bd7;
+  --color-brand-navy: #0b1f3a;
+  --color-brand-amber: #ffb23f;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body: Geist, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&display=swap');
+
+* {
+  border-color: var(--color-border);
+}
+
+html,
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}

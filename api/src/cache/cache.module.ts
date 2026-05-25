@@ -10,7 +10,9 @@ import { CacheRefresherService } from './cache-refresher/cache-refresher.service
     {
       provide: 'CACHE_MANAGER',
       useFactory: async () => {
-        return createCache({ ttl: 3600 });
+        // cache-manager v6 expects TTL in milliseconds. Default to 1 hour;
+        // callers can override per-set via CacheService.setCache(key, val, ttlMs).
+        return createCache({ ttl: 60 * 60 * 1000 });
       },
     },
     CacheService,
