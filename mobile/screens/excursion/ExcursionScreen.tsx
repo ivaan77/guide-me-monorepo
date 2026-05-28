@@ -578,7 +578,9 @@ function NavigatingPanel({
             fontFamily="$body"
             fontWeight="600"
           >
-            {t('common.skip')}
+            {index + 1 === total
+              ? t('excursion.arrived.finish')
+              : t('common.skip')}
           </SizableText>
         </YStack>
       </Pressable>
