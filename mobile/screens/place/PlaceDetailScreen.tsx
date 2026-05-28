@@ -31,7 +31,7 @@ export function PlaceDetailScreen({ id }: Props) {
 
   const goBack = () => {
     if (router.canGoBack()) router.back()
-    else router.replace('/')
+    else router.replace('/(tabs)')
   }
 
   if (isPending) {

@@ -64,7 +64,7 @@ export function ExcursionScreen({ id }: Props) {
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()
-    else router.replace('/')
+    else router.replace('/(tabs)')
   }, [router])
 
   if (isPending) {
