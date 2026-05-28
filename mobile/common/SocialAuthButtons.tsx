@@ -79,8 +79,12 @@ export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
 
   const onSkipPress = useCallback(async () => {
     setPending('skip')
-    await writeAuthChoice('skipped')
-    onSkip?.()
+    try {
+      await writeAuthChoice('skipped')
+      onSkip?.()
+    } finally {
+      setPending(null)
+    }
   }, [onSkip])
 
   return (
