@@ -17,6 +17,14 @@ import {
 import { Pause, Play, Square } from '@tamagui/lucide-icons'
 import { H3, Paragraph, SizableText, XStack, YStack, useTheme } from 'tamagui'
 import Svg, { Circle as SvgCircle } from 'react-native-svg'
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated'
 import { BottomSheet } from '../../common/BottomSheet'
 import type { PublicExcursionStop as ExcursionStop } from '@guide-me-app/core'
 
@@ -288,8 +296,9 @@ function CircleButton({
   )
 }
 
-// 40dp play/pause button with a thin progress arc around it. The arc starts
-// at the 12 o'clock position and sweeps clockwise as `progress` goes 0 → 1.
+// 40dp play/pause button with a sync-style ring around it. A thin dashed
+// track rotates clockwise while audio is playing; a thicker solid arc on
+// top fills clockwise from 12 o'clock as `progress` goes 0 → 1.
 function PlayButtonWithRing({
   progress,
   playing,
@@ -300,46 +309,85 @@ function PlayButtonWithRing({
   onPress: () => void
 }) {
   const theme = useTheme()
-  const trackColor = theme.borderColor.val
+  // Use the muted text color for the dashed track — borderColor is too
+  // subtle to read against the sheet's surface, especially in light mode.
+  const trackColor = theme.colorPress.val
   const progressColor = theme.primary.val
 
-  // Outer ring sits 4dp away from the 40dp button so the whole control is
-  // 48dp wide. Stroke is drawn on the path centerline, so the visible ring
-  // sits between radius - stroke/2 and radius + stroke/2.
   const SIZE = 48
-  const STROKE = 3
-  const RADIUS = (SIZE - STROKE) / 2
+  const PROGRESS_STROKE = 3
+  const TRACK_STROKE = 1
+  const RADIUS = (SIZE - PROGRESS_STROKE) / 2
   const CIRC = 2 * Math.PI * RADIUS
   const offset = CIRC * (1 - progress)
+
+  // Rotate the dashed track clockwise while audio plays. Pauses when
+  // playing flips false so the dashes settle in place.
+  const rotation = useSharedValue(0)
+  useEffect(() => {
+    if (playing) {
+      rotation.value = 0
+      rotation.value = withRepeat(
+        withTiming(360, { duration: 8000, easing: Easing.linear }),
+        -1,
+        false,
+      )
+    } else {
+      cancelAnimation(rotation)
+    }
+    return () => cancelAnimation(rotation)
+  }, [playing, rotation])
+
+  const trackAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }))
+
+  // Ring is hidden until the user has actually started playback. Stop
+  // resets progress to 0 and hides the ring again.
+  const hasStarted = progress > 0
 
   return (
     <Pressable onPress={onPress} hitSlop={6}>
       <YStack width={SIZE} height={SIZE} items="center" justify="center">
-        <Svg
-          width={SIZE}
-          height={SIZE}
-          style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}
-        >
-          <SvgCircle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
-            stroke={trackColor}
-            strokeWidth={STROKE}
-            fill="none"
-          />
-          <SvgCircle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
-            stroke={progressColor}
-            strokeWidth={STROKE}
-            fill="none"
-            strokeDasharray={CIRC}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-          />
-        </Svg>
+        {hasStarted && (
+          <Animated.View
+            style={[
+              { position: 'absolute', width: SIZE, height: SIZE },
+              trackAnimatedStyle,
+            ]}
+          >
+            <Svg width={SIZE} height={SIZE}>
+              <SvgCircle
+                cx={SIZE / 2}
+                cy={SIZE / 2}
+                r={RADIUS}
+                stroke={trackColor}
+                strokeWidth={TRACK_STROKE}
+                strokeDasharray="3 4"
+                fill="none"
+              />
+            </Svg>
+          </Animated.View>
+        )}
+        {hasStarted && (
+          <Svg
+            width={SIZE}
+            height={SIZE}
+            style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}
+          >
+            <SvgCircle
+              cx={SIZE / 2}
+              cy={SIZE / 2}
+              r={RADIUS}
+              stroke={progressColor}
+              strokeWidth={PROGRESS_STROKE}
+              fill="none"
+              strokeDasharray={CIRC}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+            />
+          </Svg>
+        )}
         <YStack
           width={40}
           height={40}
