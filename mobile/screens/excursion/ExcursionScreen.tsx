@@ -541,7 +541,7 @@ function NavigatingPanel({
         items="center"
         justify="center"
       >
-        <Navigation size={20} color="$onBrand" />
+        <Navigation size={20} color="$colorOnBrand" />
       </YStack>
       <YStack flex={1} gap="$0.5">
         <SizableText
@@ -709,10 +709,10 @@ function ActionButton({
         py="$3.5"
         px="$4"
       >
-        <Icon size={18} color="$onBrand" />
+        <Icon size={18} color="$colorOnBrand" />
         <SizableText
           size="$4"
-          color="$onBrand"
+          color="$colorOnBrand"
           fontFamily="$body"
           fontWeight="700"
         >

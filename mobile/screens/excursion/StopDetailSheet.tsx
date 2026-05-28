@@ -282,7 +282,7 @@ function CircleButton({
         justify="center"
         opacity={disabled ? 0.4 : 1}
       >
-        <Icon size={16} color={primary ? '$onBrand' : '$color'} />
+        <Icon size={16} color={primary ? '$colorOnBrand' : '$color'} />
       </YStack>
     </Pressable>
   )
@@ -349,9 +349,9 @@ function PlayButtonWithRing({
           justify="center"
         >
           {playing ? (
-            <Pause size={16} color="$onBrand" />
+            <Pause size={16} color="$colorOnBrand" />
           ) : (
-            <Play size={16} color="$onBrand" />
+            <Play size={16} color="$colorOnBrand" />
           )}
         </YStack>
       </YStack>

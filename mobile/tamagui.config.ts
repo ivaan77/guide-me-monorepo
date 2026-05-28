@@ -10,7 +10,7 @@ import { palette } from './constants/Colors'
 // the light-mode defaults; the dark theme overrides them with dark values
 // via the `darkOverrides` block below.
 const colorTokens = {
-  onBrand: '#FFFFFF',
+  colorOnBrand: '#FFFFFF',
   chromeOverlay: 'rgba(0, 0, 0, 0.45)',
   onMedia: '#FFFFFF',
   onMediaMuted: 'rgba(255,255,255,0.78)',
@@ -48,7 +48,7 @@ const lightOverrides = {
   surface: palette.neutral100,
   surfaceMuted: palette.neutral200,
   // White on light-mode primary (#2A5BD7) passes AA contrast.
-  onBrand: '#FFFFFF',
+  colorOnBrand: '#FFFFFF',
   chromeOverlay: 'rgba(0, 0, 0, 0.45)',
   onMedia: '#FFFFFF',
   onMediaMuted: 'rgba(255,255,255,0.78)',
@@ -75,7 +75,7 @@ const darkOverrides = {
   surface: palette.darkSurface,
   surfaceMuted: palette.darkSurface2,
   // Navy on dark-mode primary (#4A8BF5) — white would fail AA.
-  onBrand: palette.navy,
+  colorOnBrand: palette.navy,
   chromeOverlay: 'rgba(0, 0, 0, 0.55)',
   onMedia: '#FFFFFF',
   onMediaMuted: 'rgba(255,255,255,0.78)',

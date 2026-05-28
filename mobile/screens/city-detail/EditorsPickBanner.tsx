@@ -31,7 +31,7 @@ export function EditorsPickBanner({ pick }: Props) {
         items="center"
         justify="center"
       >
-        <Star size={18} color="$onBrand" fill="$onBrand" />
+        <Star size={18} color="$colorOnBrand" fill="$colorOnBrand" />
       </YStack>
       <YStack flex={1} gap="$1">
         <SizableText
