@@ -29,6 +29,7 @@ import { Switch } from '@/components/ui/switch'
 import { AudioInput } from '@/components/forms/audio-input'
 import { ImageListInput } from '@/components/forms/image-list-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
+import { MapCoordsPicker } from '@/components/forms/map-coords-picker'
 import { SingleImageInput } from '@/components/forms/single-image-input'
 import { Plus, Trash2 } from 'lucide-react'
 
@@ -270,6 +271,18 @@ export function ExcursionForm(props: Props) {
                     />
                   </div>
                 </div>
+                <MapCoordsPicker
+                  latitude={form.watch(`stops.${idx}.coords.latitude`) ?? 0}
+                  longitude={form.watch(`stops.${idx}.coords.longitude`) ?? 0}
+                  onChange={({ latitude, longitude }) => {
+                    form.setValue(`stops.${idx}.coords.latitude`, latitude, {
+                      shouldDirty: true,
+                    })
+                    form.setValue(`stops.${idx}.coords.longitude`, longitude, {
+                      shouldDirty: true,
+                    })
+                  }}
+                />
                 <SingleImageInput
                   control={form.control}
                   name={`stops.${idx}.image`}
@@ -402,6 +415,18 @@ export function ExcursionForm(props: Props) {
                     />
                   </div>
                 </div>
+                <MapCoordsPicker
+                  latitude={form.watch(`pois.${idx}.coords.latitude`) ?? 0}
+                  longitude={form.watch(`pois.${idx}.coords.longitude`) ?? 0}
+                  onChange={({ latitude, longitude }) => {
+                    form.setValue(`pois.${idx}.coords.latitude`, latitude, {
+                      shouldDirty: true,
+                    })
+                    form.setValue(`pois.${idx}.coords.longitude`, longitude, {
+                      shouldDirty: true,
+                    })
+                  }}
+                />
                 <SingleImageInput
                   control={form.control}
                   name={`pois.${idx}.image`}
