@@ -15,7 +15,8 @@ import {
   useAudioPlayerStatus,
 } from 'expo-audio'
 import { Pause, Play, Square } from '@tamagui/lucide-icons'
-import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
+import { H3, Paragraph, SizableText, XStack, YStack, useTheme } from 'tamagui'
+import Svg, { Circle as SvgCircle } from 'react-native-svg'
 import { BottomSheet } from '../../common/BottomSheet'
 import type { PublicExcursionStop as ExcursionStop } from '@guide-me-app/core'
 
@@ -61,6 +62,10 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
   const player = useAudioPlayer(stop.audioUrl ?? null)
   const status: AudioStatus | null = useAudioPlayerStatus(player)
   const isPlaying = status?.playing ?? false
+  const progress =
+    status && status.duration > 0
+      ? Math.min(1, Math.max(0, status.currentTime / status.duration))
+      : 0
 
   // Pause when the sheet unmounts (excursion screen navigates away or closes
   // the sheet). expo-audio also auto-pauses on unmount via useAudioPlayer's
@@ -77,6 +82,12 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
 
   const handlePlay = () => {
     if (!stop.audioUrl) return
+    // If the audio finished, expo-audio leaves currentTime at duration and
+    // play() is a no-op. Seek back to the start so a tap on Play after
+    // completion restarts the track.
+    if (status?.didJustFinish || (status && status.duration > 0 && status.currentTime >= status.duration)) {
+      player.seekTo(0)
+    }
     player.play()
   }
   const handlePause = () => {
@@ -150,6 +161,7 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
           <AudioControls
             hasAudio={!!stop.audioUrl}
             isPlaying={isPlaying}
+            progress={progress}
             onPlay={handlePlay}
             onPause={handlePause}
             onStop={handleStop}
@@ -166,12 +178,14 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
 function AudioControls({
   hasAudio,
   isPlaying,
+  progress,
   onPlay,
   onPause,
   onStop,
 }: {
   hasAudio: boolean
   isPlaying: boolean
+  progress: number
   onPlay: () => void
   onPause: () => void
   onStop: () => void
@@ -232,11 +246,11 @@ function AudioControls({
             : t('excursion.stopSheet.audioPrompt')}
         </SizableText>
       </YStack>
-      <XStack gap="$2">
+      <XStack gap="$2" items="center">
         {isPlaying ? (
-          <CircleButton icon={Pause} onPress={onPause} />
+          <PlayButtonWithRing progress={progress} onPress={onPause} playing />
         ) : (
-          <CircleButton icon={Play} onPress={onPlay} primary />
+          <PlayButtonWithRing progress={progress} onPress={onPlay} />
         )}
         <CircleButton icon={Square} onPress={onStop} disabled={!isPlaying} />
       </XStack>
@@ -269,6 +283,77 @@ function CircleButton({
         opacity={disabled ? 0.4 : 1}
       >
         <Icon size={16} color={primary ? '$onBrand' : '$color'} />
+      </YStack>
+    </Pressable>
+  )
+}
+
+// 40dp play/pause button with a thin progress arc around it. The arc starts
+// at the 12 o'clock position and sweeps clockwise as `progress` goes 0 → 1.
+function PlayButtonWithRing({
+  progress,
+  playing,
+  onPress,
+}: {
+  progress: number
+  playing?: boolean
+  onPress: () => void
+}) {
+  const theme = useTheme()
+  const trackColor = theme.borderColor.val
+  const progressColor = theme.primary.val
+
+  // Outer ring sits 4dp away from the 40dp button so the whole control is
+  // 48dp wide. Stroke is drawn on the path centerline, so the visible ring
+  // sits between radius - stroke/2 and radius + stroke/2.
+  const SIZE = 48
+  const STROKE = 3
+  const RADIUS = (SIZE - STROKE) / 2
+  const CIRC = 2 * Math.PI * RADIUS
+  const offset = CIRC * (1 - progress)
+
+  return (
+    <Pressable onPress={onPress} hitSlop={6}>
+      <YStack width={SIZE} height={SIZE} items="center" justify="center">
+        <Svg
+          width={SIZE}
+          height={SIZE}
+          style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}
+        >
+          <SvgCircle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            stroke={trackColor}
+            strokeWidth={STROKE}
+            fill="none"
+          />
+          <SvgCircle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            stroke={progressColor}
+            strokeWidth={STROKE}
+            fill="none"
+            strokeDasharray={CIRC}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+          />
+        </Svg>
+        <YStack
+          width={40}
+          height={40}
+          rounded={20}
+          bg="$primary"
+          items="center"
+          justify="center"
+        >
+          {playing ? (
+            <Pause size={16} color="$onBrand" />
+          ) : (
+            <Play size={16} color="$onBrand" />
+          )}
+        </YStack>
       </YStack>
     </Pressable>
   )
