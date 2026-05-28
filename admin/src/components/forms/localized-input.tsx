@@ -48,29 +48,36 @@ export function LocalizedInput<T extends FieldValues>({
             <Controller
               control={control}
               name={`${name}.${l.value}` as FieldPath<T>}
-              render={({ field }) =>
-                multiline ? (
-                  <Textarea
-                    {...field}
-                    value={(field.value as string | undefined) ?? ''}
-                    placeholder={
-                      l.value === 'en'
-                        ? placeholder
-                        : `${placeholder ?? ''} (optional, falls back to English)`
-                    }
-                  />
-                ) : (
-                  <Input
-                    {...field}
-                    value={(field.value as string | undefined) ?? ''}
-                    placeholder={
-                      l.value === 'en'
-                        ? placeholder
-                        : `${placeholder ?? ''} (optional)`
-                    }
-                  />
-                )
-              }
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-1">
+                  {multiline ? (
+                    <Textarea
+                      {...field}
+                      value={(field.value as string | undefined) ?? ''}
+                      placeholder={
+                        l.value === 'en'
+                          ? placeholder
+                          : `${placeholder ?? ''} (optional, falls back to English)`
+                      }
+                    />
+                  ) : (
+                    <Input
+                      {...field}
+                      value={(field.value as string | undefined) ?? ''}
+                      placeholder={
+                        l.value === 'en'
+                          ? placeholder
+                          : `${placeholder ?? ''} (optional)`
+                      }
+                    />
+                  )}
+                  {fieldState.error?.message && (
+                    <p className="text-xs text-[var(--color-destructive)]">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )}
             />
           </TabsContent>
         ))}

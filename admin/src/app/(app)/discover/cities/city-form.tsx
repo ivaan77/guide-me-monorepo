@@ -27,18 +27,42 @@ const localizedSchema = z.object({
   hr: z.string().optional(),
 })
 
-const editorPickSchema = z
+const editorPickPartialSchema = z
   .object({
-    headline: localizedSchema,
-    tagline: localizedSchema,
+    headline: z
+      .object({
+        en: z.string().optional(),
+        de: z.string().optional(),
+        hr: z.string().optional(),
+      })
+      .optional(),
+    tagline: z
+      .object({
+        en: z.string().optional(),
+        de: z.string().optional(),
+        hr: z.string().optional(),
+      })
+      .optional(),
   })
   .optional()
+  .refine(
+    (val) => {
+      if (!val) return true
+      const hasHeadline = !!val.headline?.en?.trim()
+      const hasTagline = !!val.tagline?.en?.trim()
+      return hasHeadline === hasTagline
+    },
+    {
+      message: 'Fill both headline and tagline, or leave both empty',
+      path: ['headline', 'en'],
+    },
+  )
 
 const baseSchema = {
   image: z.string().url('Must be a valid URL'),
   name: localizedSchema,
   country: localizedSchema,
-  editorPick: editorPickSchema,
+  editorPick: editorPickPartialSchema,
   isEnabled: z.boolean(),
 }
 
@@ -85,7 +109,7 @@ export function CityForm(props: Props) {
 
   const onSubmit = (raw: CreateValues) => {
     startTransition(async () => {
-      const cleaned = stripEmpties(raw)
+      const cleaned = normalizePayload(raw)
       const res = isEdit
         ? await updateCityAction(props.initialValues!.slug, cleaned as AdminUpdateCityRequest)
         : await createCityAction(cleaned as AdminCreateCityRequest)
@@ -180,24 +204,31 @@ export function CityForm(props: Props) {
   )
 }
 
-// Strips empty-string values from LocalizedString sub-objects and the optional
-// editorPick to keep payloads clean. The api validates strictly.
-function stripEmpties<T>(value: T): T {
-  if (Array.isArray(value)) return value.map(stripEmpties) as unknown as T
+// Drops blank optional fields before submit. editorPick requires both
+// headline.en and tagline.en on the api, so we drop the whole block unless
+// both are present.
+function normalizePayload(raw: CreateValues): CreateValues {
+  const out: Record<string, unknown> = { ...raw }
+  const ep = raw.editorPick as
+    | { headline?: { en?: string }; tagline?: { en?: string } }
+    | undefined
+  const headlineEn = ep?.headline?.en?.trim()
+  const taglineEn = ep?.tagline?.en?.trim()
+  if (!headlineEn || !taglineEn) {
+    delete out.editorPick
+  } else {
+    out.editorPick = stripEmptyStrings(raw.editorPick)
+  }
+  return out as CreateValues
+}
+
+function stripEmptyStrings<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(stripEmptyStrings) as unknown as T
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
       if (v === '' || v === undefined) continue
-      const cleaned = stripEmpties(v)
-      // editorPick: drop entirely if both headline.en and tagline.en are blank
-      out[k] = cleaned
-    }
-    if (
-      'headline' in out === false &&
-      'tagline' in out === false &&
-      Object.keys(out).length === 0
-    ) {
-      return undefined as unknown as T
+      out[k] = stripEmptyStrings(v)
     }
     return out as T
   }
