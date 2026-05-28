@@ -10,7 +10,7 @@ import { palette } from './constants/Colors'
 // the light-mode defaults; the dark theme overrides them with dark values
 // via the `darkOverrides` block below.
 const colorTokens = {
-  onBrand: '#FFFFFF',
+  colorOnBrand: '#FFFFFF',
   chromeOverlay: 'rgba(0, 0, 0, 0.45)',
   onMedia: '#FFFFFF',
   onMediaMuted: 'rgba(255,255,255,0.78)',
@@ -32,8 +32,10 @@ const lightOverrides = {
   backgroundPress: palette.neutral200,
   backgroundFocus: palette.neutral100,
   color: palette.navy,
-  colorHover: palette.primary,
-  colorPress: palette.primary,
+  // colorPress is used across the app as the muted/secondary text color,
+  // not as a press feedback color. Map it to the `textMuted` palette entry.
+  colorHover: palette.neutral600,
+  colorPress: palette.neutral600,
   colorFocus: palette.navy,
   borderColor: palette.neutral300,
   borderColorHover: palette.neutral400,
@@ -46,7 +48,7 @@ const lightOverrides = {
   surface: palette.neutral100,
   surfaceMuted: palette.neutral200,
   // White on light-mode primary (#2A5BD7) passes AA contrast.
-  onBrand: '#FFFFFF',
+  colorOnBrand: '#FFFFFF',
   chromeOverlay: 'rgba(0, 0, 0, 0.45)',
   onMedia: '#FFFFFF',
   onMediaMuted: 'rgba(255,255,255,0.78)',
@@ -58,8 +60,9 @@ const darkOverrides = {
   backgroundPress: palette.darkSurface2,
   backgroundFocus: palette.darkSurface,
   color: '#F5F7FA',
-  colorHover: palette.bright,
-  colorPress: palette.bright,
+  // Same convention as light: muted text, not press feedback.
+  colorHover: palette.darkInk2,
+  colorPress: palette.darkInk2,
   colorFocus: '#F5F7FA',
   borderColor: palette.darkBorder,
   borderColorHover: palette.darkBorderStrong,
@@ -72,7 +75,7 @@ const darkOverrides = {
   surface: palette.darkSurface,
   surfaceMuted: palette.darkSurface2,
   // Navy on dark-mode primary (#4A8BF5) — white would fail AA.
-  onBrand: palette.navy,
+  colorOnBrand: palette.navy,
   chromeOverlay: 'rgba(0, 0, 0, 0.55)',
   onMedia: '#FFFFFF',
   onMediaMuted: 'rgba(255,255,255,0.78)',

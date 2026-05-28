@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, Image } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, type Href } from 'expo-router'
 import { useAuth, useUser } from '@clerk/clerk-expo'
 import { Button, H2, Paragraph, SizableText, YStack } from 'tamagui'
@@ -9,6 +10,7 @@ import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { clearAuthChoice, writeAuthChoice } from '../../providers/AuthChoice'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { useTabBarPadding } from '../../hooks/useTabBarPadding'
 
 export function ProfileScreen() {
   const { t } = useTranslation()
@@ -16,6 +18,8 @@ export function ProfileScreen() {
   const { isSignedIn, signOut } = useAuth()
   const { user } = useUser()
   const { c } = useAppTheme()
+  const insets = useSafeAreaInsets()
+  const bottomPadding = useTabBarPadding()
 
   const displayName =
     user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
@@ -36,10 +40,10 @@ export function ProfileScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: c.background }}
-      contentContainerStyle={{ paddingBottom: 64, backgroundColor: c.background }}
+      contentContainerStyle={{ paddingBottom: bottomPadding, backgroundColor: c.background }}
       showsVerticalScrollIndicator={false}
     >
-      <YStack flex={1} bg="$background" px="$5" pt="$6" gap="$6">
+      <YStack flex={1} bg="$background" px="$5" pt={insets.top + 24} gap="$6">
         <YStack items="center" gap="$3">
           {user?.imageUrl ? (
             <Image

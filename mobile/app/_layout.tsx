@@ -138,6 +138,7 @@ function RootLayoutNav() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="sso-callback" options={{ headerShown: false }} />
         <Stack.Screen name="city/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="excursion/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="place/[id]" options={{ headerShown: false }} />

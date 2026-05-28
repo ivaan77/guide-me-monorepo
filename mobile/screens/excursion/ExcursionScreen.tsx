@@ -64,7 +64,7 @@ export function ExcursionScreen({ id }: Props) {
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()
-    else router.replace('/')
+    else router.replace('/(tabs)')
   }, [router])
 
   if (isPending) {
@@ -541,7 +541,7 @@ function NavigatingPanel({
         items="center"
         justify="center"
       >
-        <Navigation size={20} color="$onBrand" />
+        <Navigation size={20} color="$colorOnBrand" />
       </YStack>
       <YStack flex={1} gap="$0.5">
         <SizableText
@@ -578,7 +578,9 @@ function NavigatingPanel({
             fontFamily="$body"
             fontWeight="600"
           >
-            {t('common.skip')}
+            {index + 1 === total
+              ? t('excursion.arrived.finish')
+              : t('common.skip')}
           </SizableText>
         </YStack>
       </Pressable>
@@ -707,10 +709,10 @@ function ActionButton({
         py="$3.5"
         px="$4"
       >
-        <Icon size={18} color="$onBrand" />
+        <Icon size={18} color="$colorOnBrand" />
         <SizableText
           size="$4"
-          color="$onBrand"
+          color="$colorOnBrand"
           fontFamily="$body"
           fontWeight="700"
         >

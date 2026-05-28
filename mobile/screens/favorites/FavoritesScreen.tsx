@@ -18,17 +18,18 @@ import { useMe } from '../../hooks/useMe'
 import { useCity } from '../../hooks/useCity'
 import { useExcursion } from '../../hooks/useExcursion'
 import { usePlace } from '../../hooks/usePlace'
+import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { EmptyState } from '../discover/EmptyState'
 
 const LOGIN_HREF = '/login' as Href
 const H_PADDING = 20
-const TAB_BAR_HEIGHT = 49
 
 export function FavoritesScreen() {
   const { t } = useTranslation()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { isSignedIn } = useAuth()
-  const { data: me, isPending } = useMe()
+  const { data: me, isPending, isError, refetch } = useMe()
 
   const onSignIn = useCallback(async () => {
     await clearAuthChoice()
@@ -36,7 +37,7 @@ export function FavoritesScreen() {
   }, [router])
 
   const sections = useMemo(() => groupByType(me?.favorites ?? []), [me?.favorites])
-  const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 16
+  const bottomPadding = useTabBarPadding()
 
   // Single outer Tamagui-themed canvas so theme changes propagate through
   // tokens, not raw RN style props. We then put a ScrollView inside ONLY
@@ -45,7 +46,7 @@ export function FavoritesScreen() {
 
   if (!isSignedIn) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top}>
+      <YStack flex={1} bg="$background" pt={insets.top + 8}>
         <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
           <Heart size={48} color="$primary" />
           <H2 color="$color" fontFamily="$body" fontWeight="600" fontSize="$8">
@@ -77,12 +78,32 @@ export function FavoritesScreen() {
   }
 
   if (isPending) {
-    return <YStack flex={1} bg="$background" pt={insets.top} />
+    return (
+      <YStack flex={1} bg="$background" pt={insets.top + 8}>
+        <YStack
+          gap="$2"
+          px={H_PADDING}
+          pt="$3"
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <RowSkeleton key={i} />
+          ))}
+        </YStack>
+      </YStack>
+    )
+  }
+
+  if (isError) {
+    return (
+      <YStack flex={1} bg="$background" pt={insets.top + 8}>
+        <EmptyState variant="error" onRetry={() => refetch()} />
+      </YStack>
+    )
   }
 
   if (!me || me.favorites.length === 0) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top}>
+      <YStack flex={1} bg="$background" pt={insets.top + 8}>
         <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
           <Heart size={48} color="$primary" />
           <H2 color="$color" fontFamily="$body" fontWeight="600" fontSize="$8">

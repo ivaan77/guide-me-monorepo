@@ -43,7 +43,7 @@ export function CityDetailScreen({ id }: Props) {
 
   const goBack = () => {
     if (router.canGoBack()) router.back()
-    else router.replace('/')
+    else router.replace('/(tabs)')
   }
 
   if (isPending) {

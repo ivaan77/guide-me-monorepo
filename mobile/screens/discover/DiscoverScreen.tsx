@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XStack, YStack, useTheme } from 'tamagui'
 import { useCities } from '../../hooks/useCities'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useTabBarPadding } from '../../hooks/useTabBarPadding'
 import { CityCard } from './CityCard'
 import { CityCardSkeleton } from './CityCardSkeleton'
 import { EmptyState } from './EmptyState'
@@ -13,7 +14,6 @@ const GUTTER = 16
 const H_PADDING = 20
 const SEARCH_DEBOUNCE_MS = 250
 const SKELETON_COUNT = 8
-const TAB_BAR_HEIGHT = 49
 
 export function DiscoverScreen() {
   const { width } = useWindowDimensions()
@@ -24,7 +24,7 @@ export function DiscoverScreen() {
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS)
 
-  const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 16
+  const bottomPadding = useTabBarPadding()
 
   const { data, isPending, isError, error, refetch } = useCities()
 
@@ -51,7 +51,7 @@ export function DiscoverScreen() {
   )
 
   return (
-    <YStack flex={1} bg="$background" pt={insets.top}>
+    <YStack flex={1} bg="$background" pt={insets.top + 8}>
       {renderBody()}
     </YStack>
   )

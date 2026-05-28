@@ -32,13 +32,14 @@ export function SingleImageInput<T extends FieldValues>({
     <Controller
       control={control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <ImageSlot
           value={(field.value as string | undefined) ?? ''}
           onChange={field.onChange}
           label={label}
           required={required}
           folder={folder}
+          error={fieldState.error?.message}
         />
       )}
     />
@@ -51,12 +52,14 @@ function ImageSlot({
   label,
   required,
   folder,
+  error,
 }: {
   value: string
   onChange: (url: string | undefined) => void
   label: string
   required?: boolean
   folder: string
+  error?: string
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -143,6 +146,9 @@ function ImageSlot({
         onChange={handleSelect}
         className="hidden"
       />
+      {error && (
+        <p className="text-xs text-[var(--color-destructive)]">{error}</p>
+      )}
     </div>
   )
 }
