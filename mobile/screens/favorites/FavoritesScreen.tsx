@@ -18,6 +18,7 @@ import { useMe } from '../../hooks/useMe'
 import { useCity } from '../../hooks/useCity'
 import { useExcursion } from '../../hooks/useExcursion'
 import { usePlace } from '../../hooks/usePlace'
+import { EmptyState } from '../discover/EmptyState'
 
 const LOGIN_HREF = '/login' as Href
 const H_PADDING = 20
@@ -28,7 +29,7 @@ export function FavoritesScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { isSignedIn } = useAuth()
-  const { data: me, isPending } = useMe()
+  const { data: me, isPending, isError, refetch } = useMe()
 
   const onSignIn = useCallback(async () => {
     await clearAuthChoice()
@@ -77,7 +78,27 @@ export function FavoritesScreen() {
   }
 
   if (isPending) {
-    return <YStack flex={1} bg="$background" pt={insets.top} />
+    return (
+      <YStack flex={1} bg="$background" pt={insets.top}>
+        <YStack
+          gap="$2"
+          px={H_PADDING}
+          pt="$3"
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <RowSkeleton key={i} />
+          ))}
+        </YStack>
+      </YStack>
+    )
+  }
+
+  if (isError) {
+    return (
+      <YStack flex={1} bg="$background" pt={insets.top}>
+        <EmptyState variant="error" onRetry={() => refetch()} />
+      </YStack>
+    )
   }
 
   if (!me || me.favorites.length === 0) {
