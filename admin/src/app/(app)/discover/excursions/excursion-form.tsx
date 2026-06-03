@@ -272,6 +272,9 @@ export function ExcursionForm(props: Props) {
                         valueAsNumber: true,
                       })}
                     />
+                    <p className="text-[10px] text-[var(--color-muted-foreground)]">
+                      Default 30 m. Leave empty to use it.
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

@@ -13,6 +13,7 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
 import { ChevronLeft, Info, MapPin, Navigation, Play } from '@tamagui/lucide-icons'
 import type {
   PublicExcursionStop,
+  PublicInterestingFact,
   PublicLatLng,
   PublicPoi,
 } from '@guide-me-app/core'
@@ -36,6 +37,11 @@ import {
 import { EmptyState } from '../discover/EmptyState'
 import { POI_CATEGORY_META } from './poiCategory'
 import { ExcursionSkeleton } from './ExcursionSkeleton'
+import {
+  FloatingFactBanner,
+  useFactBannerSchedule,
+} from './FloatingFactBanner'
+import { InterestingFactSheet } from './InterestingFactSheet'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
@@ -44,6 +50,7 @@ import { StopsList } from './StopsList'
 type ExcursionStop = PublicExcursionStop
 type LatLng = PublicLatLng
 type Poi = PublicPoi
+type Fact = PublicInterestingFact
 
 type Props = {
   id: string
@@ -51,7 +58,10 @@ type Props = {
 
 type Phase = 'preview' | 'navigating' | 'arrived' | 'complete'
 
-const ARRIVAL_RADIUS_METERS = 30
+// Default arrival geofence. Per-stop overrides come from `stop.triggerRadius`
+// (set in admin). Increase for stops in dense urban areas where GPS jitters;
+// tighten for precise photo-ops.
+const DEFAULT_ARRIVAL_RADIUS_METERS = 30
 const H_PADDING = 20
 
 export function ExcursionScreen({ id }: Props) {
@@ -94,6 +104,7 @@ export function ExcursionScreen({ id }: Props) {
       id={id}
       stops={excursion.stops}
       pois={excursion.pois ?? []}
+      facts={excursion.interestingFacts ?? []}
       title={excursion.name}
       topInset={insets.top}
       bottomInset={insets.bottom}
@@ -108,6 +119,7 @@ function ExcursionBody({
   id,
   stops,
   pois,
+  facts,
   title,
   topInset,
   bottomInset,
@@ -118,6 +130,7 @@ function ExcursionBody({
   id: string
   stops: ExcursionStop[]
   pois: Poi[]
+  facts: Fact[]
   title: string
   topInset: number
   bottomInset: number
@@ -136,6 +149,7 @@ function ExcursionBody({
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
+  const [selectedFact, setSelectedFact] = useState<Fact | null>(null)
 
   const { height: screenHeight } = useWindowDimensions()
   const mapHeight = screenHeight * 0.5
@@ -181,7 +195,8 @@ function ExcursionBody({
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || !currentStop) return
     const dist = haversineMeters(userLocation, currentStop.coords)
-    if (dist <= ARRIVAL_RADIUS_METERS) {
+    const radius = currentStop.triggerRadius ?? DEFAULT_ARRIVAL_RADIUS_METERS
+    if (dist <= radius) {
       setPhase('arrived')
     }
   }, [phase, userLocation, currentStop])
@@ -282,6 +297,18 @@ function ExcursionBody({
     return { remainingMeters, remainingSeconds }
   }, [phase, userLocation, routeMeta, routePolyline])
 
+  // Drives the floating fact banner. The hook decides per-leg whether the
+  // walk is long enough, picks facts from a persistent unseen-pool, and
+  // schedules their appearance based on how far through the leg the user is.
+  const factBanner = useFactBannerSchedule({
+    allFacts: facts,
+    phase,
+    currentIndex,
+    legDistanceMeters: routeMeta?.distanceMeters ?? null,
+    legDurationSeconds: routeMeta?.durationSeconds ?? null,
+    remainingMeters: liveRouteInfo?.remainingMeters ?? null,
+  })
+
   return (
     <YStack flex={1} bg="$background">
       <MapView
@@ -369,6 +396,16 @@ function ExcursionBody({
         <FavoriteButton refToFavorite={{ type: 'excursion', id }} />
       </YStack>
 
+      <FloatingFactBanner
+        fact={factBanner.fact}
+        factIndexInLeg={factBanner.factIndexInLeg}
+        factsForThisLeg={factBanner.factsForThisLeg}
+        visible={factBanner.visible}
+        topOffset={topInset + 60}
+        onPressFact={setSelectedFact}
+        onDismiss={factBanner.dismiss}
+      />
+
       <StopsList
         stops={stops}
         pois={pois}
@@ -403,6 +440,12 @@ function ExcursionBody({
         visible={!!selectedPoi}
         poi={selectedPoi}
         onClose={() => setSelectedPoi(null)}
+      />
+
+      <InterestingFactSheet
+        visible={!!selectedFact}
+        fact={selectedFact}
+        onClose={() => setSelectedFact(null)}
       />
     </YStack>
   )

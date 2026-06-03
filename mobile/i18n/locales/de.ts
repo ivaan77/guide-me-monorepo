@@ -59,21 +59,34 @@ export const de: Translations = {
   },
   city: {
     notFound: 'Diese Stadt konnten wir nicht finden.',
+    audioTitle: 'Über diese Stadt',
+    audioPrompt: 'Zum Abspielen tippen',
+    audioPlaying: 'Wird abgespielt…',
     sections: {
       excursions: 'Ausflüge',
       restaurants: 'Restaurants',
+      cafes: 'Cafés',
       bars: 'Bars',
       shopping: 'Shopping',
+      events: 'Veranstaltungen',
+      parks: 'Parks',
     },
+    subCategoryOther: 'Sonstige',
   },
   place: {
     notFound: 'Diesen Ort konnten wir nicht finden.',
     fallbackDescription:
       'Ein handverlesener Ort, der einen Umweg wert ist. Details und Öffnungszeiten folgen bald — vorerst genügen Adresse und Kategorie für den Anfang.',
+    audioTitle: 'Audioguide',
+    audioPrompt: 'Zum Abspielen tippen',
+    audioPlaying: 'Wird abgespielt…',
     category: {
       restaurant: 'Restaurant',
+      cafe: 'Café',
       bar: 'Bar',
       shopping: 'Shopping',
+      event: 'Veranstaltung',
+      park: 'Park',
     },
   },
   excursion: {
@@ -107,6 +120,12 @@ export const de: Translations = {
       audioPrompt: 'Zum Abspielen tippen',
       audioPlaying: 'Wird abgespielt…',
       audioMissing: 'Für diese Station gibt es noch kein Audio.',
+    },
+    facts: {
+      sectionTitle: 'Wissenswertes',
+      sheetPrompt: 'Zum Abspielen tippen',
+      playing: 'Wird abgespielt…',
+      bannerLabel: 'Wusstest du schon?',
     },
   },
 }

@@ -59,21 +59,34 @@ export const hr: Translations = {
   },
   city: {
     notFound: 'Taj grad nismo uspjeli pronaći.',
+    audioTitle: 'O ovom gradu',
+    audioPrompt: 'Dodirni za reprodukciju',
+    audioPlaying: 'Reproducira se…',
     sections: {
       excursions: 'Izleti',
       restaurants: 'Restorani',
+      cafes: 'Kafići',
       bars: 'Barovi',
       shopping: 'Kupovina',
+      events: 'Događanja',
+      parks: 'Parkovi',
     },
+    subCategoryOther: 'Ostalo',
   },
   place: {
     notFound: 'To mjesto nismo uspjeli pronaći.',
     fallbackDescription:
       'Pažljivo odabrano mjesto vrijedno obilaska. Detalji i radno vrijeme uskoro stižu — za sada su dovoljni adresa i kategorija.',
+    audioTitle: 'Audio vodič',
+    audioPrompt: 'Dodirni za reprodukciju',
+    audioPlaying: 'Reproducira se…',
     category: {
       restaurant: 'Restoran',
+      cafe: 'Kafić',
       bar: 'Bar',
       shopping: 'Kupovina',
+      event: 'Događanje',
+      park: 'Park',
     },
   },
   excursion: {
@@ -107,6 +120,12 @@ export const hr: Translations = {
       audioPrompt: 'Dodirni za reprodukciju',
       audioPlaying: 'Reproducira se…',
       audioMissing: 'Za ovu postaju još nema audio zapisa.',
+    },
+    facts: {
+      sectionTitle: 'Zanimljivosti',
+      sheetPrompt: 'Dodirni za reprodukciju',
+      playing: 'Reproducira se…',
+      bannerLabel: 'Jeste li znali?',
     },
   },
 }

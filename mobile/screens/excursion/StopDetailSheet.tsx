@@ -1,30 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Image,
-  Pressable,
   ScrollView,
   type ViewToken,
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
-import {
-  type AudioStatus,
-  useAudioPlayer,
-  useAudioPlayerStatus,
-} from 'expo-audio'
-import { Pause, Play, Square } from '@tamagui/lucide-icons'
-import { H3, Paragraph, SizableText, XStack, YStack, useTheme } from 'tamagui'
-import Svg, { Circle as SvgCircle } from 'react-native-svg'
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated'
+import { H3, Paragraph, XStack, YStack } from 'tamagui'
+import { AudioPlayer } from '../../common/AudioPlayer'
 import { BottomSheet } from '../../common/BottomSheet'
 import type { PublicExcursionStop as ExcursionStop } from '@guide-me-app/core'
 
@@ -60,51 +45,10 @@ export function StopDetailSheet({ visible, stop, onClose }: Props) {
 function StopBody({ stop }: { stop: ExcursionStop }) {
   const { width: screenWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
+  const { t } = useTranslation()
 
   const images = stop.images?.length ? stop.images : [stop.image]
   const [carouselIndex, setCarouselIndex] = useState(0)
-
-  // Real audio playback via expo-audio. Player is created lazily by passing
-  // null until a URL is available, so we don't allocate native resources
-  // when this stop has no audio. The hook handles cleanup on unmount.
-  const player = useAudioPlayer(stop.audioUrl ?? null)
-  const status: AudioStatus | null = useAudioPlayerStatus(player)
-  const isPlaying = status?.playing ?? false
-  const progress =
-    status && status.duration > 0
-      ? Math.min(1, Math.max(0, status.currentTime / status.duration))
-      : 0
-
-  // Pause when the sheet unmounts (excursion screen navigates away or closes
-  // the sheet). expo-audio also auto-pauses on unmount via useAudioPlayer's
-  // own cleanup, but this is belt-and-suspenders.
-  useEffect(() => {
-    return () => {
-      try {
-        player.pause()
-      } catch {
-        // player already released
-      }
-    }
-  }, [player])
-
-  const handlePlay = () => {
-    if (!stop.audioUrl) return
-    // If the audio finished, expo-audio leaves currentTime at duration and
-    // play() is a no-op. Seek back to the start so a tap on Play after
-    // completion restarts the track.
-    if (status?.didJustFinish || (status && status.duration > 0 && status.currentTime >= status.duration)) {
-      player.seekTo(0)
-    }
-    player.play()
-  }
-  const handlePause = () => {
-    player.pause()
-  }
-  const handleStop = () => {
-    player.pause()
-    player.seekTo(0)
-  }
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -166,13 +110,9 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
         showsVerticalScrollIndicator={false}
       >
         <YStack px={H_PADDING} pt="$4" gap="$3">
-          <AudioControls
-            hasAudio={!!stop.audioUrl}
-            isPlaying={isPlaying}
-            progress={progress}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onStop={handleStop}
+          <AudioPlayer
+            audioUrl={stop.audioUrl}
+            title={t('excursion.stopSheet.audioTitle')}
           />
           <Paragraph color="$color" fontFamily="$body" size="$4" lineHeight="$6">
             {stop.description}
@@ -180,229 +120,5 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
         </YStack>
       </ScrollView>
     </>
-  )
-}
-
-function AudioControls({
-  hasAudio,
-  isPlaying,
-  progress,
-  onPlay,
-  onPause,
-  onStop,
-}: {
-  hasAudio: boolean
-  isPlaying: boolean
-  progress: number
-  onPlay: () => void
-  onPause: () => void
-  onStop: () => void
-}) {
-  const { t } = useTranslation()
-  if (!hasAudio) {
-    return (
-      <XStack
-        items="center"
-        bg="$surfaceMuted"
-        rounded="$5"
-        px="$3"
-        py="$3"
-        gap="$3"
-        borderWidth={1}
-        borderColor="$borderColor"
-      >
-        <YStack
-          width={36}
-          height={36}
-          rounded={18}
-          bg="$background"
-          items="center"
-          justify="center"
-        >
-          <Play size={16} color="$colorPress" />
-        </YStack>
-        <YStack flex={1}>
-          <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
-            {t('excursion.stopSheet.audioTitle')}
-          </SizableText>
-          <SizableText size="$2" color="$colorPress" fontFamily="$body">
-            {t('excursion.stopSheet.audioMissing')}
-          </SizableText>
-        </YStack>
-      </XStack>
-    )
-  }
-
-  return (
-    <XStack
-      items="center"
-      bg="$surfaceMuted"
-      rounded="$5"
-      px="$3"
-      py="$3"
-      gap="$3"
-      borderWidth={1}
-      borderColor="$borderColor"
-    >
-      <YStack flex={1} gap="$0.5">
-        <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
-          {t('excursion.stopSheet.audioTitle')}
-        </SizableText>
-        <SizableText size="$2" color="$colorPress" fontFamily="$body">
-          {isPlaying
-            ? t('excursion.stopSheet.audioPlaying')
-            : t('excursion.stopSheet.audioPrompt')}
-        </SizableText>
-      </YStack>
-      <XStack gap="$2" items="center">
-        {isPlaying ? (
-          <PlayButtonWithRing progress={progress} onPress={onPause} playing />
-        ) : (
-          <PlayButtonWithRing progress={progress} onPress={onPlay} />
-        )}
-        <CircleButton icon={Square} onPress={onStop} disabled={!isPlaying} />
-      </XStack>
-    </XStack>
-  )
-}
-
-function CircleButton({
-  icon: Icon,
-  onPress,
-  primary,
-  disabled,
-}: {
-  icon: typeof Play
-  onPress: () => void
-  primary?: boolean
-  disabled?: boolean
-}) {
-  return (
-    <Pressable onPress={onPress} disabled={disabled} hitSlop={6}>
-      <YStack
-        width={40}
-        height={40}
-        rounded={20}
-        bg={primary ? '$primary' : '$background'}
-        borderWidth={primary ? 0 : 1}
-        borderColor="$borderColor"
-        items="center"
-        justify="center"
-        opacity={disabled ? 0.4 : 1}
-      >
-        <Icon size={16} color={primary ? '$colorOnBrand' : '$color'} />
-      </YStack>
-    </Pressable>
-  )
-}
-
-// 40dp play/pause button with a sync-style ring around it. A thin dashed
-// track rotates clockwise while audio is playing; a thicker solid arc on
-// top fills clockwise from 12 o'clock as `progress` goes 0 → 1.
-function PlayButtonWithRing({
-  progress,
-  playing,
-  onPress,
-}: {
-  progress: number
-  playing?: boolean
-  onPress: () => void
-}) {
-  const theme = useTheme()
-  // Use the muted text color for the dashed track — borderColor is too
-  // subtle to read against the sheet's surface, especially in light mode.
-  const trackColor = theme.colorPress.val
-  const progressColor = theme.primary.val
-
-  const SIZE = 48
-  const PROGRESS_STROKE = 3
-  const TRACK_STROKE = 1
-  const RADIUS = (SIZE - PROGRESS_STROKE) / 2
-  const CIRC = 2 * Math.PI * RADIUS
-  const offset = CIRC * (1 - progress)
-
-  // Rotate the dashed track clockwise while audio plays. Pauses when
-  // playing flips false so the dashes settle in place.
-  const rotation = useSharedValue(0)
-  useEffect(() => {
-    if (playing) {
-      rotation.value = 0
-      rotation.value = withRepeat(
-        withTiming(360, { duration: 8000, easing: Easing.linear }),
-        -1,
-        false,
-      )
-    } else {
-      cancelAnimation(rotation)
-    }
-    return () => cancelAnimation(rotation)
-  }, [playing, rotation])
-
-  const trackAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }))
-
-  // Ring is hidden until the user has actually started playback. Stop
-  // resets progress to 0 and hides the ring again.
-  const hasStarted = progress > 0
-
-  return (
-    <Pressable onPress={onPress} hitSlop={6}>
-      <YStack width={SIZE} height={SIZE} items="center" justify="center">
-        {hasStarted && (
-          <Animated.View
-            style={[
-              { position: 'absolute', width: SIZE, height: SIZE },
-              trackAnimatedStyle,
-            ]}
-          >
-            <Svg width={SIZE} height={SIZE}>
-              <SvgCircle
-                cx={SIZE / 2}
-                cy={SIZE / 2}
-                r={RADIUS}
-                stroke={trackColor}
-                strokeWidth={TRACK_STROKE}
-                strokeDasharray="3 4"
-                fill="none"
-              />
-            </Svg>
-          </Animated.View>
-        )}
-        {hasStarted && (
-          <Svg
-            width={SIZE}
-            height={SIZE}
-            style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}
-          >
-            <SvgCircle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={RADIUS}
-              stroke={progressColor}
-              strokeWidth={PROGRESS_STROKE}
-              fill="none"
-              strokeDasharray={CIRC}
-              strokeDashoffset={offset}
-              strokeLinecap="round"
-            />
-          </Svg>
-        )}
-        <YStack
-          width={40}
-          height={40}
-          rounded={20}
-          bg="$primary"
-          items="center"
-          justify="center"
-        >
-          {playing ? (
-            <Pause size={16} color="$colorOnBrand" />
-          ) : (
-            <Play size={16} color="$colorOnBrand" />
-          )}
-        </YStack>
-      </YStack>
-    </Pressable>
   )
 }

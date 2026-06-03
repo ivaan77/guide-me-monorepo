@@ -9,15 +9,19 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
+  CalendarDays,
   ChevronLeft,
+  Coffee,
   Compass,
   ShoppingBag,
+  Trees,
   UtensilsCrossed,
   Wine,
 } from '@tamagui/lucide-icons'
 import type { IconProps } from '@tamagui/helpers-icon'
 import type { PublicCategoryItem } from '@guide-me-app/core'
 import { H1, SizableText, YStack } from 'tamagui'
+import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { useCity } from '../../hooks/useCity'
 import { EmptyState } from '../discover/EmptyState'
@@ -127,8 +131,22 @@ export function CityDetailScreen({ id }: Props) {
           </YStack>
         </YStack>
         {city.editorPick && (
-          <YStack px={H_PADDING} mt={-14} z={5}>
+          <YStack px="$2" mt={-14} z={6}>
             <EditorsPickBanner pick={city.editorPick} />
+          </YStack>
+        )}
+        {city.audioUrl && (
+          <YStack
+            px={H_PADDING}
+            mt={city.editorPick ? '$3' : -14}
+            z={5}
+          >
+            <AudioPlayer
+              audioUrl={city.audioUrl}
+              title={t('city.audioTitle')}
+              promptKey="city.audioPrompt"
+              playingKey="city.audioPlaying"
+            />
           </YStack>
         )}
         <YStack px={H_PADDING} pt="$5" gap="$3">
@@ -145,6 +163,12 @@ export function CityDetailScreen({ id }: Props) {
             hrefFor={(item) => `/place/${item.id}`}
           />
           <CategorySection
+            title={t('city.sections.cafes')}
+            icon={Coffee}
+            items={city.cafes}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
             title={t('city.sections.bars')}
             icon={Wine}
             items={city.bars}
@@ -154,6 +178,18 @@ export function CityDetailScreen({ id }: Props) {
             title={t('city.sections.shopping')}
             icon={ShoppingBag}
             items={city.shopping}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.events')}
+            icon={CalendarDays}
+            items={city.events}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.parks')}
+            icon={Trees}
+            items={city.parks}
             hrefFor={(item) => `/place/${item.id}`}
           />
         </YStack>
@@ -171,6 +207,49 @@ export function CityDetailScreen({ id }: Props) {
   )
 }
 
+// Groups items by `subCategory` when any item in the bucket has one. Items
+// without a sub-category fall into an "Other" trailing group so the labels
+// stay consistent — never showing a stray ungrouped item above a labeled one.
+function groupBySubCategory(
+  items: PublicCategoryItem[],
+  otherLabel: string,
+): Array<{ label: string | null; items: PublicCategoryItem[] }> {
+  const anyHasSub = items.some((i) => i.subCategory && i.subCategory.trim())
+  if (!anyHasSub) {
+    return [{ label: null, items }]
+  }
+
+  // Preserve the api-returned order within each group. We iterate once and
+  // bucket by sub-category label; entries without a sub-category go into
+  // "Other". Group order is determined by first occurrence in the source,
+  // then "Other" is appended at the very end if it has anything.
+  const groupsInOrder: string[] = []
+  const byLabel = new Map<string, PublicCategoryItem[]>()
+  const orphans: PublicCategoryItem[] = []
+
+  for (const item of items) {
+    const label = item.subCategory?.trim()
+    if (!label) {
+      orphans.push(item)
+      continue
+    }
+    if (!byLabel.has(label)) {
+      byLabel.set(label, [])
+      groupsInOrder.push(label)
+    }
+    byLabel.get(label)!.push(item)
+  }
+
+  const groups = groupsInOrder.map((label) => ({
+    label,
+    items: byLabel.get(label)!,
+  }))
+  if (orphans.length > 0) {
+    groups.push({ label: otherLabel, items: orphans })
+  }
+  return groups
+}
+
 function CategorySection({
   title,
   icon,
@@ -182,17 +261,50 @@ function CategorySection({
   items?: PublicCategoryItem[]
   hrefFor?: (item: PublicCategoryItem) => string
 }) {
+  const { t } = useTranslation()
   if (!items || items.length === 0) return null
+  const groups = groupBySubCategory(items, t('city.subCategoryOther'))
+  // Flat list when there's only one group with no label — preserves the
+  // original look for cities that haven't authored sub-categories yet.
+  const isFlat = groups.length === 1 && groups[0].label === null
   return (
     <Accordion title={title} icon={icon} count={items.length}>
-      {items.map((item, idx) => (
-        <CategoryListItem
-          key={item.id}
-          item={item}
-          isLast={idx === items.length - 1}
-          href={hrefFor?.(item)}
-        />
-      ))}
+      {isFlat
+        ? groups[0].items.map((item, idx) => (
+            <CategoryListItem
+              key={item.id}
+              item={item}
+              isLast={idx === groups[0].items.length - 1}
+              href={hrefFor?.(item)}
+            />
+          ))
+        : groups.map((group, gIdx) => (
+            <YStack key={group.label ?? `__group-${gIdx}`}>
+              {group.label && (
+                <YStack px="$4" pt="$3" pb="$1.5">
+                  <SizableText
+                    size="$2"
+                    fontFamily="$body"
+                    fontWeight="600"
+                    color="$colorPress"
+                    style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+                  >
+                    {group.label}
+                  </SizableText>
+                </YStack>
+              )}
+              {group.items.map((item, idx) => (
+                <CategoryListItem
+                  key={item.id}
+                  item={item}
+                  isLast={
+                    idx === group.items.length - 1 && gIdx === groups.length - 1
+                  }
+                  href={hrefFor?.(item)}
+                />
+              ))}
+            </YStack>
+          ))}
     </Accordion>
   )
 }

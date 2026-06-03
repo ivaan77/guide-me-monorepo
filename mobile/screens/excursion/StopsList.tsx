@@ -23,7 +23,13 @@ type StopEntry = { kind: 'stop'; data: ExcursionStop; stopIndex: number }
 type PoiEntry = { kind: 'poi'; data: Poi }
 type Entry = StopEntry | PoiEntry
 
-export function StopsList({ stops, pois, currentIndex, phase, onPoiPress }: Props) {
+export function StopsList({
+  stops,
+  pois,
+  currentIndex,
+  phase,
+  onPoiPress,
+}: Props) {
   const entries = useMemo<Entry[]>(() => {
     const stopEntries: Entry[] = stops.map((stop, stopIndex) => ({
       kind: 'stop',

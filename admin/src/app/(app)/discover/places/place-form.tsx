@@ -278,9 +278,9 @@ export function PlaceForm(props: Props) {
               />
             </div>
           </div>
-          <MapCoordsPicker
-            latitude={form.watch('coords.latitude') ?? 0}
-            longitude={form.watch('coords.longitude') ?? 0}
+          <LocationPickerOrPrompt
+            latitude={form.watch('coords.latitude')}
+            longitude={form.watch('coords.longitude')}
             onChange={({ latitude, longitude }) => {
               form.setValue('coords.latitude', latitude, { shouldDirty: true })
               form.setValue('coords.longitude', longitude, { shouldDirty: true })
@@ -362,6 +362,54 @@ function normalizePayload(raw: CreateValues): CreateValues {
   }
 
   return out as CreateValues
+}
+
+// react-hook-form returns NaN (not undefined) for an empty number input when
+// `valueAsNumber: true` is set, and Leaflet throws on NaN coords. So we only
+// render the map once both fields hold finite numbers; before that, show a
+// neutral button the editor can tap to drop a starter pin.
+function LocationPickerOrPrompt({
+  latitude,
+  longitude,
+  onChange,
+}: {
+  latitude: unknown
+  longitude: unknown
+  onChange: (next: { latitude: number; longitude: number }) => void
+}) {
+  const validLat =
+    typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : null
+  const validLng =
+    typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : null
+
+  if (validLat == null || validLng == null) {
+    return (
+      <div className="rounded-md border border-dashed border-[var(--color-border)] p-4 flex flex-col items-center gap-2 text-center">
+        <p className="text-sm text-[var(--color-muted-foreground)]">
+          No location set yet. Type lat/lng above, or drop a starter pin to
+          fine-tune on the map.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          // Lisbon-ish default. Editor moves the pin afterwards. Pinning at
+          // 0,0 would land in the sea south of Africa — not useful.
+          onClick={() => onChange({ latitude: 38.7223, longitude: -9.1393 })}
+        >
+          Drop starter pin
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <MapCoordsPicker
+      latitude={validLat}
+      longitude={validLng}
+      onChange={onChange}
+    />
+  )
 }
 
 function stripEmpties<T>(value: T): T {
