@@ -23,6 +23,7 @@ export const en = {
     emptyBody: 'Cities you save will show up here so you can plan your next trip.',
     signInRequiredTitle: 'Sign in to save favorites',
     signInRequiredBody: 'Saving cities, excursions, and places needs an account so we can sync them across your devices.',
+    errorBody: 'We couldn’t load your favorites right now.',
     sections: {
       cities: 'Cities',
       excursions: 'Excursions',
@@ -52,21 +53,34 @@ export const en = {
   },
   city: {
     notFound: 'We couldn’t find that city.',
+    audioTitle: 'About this city',
+    audioPrompt: 'Tap play to listen',
+    audioPlaying: 'Playing…',
     sections: {
       excursions: 'Excursions',
       restaurants: 'Restaurants',
+      cafes: 'Cafés',
       bars: 'Bars',
       shopping: 'Shopping',
+      events: 'Events',
+      parks: 'Parks',
     },
+    subCategoryOther: 'Other',
   },
   place: {
     notFound: 'We couldn’t find that place.',
     fallbackDescription:
       'A handpicked spot worth a detour. Detailed notes and opening hours are coming soon — for now, the address and category are all you need to start.',
+    audioTitle: 'Audio guide',
+    audioPrompt: 'Tap play to listen',
+    audioPlaying: 'Playing…',
     category: {
       restaurant: 'Restaurant',
+      cafe: 'Café',
       bar: 'Bar',
       shopping: 'Shopping',
+      event: 'Event',
+      park: 'Park',
     },
   },
   excursion: {
@@ -99,6 +113,12 @@ export const en = {
       audioPrompt: 'Tap play to listen',
       audioPlaying: 'Playing…',
       audioMissing: 'No audio uploaded for this stop yet.',
+    },
+    facts: {
+      sectionTitle: 'Interesting facts',
+      sheetPrompt: 'Tap play to listen',
+      playing: 'Playing…',
+      bannerLabel: 'Did you know?',
     },
   },
 }

@@ -49,7 +49,13 @@ export function FavoritesScreen() {
       <YStack flex={1} bg="$background" pt={insets.top + 8}>
         <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
           <Heart size={48} color="$primary" />
-          <H2 color="$color" fontFamily="$body" fontWeight="600" fontSize="$8">
+          <H2
+            color="$color"
+            fontFamily="$body"
+            fontWeight="600"
+            fontSize="$8"
+            text="center"
+          >
             {t('favorites.signInRequiredTitle')}
           </H2>
           <Paragraph
@@ -57,7 +63,7 @@ export function FavoritesScreen() {
             text="center"
             fontFamily="$body"
             size="$4"
-            max-width={320}
+            style={{ maxWidth: 320 }}
           >
             {t('favorites.signInRequiredBody')}
           </Paragraph>
@@ -96,7 +102,11 @@ export function FavoritesScreen() {
   if (isError) {
     return (
       <YStack flex={1} bg="$background" pt={insets.top + 8}>
-        <EmptyState variant="error" onRetry={() => refetch()} />
+        <EmptyState
+          variant="error"
+          message={t('favorites.errorBody')}
+          onRetry={() => refetch()}
+        />
       </YStack>
     )
   }
@@ -106,7 +116,13 @@ export function FavoritesScreen() {
       <YStack flex={1} bg="$background" pt={insets.top + 8}>
         <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
           <Heart size={48} color="$primary" />
-          <H2 color="$color" fontFamily="$body" fontWeight="600" fontSize="$8">
+          <H2
+            color="$color"
+            fontFamily="$body"
+            fontWeight="600"
+            fontSize="$8"
+            text="center"
+          >
             {t('favorites.emptyTitle')}
           </H2>
           <Paragraph color="$colorPress" text="center" fontFamily="$body" size="$4">

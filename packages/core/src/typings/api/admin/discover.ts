@@ -19,6 +19,10 @@ export type AdminCity = {
     name: LocalizedString
     country: LocalizedString
     editorPick?: AdminEditorPick
+    // City-level audio narration (optional, per locale).
+    audioUrl?: LocalizedAudio
+    // Slugs of Places this city shows in its detail screen. Order is preserved.
+    cityPlaceSlugs?: string[]
     isEnabled: boolean
     createdAt?: string
     updatedAt?: string
@@ -30,6 +34,8 @@ export type AdminCreateCityRequest = {
     name: LocalizedString
     country: LocalizedString
     editorPick?: AdminEditorPick
+    audioUrl?: LocalizedAudio
+    cityPlaceSlugs?: string[]
     isEnabled?: boolean
 }
 
@@ -49,17 +55,23 @@ export type AdminExcursionStop = {
     image: string
     images?: string[]
     audioUrl?: LocalizedAudio
+    // Per-stop arrival radius (meters). Optional; mobile falls back to the
+    // global default when unset.
+    triggerRadius?: number
 }
 
-export type AdminPoi = {
-    slug: string
+// Excursions reference Places by slug rather than embedding their own POI
+// records. Order is per-excursion so the same place can sit in different
+// positions in different excursions.
+export type AdminExcursionPoiRef = {
+    placeSlug: string
     order: number
-    name: LocalizedString
-    category: PoiCategory
-    description: LocalizedString
-    coords: PublicLatLng
-    image: string
-    images?: string[]
+}
+
+export type AdminInterestingFact = {
+    slug: string
+    title: LocalizedString
+    audioUrl: LocalizedAudio
 }
 
 export type AdminExcursion = {
@@ -69,7 +81,8 @@ export type AdminExcursion = {
     meta: LocalizedString
     image: string
     stops: AdminExcursionStop[]
-    pois?: AdminPoi[]
+    pois?: AdminExcursionPoiRef[]
+    interestingFacts?: AdminInterestingFact[]
     isEnabled: boolean
     createdAt?: string
     updatedAt?: string
@@ -82,7 +95,8 @@ export type AdminCreateExcursionRequest = {
     meta: LocalizedString
     image: string
     stops?: AdminExcursionStop[]
-    pois?: AdminPoi[]
+    pois?: AdminExcursionPoiRef[]
+    interestingFacts?: AdminInterestingFact[]
     isEnabled?: boolean
 }
 
@@ -99,6 +113,14 @@ export type AdminPlace = {
     image: string
     description?: LocalizedString
     images?: string[]
+    // Geographic location. Optional only because legacy non-excursion places
+    // were never authored with coords; new entries should always set this.
+    coords?: PublicLatLng
+    // Free-text optional sub-category label (e.g. "Japanese", "Pizza").
+    // Localized so editors can vary the label by locale.
+    subCategory?: LocalizedString
+    // Optional audio narration, per locale.
+    audioUrl?: LocalizedAudio
     isEnabled: boolean
     createdAt?: string
     updatedAt?: string
@@ -113,6 +135,9 @@ export type AdminCreatePlaceRequest = {
     image: string
     description?: LocalizedString
     images?: string[]
+    coords?: PublicLatLng
+    subCategory?: LocalizedString
+    audioUrl?: LocalizedAudio
     isEnabled?: boolean
 }
 
@@ -127,3 +152,49 @@ export type AdminAllExcursionsResponse = { excursions: AdminExcursion[] }
 export type AdminExcursionResponse = { excursion: AdminExcursion }
 export type AdminAllPlacesResponse = { places: AdminPlace[] }
 export type AdminPlaceResponse = { place: AdminPlace }
+
+// --- Stats ---
+
+// Lightweight reference for inactive-entity lists on the stats page.
+// Only the bare minimum to identify and link to the record.
+export type AdminInactiveRef = {
+    slug: string
+    name: string
+    citySlug?: string
+}
+
+// One cumulative-by-date sample point. `date` is an ISO yyyy-mm-dd string
+// (UTC). The api emits one point per day on which any new doc was created,
+// containing running cumulative totals.
+export type AdminStatsTimeseriesPoint = {
+    date: string
+    cities: number
+    excursions: number
+    places: number
+}
+
+export type AdminStats = {
+    counts: {
+        cities: number
+        excursions: number
+        places: number
+        // Per-category place breakdown. Categories with zero docs are still
+        // present (value 0) so the UI can render a stable shape.
+        placesByCategory: Record<PoiCategory, number>
+        // Total stops across all excursions.
+        excursionStops: number
+        // Total interesting facts across all excursions.
+        interestingFacts: number
+        // Total POI references (sum of excursion.pois lengths).
+        poiReferences: number
+    }
+    inactive: {
+        cities: AdminInactiveRef[]
+        excursions: AdminInactiveRef[]
+        places: AdminInactiveRef[]
+    }
+    // Sorted ascending by date. May be empty if no docs have createdAt.
+    timeseries: AdminStatsTimeseriesPoint[]
+}
+
+export type AdminStatsResponse = { stats: AdminStats }

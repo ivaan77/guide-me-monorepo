@@ -2,8 +2,8 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
-  IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -15,7 +15,6 @@ import { LocalizedAudioDto } from './localized-audio.dto';
 import { LocalizedStringDto } from './localized-string.dto';
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-const CATEGORIES = ['restaurant', 'bar', 'shopping'] as const;
 
 class ExcursionStopDto {
   @IsString()
@@ -50,39 +49,35 @@ class ExcursionStopDto {
   @ValidateNested()
   @Type(() => LocalizedAudioDto)
   audioUrl?: LocalizedAudioDto;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  triggerRadius?: number;
 }
 
-class PoiDto {
+class ExcursionPoiRefDto {
   @IsString()
   @Matches(SLUG_REGEX)
-  slug: string;
+  placeSlug: string;
 
   @IsInt()
   @Min(0)
   order: number;
+}
 
-  @ValidateNested()
-  @Type(() => LocalizedStringDto)
-  name: LocalizedStringDto;
-
-  @IsIn(CATEGORIES)
-  category: (typeof CATEGORIES)[number];
-
-  @ValidateNested()
-  @Type(() => LocalizedStringDto)
-  description: LocalizedStringDto;
-
-  @ValidateNested()
-  @Type(() => LatLngDto)
-  coords: LatLngDto;
-
+class InterestingFactDto {
   @IsString()
-  image: string;
+  @Matches(SLUG_REGEX)
+  slug: string;
 
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  images?: string[];
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  title: LocalizedStringDto;
+
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl: LocalizedAudioDto;
 }
 
 export class CreateExcursionDto {
@@ -114,8 +109,14 @@ export class CreateExcursionDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => PoiDto)
-  pois?: PoiDto[];
+  @Type(() => ExcursionPoiRefDto)
+  pois?: ExcursionPoiRefDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InterestingFactDto)
+  interestingFacts?: InterestingFactDto[];
 
   @IsOptional()
   @IsBoolean()
@@ -151,8 +152,14 @@ export class UpdateExcursionDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => PoiDto)
-  pois?: PoiDto[];
+  @Type(() => ExcursionPoiRefDto)
+  pois?: ExcursionPoiRefDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InterestingFactDto)
+  interestingFacts?: InterestingFactDto[];
 
   @IsOptional()
   @IsBoolean()

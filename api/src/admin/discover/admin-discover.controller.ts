@@ -19,6 +19,7 @@ import {
   AdminExcursionResponse,
   AdminPath,
   AdminPlaceResponse,
+  AdminStatsResponse,
   PoiCategory,
 } from '@guide-me-app/core';
 import { AdminTokenGuard } from '../admin-token.guard';
@@ -134,5 +135,12 @@ export class AdminDiscoverController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deletePlace(@Param('slug') slug: string): Promise<void> {
     await this.service.deletePlace(slug);
+  }
+
+  // ---------- Stats ----------
+
+  @Get(AdminPath.Discover.stats)
+  async getStats(): Promise<AdminStatsResponse> {
+    return { stats: await this.service.getStats() };
   }
 }

@@ -29,6 +29,6 @@ import {
   ],
   controllers: [DiscoverController],
   providers: [DiscoverService, DiscoverRepository, DiscoverCacheInterceptor],
-  exports: [DiscoverRepository], // exposed so the seed script can use it
+  exports: [DiscoverRepository], // shared with AdminDiscoverModule
 })
 export class DiscoverModule {}

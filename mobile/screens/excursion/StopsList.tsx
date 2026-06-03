@@ -17,13 +17,24 @@ type Props = {
   currentIndex: number
   phase: 'preview' | 'navigating' | 'arrived' | 'complete'
   onPoiPress: (poi: Poi) => void
+  // Optional: tap a stop row to enlarge its image in a lightbox. Excursion
+  // screen passes this to drive its <ImageLightbox>. List works fine without
+  // it — rows just become non-tappable in that case.
+  onStopPress?: (stop: ExcursionStop) => void
 }
 
 type StopEntry = { kind: 'stop'; data: ExcursionStop; stopIndex: number }
 type PoiEntry = { kind: 'poi'; data: Poi }
 type Entry = StopEntry | PoiEntry
 
-export function StopsList({ stops, pois, currentIndex, phase, onPoiPress }: Props) {
+export function StopsList({
+  stops,
+  pois,
+  currentIndex,
+  phase,
+  onPoiPress,
+  onStopPress,
+}: Props) {
   const entries = useMemo<Entry[]>(() => {
     const stopEntries: Entry[] = stops.map((stop, stopIndex) => ({
       kind: 'stop',
@@ -50,6 +61,9 @@ export function StopsList({ stops, pois, currentIndex, phase, onPoiPress }: Prop
               stop={entry.data}
               stopIndex={entry.stopIndex}
               status={statusFor(entry.stopIndex, currentIndex, phase)}
+              onPress={
+                onStopPress ? () => onStopPress(entry.data) : undefined
+              }
             />
           ) : (
             <PoiRow
@@ -81,16 +95,18 @@ function StopRow({
   stop,
   stopIndex,
   status,
+  onPress,
 }: {
   stop: ExcursionStop
   stopIndex: number
   status: Status
+  onPress?: () => void
 }) {
   const { t } = useTranslation()
   const isVisited = status === 'visited'
   const isCurrent = status === 'current'
 
-  return (
+  const row = (
     <XStack
       items="center"
       gap="$3"
@@ -155,6 +171,9 @@ function StopRow({
       </YStack>
     </XStack>
   )
+
+  if (!onPress) return row
+  return <Pressable onPress={onPress}>{row}</Pressable>
 }
 
 function PoiRow({ poi, onPress }: { poi: Poi; onPress: () => void }) {

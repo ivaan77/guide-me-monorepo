@@ -16,8 +16,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { SingleImageInput } from '@/components/forms/single-image-input'
+import { AudioInput } from '@/components/forms/audio-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
+import { PlacePicker } from '@/components/forms/place-picker'
+import { SingleImageInput } from '@/components/forms/single-image-input'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
 
@@ -25,6 +27,12 @@ const localizedSchema = z.object({
   en: z.string().min(1, 'English is required'),
   de: z.string().optional(),
   hr: z.string().optional(),
+})
+
+const localizedAudioSchema = z.object({
+  en: z.string().url().optional(),
+  de: z.string().url().optional(),
+  hr: z.string().url().optional(),
 })
 
 const editorPickPartialSchema = z
@@ -63,6 +71,8 @@ const baseSchema = {
   name: localizedSchema,
   country: localizedSchema,
   editorPick: editorPickPartialSchema,
+  audioUrl: localizedAudioSchema.optional(),
+  cityPlaceSlugs: z.array(z.string().regex(SLUG_REGEX)).optional(),
   isEnabled: z.boolean(),
 }
 
@@ -91,6 +101,8 @@ export function CityForm(props: Props) {
         name: props.initialValues.name,
         country: props.initialValues.country,
         editorPick: props.initialValues.editorPick,
+        audioUrl: props.initialValues.audioUrl,
+        cityPlaceSlugs: props.initialValues.cityPlaceSlugs ?? [],
         isEnabled: props.initialValues.isEnabled,
       }
     : {
@@ -99,6 +111,8 @@ export function CityForm(props: Props) {
         name: { en: '' },
         country: { en: '' },
         editorPick: undefined,
+        audioUrl: undefined,
+        cityPlaceSlugs: [],
         isEnabled: true,
       }
 
@@ -121,6 +135,11 @@ export function CityForm(props: Props) {
       router.push('/discover/cities')
     })
   }
+
+  // On the create form we don't know the city's own slug yet — the user is
+  // typing it. The picker also needs that slug to fetch places by city.
+  // Solution: only render the picker in edit mode.
+  const citySlug = isEdit ? props.initialValues.slug : ''
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
@@ -173,6 +192,31 @@ export function CityForm(props: Props) {
       </Card>
 
       <Card>
+        <CardContent className="pt-6 flex flex-col gap-3">
+          <AudioInput
+            control={form.control}
+            name="audioUrl"
+            label="City intro audio (optional)"
+            folder={`city/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 flex flex-col gap-3">
+          <PlacePicker
+            citySlug={citySlug}
+            value={form.watch('cityPlaceSlugs') ?? []}
+            onChange={(next) =>
+              form.setValue('cityPlaceSlugs', next, { shouldDirty: true })
+            }
+            label="Places to show in this city"
+            emptyHint="Save the city first, then come back to attach places."
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardContent className="pt-6 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Visible to mobile</p>
@@ -219,6 +263,15 @@ function normalizePayload(raw: CreateValues): CreateValues {
   } else {
     out.editorPick = stripEmptyStrings(raw.editorPick)
   }
+
+  // Drop audioUrl if no locale has a URL.
+  const audio = raw.audioUrl as Record<string, unknown> | undefined
+  if (!audio || Object.values(audio).every((v) => !v)) {
+    delete out.audioUrl
+  } else {
+    out.audioUrl = stripEmptyStrings(raw.audioUrl)
+  }
+
   return out as CreateValues
 }
 

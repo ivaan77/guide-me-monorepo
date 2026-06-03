@@ -1,9 +1,23 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import {
+  LatLngSub,
+  LatLngSubSchema,
+  LocalizedAudioSub,
+  LocalizedAudioSubSchema,
   LocalizedStringSub,
   LocalizedStringSubSchema,
 } from './locale.subdocuments';
+
+export const PLACE_CATEGORIES = [
+  'restaurant',
+  'cafe',
+  'bar',
+  'shopping',
+  'event',
+  'park',
+] as const;
+export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];
 
 @Schema({ collection: 'places', timestamps: true })
 export class DiscoverPlace {
@@ -15,10 +29,10 @@ export class DiscoverPlace {
 
   @Prop({
     required: true,
-    enum: ['restaurant', 'bar', 'shopping'],
+    enum: PLACE_CATEGORIES,
     index: true,
   })
-  category: 'restaurant' | 'bar' | 'shopping';
+  category: PlaceCategory;
 
   @Prop({ type: LocalizedStringSubSchema, required: true })
   name: LocalizedStringSub;
@@ -34,6 +48,19 @@ export class DiscoverPlace {
 
   @Prop([String])
   images?: string[];
+
+  // Geographic location. Optional only because legacy non-excursion places
+  // were authored before this field existed; new docs should always set it.
+  @Prop({ type: LatLngSubSchema })
+  coords?: LatLngSub;
+
+  // Optional free-text sub-category label (localized).
+  @Prop({ type: LocalizedStringSubSchema })
+  subCategory?: LocalizedStringSub;
+
+  // Optional localized audio narration.
+  @Prop({ type: LocalizedAudioSubSchema })
+  audioUrl?: LocalizedAudioSub;
 
   @Prop({ required: true, default: true, index: true })
   isEnabled: boolean;

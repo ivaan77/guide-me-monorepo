@@ -66,7 +66,10 @@ export function DiscoverScreen() {
         <NonScrollableState header={header}>
           <EmptyState
             variant="error"
-            message={error instanceof Error ? error.message : undefined}
+            // Raw error.message can be unfriendly text like "Aborted" when
+            // react-query cancels an in-flight fetch on unmount/navigate.
+            // Surface curated copy unless we have a real human message.
+            message={friendlyErrorMessage(error)}
             onRetry={() => refetch()}
           />
         </NonScrollableState>
@@ -157,4 +160,19 @@ function NonScrollableState({
       </YStack>
     </YStack>
   )
+}
+
+// Returns an error message safe to show to users, or undefined to let the
+// EmptyState fall back to its localized default. Filters out internal /
+// transient errors:
+//   - AbortError (fetch cancelled when react-query refocuses or component
+//     unmounts mid-request) — typically surfaces as message "Aborted".
+//   - Empty strings and "Error" placeholders.
+function friendlyErrorMessage(error: unknown): string | undefined {
+  if (!(error instanceof Error)) return undefined
+  const msg = error.message?.trim()
+  if (!msg) return undefined
+  if (error.name === 'AbortError') return undefined
+  if (/^aborted$/i.test(msg)) return undefined
+  return msg
 }

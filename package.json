@@ -2,9 +2,9 @@
   "name": "@guide-me-app/monorepo",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "yarn@4.5.0",
+  "packageManager": "yarn@4.16.0",
   "scripts": {
-    "eas-build-pre-install": "corepack enable && corepack prepare yarn@4.5.0 --activate",
+    "eas-build-pre-install": "corepack enable && corepack prepare yarn@4.16.0 --activate",
     "build:all": "tsc --build --verbose",
     "core:build": "yarn workspace @guide-me-app/core run build",
     "api:build": "yarn workspace @guide-me-app/api run build",

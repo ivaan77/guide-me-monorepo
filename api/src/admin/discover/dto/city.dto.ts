@@ -1,11 +1,13 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsOptional,
   IsString,
   Matches,
   ValidateNested,
 } from 'class-validator';
+import { LocalizedAudioDto } from './localized-audio.dto';
 import { LocalizedStringDto } from './localized-string.dto';
 
 // Slugs: lowercase letters, numbers, hyphens. No leading/trailing hyphen.
@@ -43,6 +45,17 @@ export class CreateCityDto {
   editorPick?: EditorPickDto;
 
   @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(SLUG_REGEX, { each: true })
+  cityPlaceSlugs?: string[];
+
+  @IsOptional()
   @IsBoolean()
   isEnabled?: boolean;
 }
@@ -66,6 +79,17 @@ export class UpdateCityDto {
   @ValidateNested()
   @Type(() => EditorPickDto)
   editorPick?: EditorPickDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(SLUG_REGEX, { each: true })
+  cityPlaceSlugs?: string[];
 
   @IsOptional()
   @IsBoolean()
