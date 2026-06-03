@@ -166,14 +166,6 @@ export class DiscoverRepository {
 
   // --- Writes ---
 
-  async wipeAll(): Promise<void> {
-    await Promise.all([
-      this.cityModel.deleteMany({}).exec(),
-      this.excursionModel.deleteMany({}).exec(),
-      this.placeModel.deleteMany({}).exec(),
-    ]);
-  }
-
   insertCity(input: Partial<DiscoverCity>): Promise<DiscoverCityDocument> {
     return this.cityModel.create(
       input,
