@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Image,
-  Platform,
   Pressable,
   useWindowDimensions,
 } from 'react-native'
@@ -34,7 +33,9 @@ import {
   remainingMetersAlongPolyline,
   trimPolylineFromUser,
 } from '../../lib/directions'
+import { playArrivalFeedback } from '../../lib/feedback'
 import { EmptyState } from '../discover/EmptyState'
+import { CLEAN_MAP_STYLE } from './cleanMapStyle'
 import { POI_CATEGORY_META } from './poiCategory'
 import { ExcursionSkeleton } from './ExcursionSkeleton'
 import {
@@ -45,6 +46,8 @@ import { InterestingFactSheet } from './InterestingFactSheet'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
+import { ImageLightbox } from '../../common/ImageLightbox'
+import { UserHeadingPin } from './UserHeadingPin'
 
 // Local aliases — the screen used these names heavily.
 type ExcursionStop = PublicExcursionStop
@@ -141,6 +144,9 @@ function ExcursionBody({
   const [phase, setPhase] = useState<Phase>('preview')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userLocation, setUserLocation] = useState<LatLng | null>(null)
+  // Compass heading in degrees (0 = north, clockwise). Null until the first
+  // sample arrives; also null on devices without a magnetometer.
+  const [heading, setHeading] = useState<number | null>(null)
   const [routePolyline, setRoutePolyline] = useState<LatLng[]>([])
   const [routeMeta, setRouteMeta] = useState<{
     distanceMeters: number
@@ -150,6 +156,8 @@ function ExcursionBody({
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
   const [selectedFact, setSelectedFact] = useState<Fact | null>(null)
+  // URL of the stop image currently shown in the lightbox; null when closed.
+  const [lightboxUri, setLightboxUri] = useState<string | null>(null)
 
   const { height: screenHeight } = useWindowDimensions()
   const mapHeight = screenHeight * 0.5
@@ -157,7 +165,8 @@ function ExcursionBody({
   const currentStop = stops[currentIndex]
 
   useEffect(() => {
-    let sub: Location.LocationSubscription | null = null
+    let posSub: Location.LocationSubscription | null = null
+    let headSub: Location.LocationSubscription | null = null
     let cancelled = false
 
     async function start() {
@@ -174,7 +183,7 @@ function ExcursionBody({
         latitude: initial.coords.latitude,
         longitude: initial.coords.longitude,
       })
-      sub = await Location.watchPositionAsync(
+      posSub = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.High, distanceInterval: 5 },
         (loc) => {
           setUserLocation({
@@ -183,12 +192,24 @@ function ExcursionBody({
           })
         },
       )
+      // Compass heading. Prefer trueHeading (calibrated against true north,
+      // matches map orientation); fall back to magHeading when the device
+      // can't compute trueHeading (low accuracy / no GPS lock yet).
+      headSub = await Location.watchHeadingAsync((h) => {
+        if (cancelled) return
+        const next =
+          h.trueHeading != null && h.trueHeading >= 0
+            ? h.trueHeading
+            : h.magHeading
+        setHeading(next)
+      })
     }
 
     start()
     return () => {
       cancelled = true
-      sub?.remove()
+      posSub?.remove()
+      headSub?.remove()
     }
   }, [])
 
@@ -200,6 +221,17 @@ function ExcursionBody({
       setPhase('arrived')
     }
   }, [phase, userLocation, currentStop])
+
+  // Play success haptic + chime the moment phase becomes 'arrived'. Skip on
+  // the initial mount so reopening an already-arrived state doesn't replay
+  // the sound — only fires on a genuine transition into arrived.
+  const previousPhaseRef = useRef<Phase>(phase)
+  useEffect(() => {
+    if (phase === 'arrived' && previousPhaseRef.current !== 'arrived') {
+      playArrivalFeedback()
+    }
+    previousPhaseRef.current = phase
+  }, [phase])
 
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || !currentStop) return
@@ -232,19 +264,106 @@ function ExcursionBody({
     }
   }, [stops])
 
-  // Fit map to show all stops + POIs + user location when in preview.
+  // Fit map to show all stops + POIs + user location when in preview. Fires
+  // on phase entry and again the moment GPS arrives (so the user pin is
+  // included in the bounding box without us hopping the camera twice).
   useEffect(() => {
     if (phase !== 'preview') return
+    // Exclude any coordinates that look like accidental zero/zero entries
+    // (e.g. a place authored without coords). Including them would skew
+    // the bounding box halfway to the Gulf of Guinea.
+    const isReal = (c: LatLng) =>
+      typeof c.latitude === 'number' &&
+      typeof c.longitude === 'number' &&
+      !(c.latitude === 0 && c.longitude === 0)
     const coords: LatLng[] = [
-      ...stops.map((s) => s.coords),
-      ...pois.map((p) => p.coords),
+      ...stops.map((s) => s.coords).filter(isReal),
+      ...pois.map((p) => p.coords).filter(isReal),
     ]
     if (userLocation) coords.push(userLocation)
+    if (coords.length === 0) return
     mapRef.current?.fitToCoordinates(coords, {
-      edgePadding: { top: 80, right: 60, bottom: 80, left: 60 },
+      // Match the navigating-fit padding so the bottom panel + stops list
+      // never overlap pins. Top inset reserves space for the back button +
+      // favorite button.
+      edgePadding: { top: 80, right: 60, bottom: 220, left: 60 },
       animated: true,
     })
   }, [phase, stops, pois, userLocation, mapRef])
+
+  // On entering navigating (or each new leg), zoom the camera to fit both
+  // the user and the next stop with padding. After that initial overview
+  // lands the heading-up follow-mode below takes over and tracks the user.
+  // Guard against missing GPS — we'd otherwise crash on a null coordinate
+  // or zoom to a single-point bounding box.
+  const hasFittedThisLegRef = useRef(false)
+  useEffect(() => {
+    // Reset the per-leg flag every time the leg changes or the phase leaves
+    // navigating, so a re-entry triggers a fresh fit.
+    hasFittedThisLegRef.current = false
+  }, [phase, currentIndex])
+  useEffect(() => {
+    if (phase !== 'navigating' || !userLocation || !currentStop) return
+    if (hasFittedThisLegRef.current) return
+    // If the user is already on top of the stop (within ~5m of the same
+    // coordinate), fitToCoordinates degenerates to absurd zoom. Fall back
+    // to a centered camera at the user with the same zoom heading-up uses.
+    const same =
+      haversineMeters(userLocation, currentStop.coords) < 5
+    if (same) {
+      mapRef.current?.animateCamera(
+        { center: userLocation, heading: 0, pitch: 0, zoom: 17 },
+        { duration: 600 },
+      )
+    } else {
+      mapRef.current?.fitToCoordinates(
+        [userLocation, currentStop.coords],
+        {
+          // Generous bottom padding so the next-stop pin doesn't sit
+          // under the bottom panel / stops list.
+          edgePadding: { top: 80, right: 60, bottom: 220, left: 60 },
+          animated: true,
+        },
+      )
+    }
+    hasFittedThisLegRef.current = true
+  }, [phase, currentIndex, userLocation, currentStop, mapRef])
+
+  // Heading-up rotation during navigation. We re-animate the camera whenever
+  // the heading changes by at least 5° so the map turns visibly without
+  // chattering on every compass tick. Suppressed until the initial fit
+  // above has landed, so the overview isn't immediately blown away.
+  const lastAnimatedHeadingRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (phase !== 'navigating' || !userLocation || heading == null) return
+    if (!hasFittedThisLegRef.current) return
+    const prev = lastAnimatedHeadingRef.current
+    if (prev != null) {
+      const diff = Math.abs(((heading - prev + 540) % 360) - 180)
+      if (diff < 5) return
+    }
+    lastAnimatedHeadingRef.current = heading
+    mapRef.current?.animateCamera(
+      {
+        center: userLocation,
+        heading,
+        pitch: 0,
+        zoom: 17,
+      },
+      { duration: 500 },
+    )
+  }, [phase, userLocation, heading, mapRef])
+
+  // When the user re-enters preview/arrived/complete, reset the camera to
+  // north-up so the map is readable as a normal 2D view.
+  useEffect(() => {
+    if (phase === 'navigating') return
+    lastAnimatedHeadingRef.current = null
+    mapRef.current?.animateCamera(
+      { heading: 0, pitch: 0 },
+      { duration: 400 },
+    )
+  }, [phase, mapRef])
 
   const start = () => {
     setPhase('navigating')
@@ -313,27 +432,55 @@ function ExcursionBody({
     <YStack flex={1} bg="$background">
       <MapView
         ref={mapRef}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        // Google Maps on both platforms so customMapStyle applies consistently
+        // and we get the same renderer + icons across iOS and Android.
+        provider={PROVIDER_GOOGLE}
         style={{ width: '100%', height: mapHeight }}
         initialRegion={initialRegion}
-        showsUserLocation={!permissionDenied}
+        // Custom user pin (UserHeadingPin) replaces the system blue dot so
+        // we can render the heading cone. The platform's own pin would
+        // double up otherwise.
+        showsUserLocation={false}
         showsMyLocationButton={false}
+        // Hide native map clutter so only our markers show up:
+        //   - customMapStyle works on Android (Google) + iOS (only when
+        //     provider is PROVIDER_GOOGLE).
+        //   - showsPointsOfInterest is the Apple Maps equivalent (iOS
+        //     when the provider is undefined). It also hides business
+        //     POIs on the default Apple basemap.
+        //   - showsBuildings/Traffic/Indoors removed for a calm walking map.
+        customMapStyle={CLEAN_MAP_STYLE}
+        showsPointsOfInterests={false}
+        showsBuildings={false}
+        showsTraffic={false}
+        showsIndoors={false}
+        // During navigation we rotate the map heading-up via animateCamera;
+        // disable the user's manual rotation so the gestures don't fight
+        // the auto-rotation. Pan + pinch stay enabled.
+        rotateEnabled={phase !== 'navigating'}
       >
-        {stops.map((stop, idx) => (
+        {/* Stops: hidden during navigation except the current target, so
+            the user isn't distracted by behind-them or ahead-of-them pins. */}
+        {phase !== 'navigating' &&
+          stops.map((stop, idx) => (
+            <Marker
+              key={stop.id}
+              coordinate={stop.coords}
+              title={`${idx + 1}. ${stop.name}`}
+              description={stop.description}
+              pinColor={idx < currentIndex ? '#9CA3AF' : undefined}
+            />
+          ))}
+        {phase === 'navigating' && currentStop && (
           <Marker
-            key={stop.id}
-            coordinate={stop.coords}
-            title={`${idx + 1}. ${stop.name}`}
-            description={stop.description}
-            pinColor={
-              phase === 'navigating' && idx === currentIndex
-                ? primary
-                : idx < currentIndex
-                  ? '#9CA3AF'
-                  : undefined
-            }
+            key={currentStop.id}
+            coordinate={currentStop.coords}
+            title={`${currentIndex + 1}. ${currentStop.name}`}
+            description={currentStop.description}
+            pinColor={primary}
           />
-        ))}
+        )}
+
         {phase === 'navigating' && displayPolyline.length > 1 && (
           <Polyline
             coordinates={displayPolyline}
@@ -349,40 +496,53 @@ function ExcursionBody({
             lineDashPattern={[8, 8]}
           />
         )}
-        {pois.map((poi) => {
-          const meta = POI_CATEGORY_META[poi.category]
-          const Icon = meta.icon
-          return (
-            <Marker
-              key={poi.id}
-              coordinate={poi.coords}
-              title={poi.name}
-              onPress={() => setSelectedPoi(poi)}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-            >
-              <YStack
-                width={32}
-                height={32}
-                rounded={16}
-                bg="#FFFFFF"
-                borderWidth={2}
-                borderColor={meta.color as any}
-                items="center"
-                justify="center"
-                style={{
-                  shadowColor: '#000',
-                  shadowOpacity: 0.2,
-                  shadowRadius: 3,
-                  shadowOffset: { width: 0, height: 1 },
-                  elevation: 3,
-                }}
+
+        {/* POIs: hidden during navigation to declutter the map. They come
+            back on arrival and preview so the user can still explore them. */}
+        {phase !== 'navigating' &&
+          pois.map((poi) => {
+            const meta = POI_CATEGORY_META[poi.category]
+            const Icon = meta.icon
+            return (
+              <Marker
+                key={poi.id}
+                coordinate={poi.coords}
+                title={poi.name}
+                onPress={() => setSelectedPoi(poi)}
+                anchor={{ x: 0.5, y: 0.5 }}
+                tracksViewChanges={false}
               >
-                <Icon size={16} color={meta.color as any} />
-              </YStack>
-            </Marker>
-          )
-        })}
+                <YStack
+                  width={32}
+                  height={32}
+                  rounded={16}
+                  bg="#FFFFFF"
+                  borderWidth={2}
+                  borderColor={meta.color as any}
+                  items="center"
+                  justify="center"
+                  style={{
+                    shadowColor: '#000',
+                    shadowOpacity: 0.2,
+                    shadowRadius: 3,
+                    shadowOffset: { width: 0, height: 1 },
+                    elevation: 3,
+                  }}
+                >
+                  <Icon size={16} color={meta.color as any} />
+                </YStack>
+              </Marker>
+            )
+          })}
+
+        {/* Custom user pin with heading cone. Replaces the default blue
+            dot. Rendered last so it always sits on top of polylines. */}
+        {userLocation && !permissionDenied && (
+          <UserHeadingPin
+            coords={userLocation}
+            heading={phase === 'navigating' ? heading : null}
+          />
+        )}
       </MapView>
 
       <BackButton topInset={topInset} onPress={goBack} />
@@ -412,6 +572,7 @@ function ExcursionBody({
         currentIndex={currentIndex}
         phase={phase}
         onPoiPress={setSelectedPoi}
+        onStopPress={(stop) => setLightboxUri(stop.image)}
       />
 
       <BottomPanel
@@ -447,6 +608,8 @@ function ExcursionBody({
         fact={selectedFact}
         onClose={() => setSelectedFact(null)}
       />
+
+      <ImageLightbox uri={lightboxUri} onClose={() => setLightboxUri(null)} />
     </YStack>
   )
 }

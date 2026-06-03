@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import type { PublicInterestingFact } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
+import { playFactFeedback } from '../../lib/feedback'
 
 // Navy renders well on amber; not a registered Tamagui color token, so we
 // pull it from the palette to avoid the validator warning.
@@ -292,6 +293,18 @@ export function useFactBannerSchedule(params: {
       visible && factIndexInLeg >= 0 ? legFacts[factIndexInLeg] ?? null : null,
     [visible, factIndexInLeg, legFacts],
   )
+
+  // Fire haptic + ping whenever a new fact actually appears. We watch the
+  // fact id (not the index) so a swap to a different fact in the same slot
+  // also triggers, and a re-render with the same fact doesn't.
+  const lastNotifiedFactIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    const id = currentFact?.id ?? null
+    if (id && id !== lastNotifiedFactIdRef.current) {
+      playFactFeedback()
+    }
+    lastNotifiedFactIdRef.current = id
+  }, [currentFact])
 
   return {
     visible,

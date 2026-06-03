@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   type ViewToken,
@@ -20,6 +19,7 @@ import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { usePlace } from '../../hooks/usePlace'
 import { EmptyState } from '../discover/EmptyState'
+import { CLEAN_MAP_STYLE } from '../excursion/cleanMapStyle'
 import { PlaceDetailSkeleton } from './PlaceDetailSkeleton'
 
 type Props = {
@@ -119,9 +119,9 @@ export function PlaceDetailScreen({ id }: Props) {
               borderColor="$borderColor"
             >
               <MapView
-                provider={
-                  Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined
-                }
+                // Google Maps on both platforms so customMapStyle applies
+                // and the look matches the excursion screen.
+                provider={PROVIDER_GOOGLE}
                 style={{ width: '100%', height: 200 }}
                 initialRegion={{
                   latitude: place.coords.latitude,
@@ -135,6 +135,12 @@ export function PlaceDetailScreen({ id }: Props) {
                 zoomEnabled={false}
                 rotateEnabled={false}
                 pitchEnabled={false}
+                // Strip Google/Apple's own POI clutter so only our pin shows.
+                customMapStyle={CLEAN_MAP_STYLE}
+                showsPointsOfInterests={false}
+                showsBuildings={false}
+                showsTraffic={false}
+                showsIndoors={false}
               >
                 <Marker
                   coordinate={place.coords}
