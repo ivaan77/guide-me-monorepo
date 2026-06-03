@@ -249,7 +249,10 @@ export class AdminDiscoverService {
       cities: cities
         .filter((c) => !c.isEnabled)
         .map(
-          (c): AdminInactiveRef => ({ slug: c.slug, name: c.name?.en ?? c.slug }),
+          (c): AdminInactiveRef => ({
+            slug: c.slug,
+            name: c.name?.en ?? c.slug,
+          }),
         ),
       excursions: excursions
         .filter((e) => !e.isEnabled)
