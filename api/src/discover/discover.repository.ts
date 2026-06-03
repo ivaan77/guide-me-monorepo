@@ -76,9 +76,7 @@ export class DiscoverRepository {
   // endpoint (city.cityPlaceSlugs) and the excursion detail endpoint
   // (excursion.pois[].placeSlug). Filters out disabled places so a deleted/
   // hidden place silently drops out of the response.
-  findEnabledPlacesBySlugs(
-    slugs: string[],
-  ): Promise<DiscoverPlaceDocument[]> {
+  findEnabledPlacesBySlugs(slugs: string[]): Promise<DiscoverPlaceDocument[]> {
     if (slugs.length === 0) return Promise.resolve([]);
     return this.placeModel
       .find({ slug: { $in: slugs }, ...ENABLED_FILTER })
@@ -156,9 +154,7 @@ export class DiscoverRepository {
   // Cities can list a place in cityPlaceSlugs. Used to block deletion of a
   // place that's still wired into a city's display list.
   countCitiesReferencingPlace(placeSlug: string): Promise<number> {
-    return this.cityModel
-      .countDocuments({ cityPlaceSlugs: placeSlug })
-      .exec();
+    return this.cityModel.countDocuments({ cityPlaceSlugs: placeSlug }).exec();
   }
 
   // Excursions reference a place via pois[].placeSlug.

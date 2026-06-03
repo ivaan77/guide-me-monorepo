@@ -127,7 +127,8 @@ export class AdminDiscoverService {
       let citySlug = dto.citySlug;
       if (!citySlug) {
         const current = await this.repo.findExcursionBySlugAdmin(slug);
-        if (!current) throw new NotFoundException(`Excursion not found: ${slug}`);
+        if (!current)
+          throw new NotFoundException(`Excursion not found: ${slug}`);
         citySlug = current.citySlug;
       }
       await this.assertPoiRefsExist(dto.pois, citySlug);

@@ -139,8 +139,7 @@ export class DiscoverService {
       image: excursion.image,
       stops: excursion.stops.map((stop) => this.toPublicStop(stop, locale)),
       pois: resolvedPois.length > 0 ? resolvedPois : undefined,
-      interestingFacts:
-        resolvedFacts.length > 0 ? resolvedFacts : undefined,
+      interestingFacts: resolvedFacts.length > 0 ? resolvedFacts : undefined,
     };
 
     return { excursion: publicExcursion, locale };
