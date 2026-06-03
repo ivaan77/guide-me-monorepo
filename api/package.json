@@ -17,6 +17,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "seed:discover": "ts-node -r tsconfig-paths/register scripts/seed-discover.ts",
+    "migrate:places": "ts-node -r tsconfig-paths/register scripts/migrate-places.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

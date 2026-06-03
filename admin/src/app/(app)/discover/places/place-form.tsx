@@ -23,11 +23,31 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { AudioInput } from '@/components/forms/audio-input'
 import { ImageListInput } from '@/components/forms/image-list-input'
-import { SingleImageInput } from '@/components/forms/single-image-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
+import { MapCoordsPicker } from '@/components/forms/map-coords-picker'
+import { SingleImageInput } from '@/components/forms/single-image-input'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
+
+const CATEGORIES = [
+  'restaurant',
+  'cafe',
+  'bar',
+  'shopping',
+  'event',
+  'park',
+] as const
+
+const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
+  restaurant: 'Restaurant',
+  cafe: 'Café',
+  bar: 'Bar',
+  shopping: 'Shopping',
+  event: 'Event',
+  park: 'Park',
+}
 
 const localizedSchema = z.object({
   en: z.string().min(1, 'English is required'),
@@ -35,14 +55,37 @@ const localizedSchema = z.object({
   hr: z.string().optional(),
 })
 
+// Sub-category is fully optional — none of the three locales is required —
+// and editors may type free-form labels like "Japanese" or "Pizza". Falsy en
+// drops the whole field at submit time so we don't store empty objects.
+const optionalLocalizedSchema = z.object({
+  en: z.string().optional(),
+  de: z.string().optional(),
+  hr: z.string().optional(),
+})
+
+const latLngSchema = z.object({
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+})
+
+const localizedAudioSchema = z.object({
+  en: z.string().url().optional(),
+  de: z.string().url().optional(),
+  hr: z.string().url().optional(),
+})
+
 const baseSchema = {
   citySlug: z.string().regex(SLUG_REGEX),
-  category: z.enum(['restaurant', 'bar', 'shopping']),
+  category: z.enum(CATEGORIES),
   name: localizedSchema,
   meta: localizedSchema,
   image: z.string().url(),
   description: localizedSchema.optional(),
   images: z.array(z.string().url()).optional(),
+  coords: latLngSchema.optional(),
+  subCategory: optionalLocalizedSchema.optional(),
+  audioUrl: localizedAudioSchema.optional(),
   isEnabled: z.boolean(),
 }
 
@@ -70,6 +113,9 @@ export function PlaceForm(props: Props) {
         image: props.initialValues.image,
         description: props.initialValues.description,
         images: props.initialValues.images,
+        coords: props.initialValues.coords,
+        subCategory: props.initialValues.subCategory,
+        audioUrl: props.initialValues.audioUrl,
         isEnabled: props.initialValues.isEnabled,
       }
     : {
@@ -81,6 +127,9 @@ export function PlaceForm(props: Props) {
         image: '',
         description: undefined,
         images: undefined,
+        coords: undefined,
+        subCategory: undefined,
+        audioUrl: undefined,
         isEnabled: true,
       }
 
@@ -91,7 +140,7 @@ export function PlaceForm(props: Props) {
 
   const onSubmit = (raw: CreateValues) => {
     startTransition(async () => {
-      const cleaned = stripEmpties(raw)
+      const cleaned = normalizePayload(raw)
       const res = isEdit
         ? await updatePlaceAction(
             props.initialValues!.slug,
@@ -106,6 +155,9 @@ export function PlaceForm(props: Props) {
       router.push('/discover/places')
     })
   }
+
+  // Reused for image/audio folder paths.
+  const slugForFolder = isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
@@ -156,9 +208,11 @@ export function PlaceForm(props: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="restaurant">Restaurant</SelectItem>
-                  <SelectItem value="bar">Bar</SelectItem>
-                  <SelectItem value="shopping">Shopping</SelectItem>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {CATEGORY_LABELS[c]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -168,7 +222,7 @@ export function PlaceForm(props: Props) {
             name="image"
             label="Hero image"
             required
-            folder={`place/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
+            folder={`place/${slugForFolder}`}
           />
           <LocalizedInput control={form.control} name="name" label="Name" required />
           <LocalizedInput
@@ -180,6 +234,12 @@ export function PlaceForm(props: Props) {
           />
           <LocalizedInput
             control={form.control}
+            name="subCategory"
+            label="Sub-category (optional)"
+            placeholder="Japanese, Pizza, Recommended…"
+          />
+          <LocalizedInput
+            control={form.control}
             name="description"
             label="Description (optional)"
             multiline
@@ -188,7 +248,54 @@ export function PlaceForm(props: Props) {
             control={form.control}
             name="images"
             label="Gallery images"
-            folder={`place/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}/gallery`}
+            folder={`place/${slugForFolder}/gallery`}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 flex flex-col gap-3">
+          <p className="text-sm font-medium">Location (optional)</p>
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            Required for the place to appear on the mobile map. Click on the map
+            or type coordinates manually.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs">Latitude</Label>
+              <Input
+                type="number"
+                step="any"
+                {...form.register('coords.latitude', { valueAsNumber: true })}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs">Longitude</Label>
+              <Input
+                type="number"
+                step="any"
+                {...form.register('coords.longitude', { valueAsNumber: true })}
+              />
+            </div>
+          </div>
+          <MapCoordsPicker
+            latitude={form.watch('coords.latitude') ?? 0}
+            longitude={form.watch('coords.longitude') ?? 0}
+            onChange={({ latitude, longitude }) => {
+              form.setValue('coords.latitude', latitude, { shouldDirty: true })
+              form.setValue('coords.longitude', longitude, { shouldDirty: true })
+            }}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 flex flex-col gap-3">
+          <AudioInput
+            control={form.control}
+            name="audioUrl"
+            label="Audio guide (optional)"
+            folder={`place/${slugForFolder}`}
           />
         </CardContent>
       </Card>
@@ -223,6 +330,38 @@ export function PlaceForm(props: Props) {
       </div>
     </form>
   )
+}
+
+// Drops empty optional fields and untouched LocalizedString blocks so the api
+// doesn't store {en: ''} for sub-category etc.
+function normalizePayload(raw: CreateValues): CreateValues {
+  const out = stripEmpties(raw) as Record<string, unknown>
+
+  // sub-category: if en is missing/blank, drop the whole field.
+  const sub = out.subCategory as Record<string, unknown> | undefined
+  if (!sub || typeof sub !== 'object' || !sub.en) {
+    delete out.subCategory
+  }
+
+  // coords: both lat and lng must be present to be meaningful.
+  const coords = out.coords as { latitude?: number; longitude?: number } | undefined
+  if (
+    !coords ||
+    typeof coords.latitude !== 'number' ||
+    typeof coords.longitude !== 'number' ||
+    Number.isNaN(coords.latitude) ||
+    Number.isNaN(coords.longitude)
+  ) {
+    delete out.coords
+  }
+
+  // audio: if no locale has a url, drop it.
+  const audio = out.audioUrl as Record<string, unknown> | undefined
+  if (audio && Object.values(audio).every((v) => !v)) {
+    delete out.audioUrl
+  }
+
+  return out as CreateValues
 }
 
 function stripEmpties<T>(value: T): T {

@@ -8,10 +8,12 @@ import {
   Matches,
   ValidateNested,
 } from 'class-validator';
+import { PLACE_CATEGORIES } from '../../../discover/schemas/discover-place.schema';
+import { LatLngDto } from './lat-lng.dto';
+import { LocalizedAudioDto } from './localized-audio.dto';
 import { LocalizedStringDto } from './localized-string.dto';
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-const CATEGORIES = ['restaurant', 'bar', 'shopping'] as const;
 
 export class CreatePlaceDto {
   @IsString()
@@ -22,8 +24,8 @@ export class CreatePlaceDto {
   @Matches(SLUG_REGEX)
   citySlug: string;
 
-  @IsIn(CATEGORIES)
-  category: (typeof CATEGORIES)[number];
+  @IsIn(PLACE_CATEGORIES)
+  category: (typeof PLACE_CATEGORIES)[number];
 
   @ValidateNested()
   @Type(() => LocalizedStringDto)
@@ -47,6 +49,21 @@ export class CreatePlaceDto {
   images?: string[];
 
   @IsOptional()
+  @ValidateNested()
+  @Type(() => LatLngDto)
+  coords?: LatLngDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  subCategory?: LocalizedStringDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
+
+  @IsOptional()
   @IsBoolean()
   isEnabled?: boolean;
 }
@@ -58,8 +75,8 @@ export class UpdatePlaceDto {
   citySlug?: string;
 
   @IsOptional()
-  @IsIn(CATEGORIES)
-  category?: (typeof CATEGORIES)[number];
+  @IsIn(PLACE_CATEGORIES)
+  category?: (typeof PLACE_CATEGORIES)[number];
 
   @IsOptional()
   @ValidateNested()
@@ -84,6 +101,21 @@ export class UpdatePlaceDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LatLngDto)
+  coords?: LatLngDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  subCategory?: LocalizedStringDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
 
   @IsOptional()
   @IsBoolean()

@@ -50,6 +50,10 @@ export type AllPublicCitiesResponse = {
 
 // --- City detail ---
 
+// subCategory is an optional free-text label (e.g. "Japanese", "Pizza",
+// "Recommended"). When present, the mobile UI groups same-category items
+// by this string. Entries without a subCategory fall into an "Other"
+// bucket at the bottom of their category section.
 export type PublicCategoryItem = {
     id: string
     name: string
@@ -57,13 +61,20 @@ export type PublicCategoryItem = {
     image: string
     description?: string
     images?: string[]
+    subCategory?: string
 }
 
+// City detail now also exposes events and parks, plus an optional
+// city-level audio narration.
 export type PublicCityDetail = PublicCity & {
+    audioUrl?: string
     excursions?: PublicCategoryItem[]
     restaurants?: PublicCategoryItem[]
+    cafes?: PublicCategoryItem[]
     bars?: PublicCategoryItem[]
     shopping?: PublicCategoryItem[]
+    events?: PublicCategoryItem[]
+    parks?: PublicCategoryItem[]
 }
 
 export type PublicCityDetailResponse = {
@@ -78,6 +89,8 @@ export type PublicLatLng = {
     longitude: number
 }
 
+// triggerRadius (meters) is per-stop and optional. When unset, the mobile
+// app falls back to its global default arrival radius.
 export type PublicExcursionStop = {
     id: string
     order: number
@@ -87,10 +100,20 @@ export type PublicExcursionStop = {
     image: string
     images?: string[]
     audioUrl?: string
+    triggerRadius?: number
 }
 
-export type PoiCategory = 'restaurant' | 'bar' | 'shopping'
+export type PoiCategory =
+    | 'restaurant'
+    | 'cafe'
+    | 'bar'
+    | 'shopping'
+    | 'event'
+    | 'park'
 
+// PublicPoi is now the resolved Place reference: the api dereferences
+// excursion.pois[].placeSlug into the full Place document so mobile gets
+// everything in one response.
 export type PublicPoi = {
     id: string
     order: number
@@ -100,6 +123,15 @@ export type PublicPoi = {
     coords: PublicLatLng
     image: string
     images?: string[]
+    subCategory?: string
+}
+
+// Interesting facts are excursion-level narration cards. Each has its own
+// localized audio narration; resolved to a single string on the public side.
+export type PublicInterestingFact = {
+    id: string
+    title: string
+    audioUrl: string
 }
 
 export type PublicExcursion = {
@@ -109,6 +141,7 @@ export type PublicExcursion = {
     image: string
     stops: PublicExcursionStop[]
     pois?: PublicPoi[]
+    interestingFacts?: PublicInterestingFact[]
 }
 
 export type PublicExcursionResponse = {
@@ -116,8 +149,11 @@ export type PublicExcursionResponse = {
     locale: Locale
 }
 
-// --- Place detail (restaurant / bar / shopping) ---
+// --- Place detail ---
 
+// Places are the canonical reference for any city-affiliated point of
+// interest. Excursions reference them by slug; cities embed a list of
+// slugs to display. Coords + audioUrl + subCategory are optional.
 export type PublicPlaceDetail = {
     id: string
     name: string
@@ -126,6 +162,9 @@ export type PublicPlaceDetail = {
     image: string
     description?: string
     images?: string[]
+    coords?: PublicLatLng
+    audioUrl?: string
+    subCategory?: string
 }
 
 export type PublicPlaceResponse = {

@@ -72,6 +72,20 @@ export class DiscoverRepository {
       .exec();
   }
 
+  // Resolves a list of place slugs to documents. Used by the city detail
+  // endpoint (city.cityPlaceSlugs) and the excursion detail endpoint
+  // (excursion.pois[].placeSlug). Filters out disabled places so a deleted/
+  // hidden place silently drops out of the response.
+  findEnabledPlacesBySlugs(
+    slugs: string[],
+  ): Promise<DiscoverPlaceDocument[]> {
+    if (slugs.length === 0) return Promise.resolve([]);
+    return this.placeModel
+      .find({ slug: { $in: slugs }, ...ENABLED_FILTER })
+      .lean<DiscoverPlaceDocument[]>()
+      .exec();
+  }
+
   findEnabledExcursionBySlug(
     slug: string,
   ): Promise<DiscoverExcursionDocument | null> {
@@ -137,6 +151,21 @@ export class DiscoverRepository {
 
   countPlacesForCity(citySlug: string): Promise<number> {
     return this.placeModel.countDocuments({ citySlug }).exec();
+  }
+
+  // Cities can list a place in cityPlaceSlugs. Used to block deletion of a
+  // place that's still wired into a city's display list.
+  countCitiesReferencingPlace(placeSlug: string): Promise<number> {
+    return this.cityModel
+      .countDocuments({ cityPlaceSlugs: placeSlug })
+      .exec();
+  }
+
+  // Excursions reference a place via pois[].placeSlug.
+  countExcursionsReferencingPlace(placeSlug: string): Promise<number> {
+    return this.excursionModel
+      .countDocuments({ 'pois.placeSlug': placeSlug })
+      .exec();
   }
 
   // --- Writes ---
