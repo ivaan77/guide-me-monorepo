@@ -1,7 +1,14 @@
 import Link from 'next/link'
 import { auth, signOut } from '@/auth'
 import { Button } from '@/components/ui/button'
-import { Compass, MapPin, Store, LogOut } from 'lucide-react'
+import {
+  BarChart3,
+  Compass,
+  HelpCircle,
+  LogOut,
+  MapPin,
+  Store,
+} from 'lucide-react'
 
 async function SignOutButton() {
   return (
@@ -40,6 +47,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           label="Excursions"
         />
         <NavLink href="/discover/places" icon={<Store className="h-4 w-4" />} label="Places" />
+        <NavLink href="/stats" icon={<BarChart3 className="h-4 w-4" />} label="Stats" />
+        <NavLink href="/help" icon={<HelpCircle className="h-4 w-4" />} label="Help" />
         <div className="mt-auto pt-4 border-t border-[var(--color-border)] flex items-center justify-between">
           <span className="text-xs text-[var(--color-muted-foreground)] truncate pl-2">
             {session?.user?.name}

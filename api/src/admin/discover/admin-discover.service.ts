@@ -6,9 +6,13 @@ import {
 import {
   AdminCity,
   AdminExcursion,
+  AdminInactiveRef,
   AdminPlace,
+  AdminStats,
+  AdminStatsTimeseriesPoint,
   PoiCategory,
 } from '@guide-me-app/core';
+import { PLACE_CATEGORIES } from '../../discover/schemas/discover-place.schema';
 import { CacheService } from '../../cache/cache.service';
 import { DISCOVER_CACHE_PREFIX } from '../../discover/discover.interceptor';
 import { DiscoverRepository } from '../../discover/discover.repository';
@@ -208,6 +212,86 @@ export class AdminDiscoverService {
     await this.bustCache();
   }
 
+  // ---------------- Stats ----------------
+
+  async getStats(): Promise<AdminStats> {
+    // Fetch all three collections in parallel. The dataset is small (admin
+    // working set, typically < 1000 docs total) so a full scan is fine — no
+    // need for aggregation pipelines.
+    const [cities, excursions, places] = await Promise.all([
+      this.repo.findAllCitiesAdmin(),
+      this.repo.findAllExcursionsAdmin(),
+      this.repo.findAllPlacesAdmin(),
+    ]);
+
+    const placesByCategory: Record<PoiCategory, number> = Object.fromEntries(
+      PLACE_CATEGORIES.map((c) => [c, 0]),
+    ) as Record<PoiCategory, number>;
+    for (const p of places) {
+      placesByCategory[p.category as PoiCategory] =
+        (placesByCategory[p.category as PoiCategory] ?? 0) + 1;
+    }
+
+    const excursionStops = excursions.reduce(
+      (sum, e) => sum + (e.stops?.length ?? 0),
+      0,
+    );
+    const interestingFacts = excursions.reduce(
+      (sum, e) => sum + (e.interestingFacts?.length ?? 0),
+      0,
+    );
+    const poiReferences = excursions.reduce(
+      (sum, e) => sum + (e.pois?.length ?? 0),
+      0,
+    );
+
+    const inactive = {
+      cities: cities
+        .filter((c) => !c.isEnabled)
+        .map(
+          (c): AdminInactiveRef => ({ slug: c.slug, name: c.name?.en ?? c.slug }),
+        ),
+      excursions: excursions
+        .filter((e) => !e.isEnabled)
+        .map(
+          (e): AdminInactiveRef => ({
+            slug: e.slug,
+            name: e.name?.en ?? e.slug,
+            citySlug: e.citySlug,
+          }),
+        ),
+      places: places
+        .filter((p) => !p.isEnabled)
+        .map(
+          (p): AdminInactiveRef => ({
+            slug: p.slug,
+            name: p.name?.en ?? p.slug,
+            citySlug: p.citySlug,
+          }),
+        ),
+    };
+
+    const timeseries = buildCumulativeTimeseries({
+      cities: cities.map(extractCreatedAt),
+      excursions: excursions.map(extractCreatedAt),
+      places: places.map(extractCreatedAt),
+    });
+
+    return {
+      counts: {
+        cities: cities.length,
+        excursions: excursions.length,
+        places: places.length,
+        placesByCategory,
+        excursionStops,
+        interestingFacts,
+        poiReferences,
+      },
+      inactive,
+      timeseries,
+    };
+  }
+
   // ---------------- Helpers ----------------
 
   // Wipes all discover cache entries on every write. Cheap (a few hundred
@@ -320,4 +404,55 @@ export class AdminDiscoverService {
       updatedAt: (doc as any).updatedAt?.toISOString?.(),
     };
   }
+}
+
+// Pulls the Mongoose-managed createdAt timestamp from a lean document. The
+// schema declares timestamps: true so this is always present in practice; we
+// fall back to `null` defensively so old or imported docs don't crash the
+// timeseries.
+function extractCreatedAt(doc: unknown): Date | null {
+  const raw = (doc as { createdAt?: unknown } | null)?.createdAt;
+  if (raw instanceof Date) return raw;
+  if (typeof raw === 'string' || typeof raw === 'number') {
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+
+// Builds a sparse cumulative timeseries: one point per UTC day on which at
+// least one entity (city, excursion, or place) was created. Each point holds
+// the running totals up to and including that day. Sparse, not daily, so
+// the response stays small even across long gaps.
+function buildCumulativeTimeseries(grouped: {
+  cities: Array<Date | null>;
+  excursions: Array<Date | null>;
+  places: Array<Date | null>;
+}): AdminStatsTimeseriesPoint[] {
+  type Tally = { cities: number; excursions: number; places: number };
+  const perDay = new Map<string, Tally>();
+
+  const bump = (date: Date | null, key: keyof Tally): void => {
+    if (!date) return;
+    const day = date.toISOString().slice(0, 10);
+    const cur = perDay.get(day) ?? { cities: 0, excursions: 0, places: 0 };
+    cur[key]++;
+    perDay.set(day, cur);
+  };
+
+  for (const d of grouped.cities) bump(d, 'cities');
+  for (const d of grouped.excursions) bump(d, 'excursions');
+  for (const d of grouped.places) bump(d, 'places');
+
+  const sortedDays = [...perDay.keys()].sort();
+  let cumC = 0;
+  let cumE = 0;
+  let cumP = 0;
+  return sortedDays.map((day) => {
+    const t = perDay.get(day)!;
+    cumC += t.cities;
+    cumE += t.excursions;
+    cumP += t.places;
+    return { date: day, cities: cumC, excursions: cumE, places: cumP };
+  });
 }

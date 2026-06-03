@@ -152,3 +152,49 @@ export type AdminAllExcursionsResponse = { excursions: AdminExcursion[] }
 export type AdminExcursionResponse = { excursion: AdminExcursion }
 export type AdminAllPlacesResponse = { places: AdminPlace[] }
 export type AdminPlaceResponse = { place: AdminPlace }
+
+// --- Stats ---
+
+// Lightweight reference for inactive-entity lists on the stats page.
+// Only the bare minimum to identify and link to the record.
+export type AdminInactiveRef = {
+    slug: string
+    name: string
+    citySlug?: string
+}
+
+// One cumulative-by-date sample point. `date` is an ISO yyyy-mm-dd string
+// (UTC). The api emits one point per day on which any new doc was created,
+// containing running cumulative totals.
+export type AdminStatsTimeseriesPoint = {
+    date: string
+    cities: number
+    excursions: number
+    places: number
+}
+
+export type AdminStats = {
+    counts: {
+        cities: number
+        excursions: number
+        places: number
+        // Per-category place breakdown. Categories with zero docs are still
+        // present (value 0) so the UI can render a stable shape.
+        placesByCategory: Record<PoiCategory, number>
+        // Total stops across all excursions.
+        excursionStops: number
+        // Total interesting facts across all excursions.
+        interestingFacts: number
+        // Total POI references (sum of excursion.pois lengths).
+        poiReferences: number
+    }
+    inactive: {
+        cities: AdminInactiveRef[]
+        excursions: AdminInactiveRef[]
+        places: AdminInactiveRef[]
+    }
+    // Sorted ascending by date. May be empty if no docs have createdAt.
+    timeseries: AdminStatsTimeseriesPoint[]
+}
+
+export type AdminStatsResponse = { stats: AdminStats }
