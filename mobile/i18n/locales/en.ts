@@ -23,6 +23,7 @@ export const en = {
     emptyBody: 'Cities you save will show up here so you can plan your next trip.',
     signInRequiredTitle: 'Sign in to save favorites',
     signInRequiredBody: 'Saving cities, excursions, and places needs an account so we can sync them across your devices.',
+    errorBody: 'We couldn’t load your favorites right now.',
     sections: {
       cities: 'Cities',
       excursions: 'Excursions',

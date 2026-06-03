@@ -28,6 +28,7 @@ export const hr: Translations = {
     signInRequiredTitle: 'Prijavi se kako bi spremio favorite',
     signInRequiredBody:
       'Za spremanje gradova, izleta i mjesta potreban je račun, kako bismo ih sinkronizirali na više uređaja.',
+    errorBody: 'Trenutačno ne možemo učitati tvoje favorite.',
     sections: {
       cities: 'Gradovi',
       excursions: 'Izleti',

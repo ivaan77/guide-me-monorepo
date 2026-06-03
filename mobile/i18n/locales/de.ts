@@ -28,6 +28,7 @@ export const de: Translations = {
     signInRequiredTitle: 'Melde dich an, um Favoriten zu speichern',
     signInRequiredBody:
       'Zum Speichern von Städten, Ausflügen und Orten brauchst du ein Konto, damit wir sie geräteübergreifend synchronisieren können.',
+    errorBody: 'Deine Favoriten konnten gerade nicht geladen werden.',
     sections: {
       cities: 'Städte',
       excursions: 'Ausflüge',
