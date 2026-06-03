@@ -2,10 +2,10 @@
   "name": "@guide-me-app/mobile",
   "main": "expo-router/entry",
   "version": "1.0.0",
-  "packageManager": "yarn@4.5.0",
+  "packageManager": "yarn@4.16.0",
   "private": true,
   "scripts": {
-    "eas-build-pre-install": "corepack enable && corepack prepare yarn@4.5.0 --activate",
+    "eas-build-pre-install": "corepack enable && corepack prepare yarn@4.16.0 --activate",
     "upgrade:tamagui": "yarn up '*tamagui*'@latest '@tamagui/*'@latest",
     "upgrade:tamagui:canary": "yarn up '*tamagui*'@canary '@tamagui/*'@canary",
     "check:tamagui": "tamagui check",
