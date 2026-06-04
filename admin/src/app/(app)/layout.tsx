@@ -46,7 +46,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           icon={<Compass className="h-4 w-4" />}
           label="Excursions"
         />
-        <NavLink href="/discover/places" icon={<Store className="h-4 w-4" />} label="Places" />
+        <NavLink
+          href="/discover/places"
+          icon={<Store className="h-4 w-4" />}
+          label="Places & Events"
+        />
         <NavLink href="/stats" icon={<BarChart3 className="h-4 w-4" />} label="Stats" />
         <NavLink href="/help" icon={<HelpCircle className="h-4 w-4" />} label="Help" />
         <div className="mt-auto pt-4 border-t border-[var(--color-border)] flex items-center justify-between">

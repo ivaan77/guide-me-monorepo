@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner'
 import { ArrowDown, ArrowUp, Loader2, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { FieldHint } from '@/components/forms/field-hint'
 import { Label } from '@/components/ui/label'
 import { uploadImage } from './single-image-input'
 
@@ -16,6 +17,8 @@ type Props<T extends FieldValues> = {
   control: Control<T>
   name: FieldPath<T>
   label: string
+  // Optional one-line hint surfaced as an (i) tooltip next to the label.
+  hint?: string
   // Server-side folder under the bucket's image/ root, e.g.
   //   excursion/belem/stops/jeronimos/gallery
   folder: string
@@ -25,6 +28,7 @@ export function ImageListInput<T extends FieldValues>({
   control,
   name,
   label,
+  hint,
   folder,
 }: Props<T>) {
   return (
@@ -36,6 +40,7 @@ export function ImageListInput<T extends FieldValues>({
           value={(field.value as string[] | undefined) ?? []}
           onChange={field.onChange}
           label={label}
+          hint={hint}
           folder={folder}
         />
       )}
@@ -47,11 +52,13 @@ function Gallery({
   value,
   onChange,
   label,
+  hint,
   folder,
 }: {
   value: string[]
   onChange: (next: string[] | undefined) => void
   label: string
+  hint?: string
   folder: string
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
@@ -94,7 +101,10 @@ function Gallery({
 
   return (
     <div className="flex flex-col gap-2">
-      <Label>{label}</Label>
+      <div className="flex items-center gap-1.5">
+        <Label>{label}</Label>
+        {hint && <FieldHint text={hint} />}
+      </div>
       <p className="text-xs text-[var(--color-muted-foreground)]">
         These appear in the mobile app carousel in order. Drop in multiple files at once.
       </p>

@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner'
 import { Loader2, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { FieldHint } from '@/components/forms/field-hint'
 import { Label } from '@/components/ui/label'
 
 type Props<T extends FieldValues> = {
@@ -16,6 +17,8 @@ type Props<T extends FieldValues> = {
   name: FieldPath<T>
   label: string
   required?: boolean
+  // Optional one-line hint surfaced as an (i) tooltip next to the label.
+  hint?: string
   // Server-side folder under the bucket's image/ root. Example:
   //   city/lisbon
   folder: string
@@ -26,6 +29,7 @@ export function SingleImageInput<T extends FieldValues>({
   name,
   label,
   required,
+  hint,
   folder,
 }: Props<T>) {
   return (
@@ -38,6 +42,7 @@ export function SingleImageInput<T extends FieldValues>({
           onChange={field.onChange}
           label={label}
           required={required}
+          hint={hint}
           folder={folder}
           error={fieldState.error?.message}
         />
@@ -51,6 +56,7 @@ function ImageSlot({
   onChange,
   label,
   required,
+  hint,
   folder,
   error,
 }: {
@@ -58,6 +64,7 @@ function ImageSlot({
   onChange: (url: string | undefined) => void
   label: string
   required?: boolean
+  hint?: string
   folder: string
   error?: string
 }) {
@@ -84,10 +91,13 @@ function ImageSlot({
 
   return (
     <div className="flex flex-col gap-2">
-      <Label>
-        {label}
-        {required && <span className="text-[var(--color-destructive)] ml-1">*</span>}
-      </Label>
+      <div className="flex items-center gap-1.5">
+        <Label>
+          {label}
+          {required && <span className="text-[var(--color-destructive)] ml-1">*</span>}
+        </Label>
+        {hint && <FieldHint text={hint} />}
+      </div>
       {value ? (
         <div className="flex gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -53,8 +53,11 @@ export function PlacesFilters({
           <SelectContent>
             <SelectItem value={ALL}>All categories</SelectItem>
             <SelectItem value="restaurant">Restaurant</SelectItem>
+            <SelectItem value="cafe">Café</SelectItem>
             <SelectItem value="bar">Bar</SelectItem>
             <SelectItem value="shopping">Shopping</SelectItem>
+            <SelectItem value="event">Event</SelectItem>
+            <SelectItem value="park">Park</SelectItem>
           </SelectContent>
         </Select>
       </div>

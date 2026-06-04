@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -27,11 +27,13 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { AudioInput } from '@/components/forms/audio-input'
+import { FieldHint } from '@/components/forms/field-hint'
 import { ImageListInput } from '@/components/forms/image-list-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
 import { MapCoordsPicker } from '@/components/forms/map-coords-picker'
 import { PlacePicker } from '@/components/forms/place-picker'
 import { SingleImageInput } from '@/components/forms/single-image-input'
+import { buildUniqueSlug, slugify } from '@/lib/slug'
 import { Plus, Trash2 } from 'lucide-react'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
@@ -53,6 +55,15 @@ const localizedAudioSchema = z.object({
   hr: z.string().url().optional(),
 })
 
+// react-hook-form returns NaN for an empty <input type="number"> when
+// valueAsNumber is set, which would fail .int().min(1). Preprocess to drop
+// NaN / null / '' down to undefined so .optional() actually kicks in.
+const optionalPositiveInt = z.preprocess((v) => {
+  if (v === '' || v == null) return undefined
+  if (typeof v === 'number' && Number.isNaN(v)) return undefined
+  return v
+}, z.coerce.number().int().min(1).optional())
+
 const stopSchema = z.object({
   slug: z.string().regex(SLUG_REGEX),
   order: z.coerce.number().int().min(0),
@@ -62,7 +73,7 @@ const stopSchema = z.object({
   image: z.string().url(),
   images: z.array(z.string().url()).optional(),
   audioUrl: localizedAudioSchema.optional(),
-  triggerRadius: z.coerce.number().int().min(1).optional(),
+  triggerRadius: optionalPositiveInt,
 })
 
 // Excursion POIs are references into the places collection. Order is
@@ -99,8 +110,19 @@ const updateSchema = z.object(baseSchema)
 type CreateValues = z.infer<typeof createSchema>
 
 type Props =
-  | { mode: 'create'; cities: { slug: string; name: string }[]; initialValues?: undefined }
-  | { mode: 'edit'; cities: { slug: string; name: string }[]; initialValues: AdminExcursion }
+  | {
+      mode: 'create'
+      cities: { slug: string; name: string }[]
+      // Existing excursion slugs so the auto-generated slug can avoid
+      // collisions (belem → belem-2).
+      existingSlugs?: string[]
+      initialValues?: undefined
+    }
+  | {
+      mode: 'edit'
+      cities: { slug: string; name: string }[]
+      initialValues: AdminExcursion
+    }
 
 export function ExcursionForm(props: Props) {
   const router = useRouter()
@@ -142,6 +164,59 @@ export function ExcursionForm(props: Props) {
   const citySlug = form.watch('citySlug')
   const pois = form.watch('pois') ?? []
 
+  // Top-level slug auto-derived from name.en on create. Read-only field.
+  // Skipped in edit mode (slug is immutable post-save).
+  const existingSlugs = !isEdit ? props.existingSlugs ?? [] : []
+  const watchedNameEn = form.watch('name.en')
+  useEffect(() => {
+    if (isEdit) return
+    const base = slugify(watchedNameEn ?? '')
+    const next = buildUniqueSlug(base, existingSlugs)
+    form.setValue('slug', next, { shouldValidate: !!next })
+  }, [watchedNameEn, isEdit, form, existingSlugs])
+
+  // Auto-derive each stop's slug from its name.en. Uniqueness is local to
+  // this excursion's stops array so two stops in the same excursion can't
+  // collide (visible slug is just a routing key inside the embedded array).
+  const watchedStopNames = stops.fields
+    .map((_, idx) => form.watch(`stops.${idx}.name.en`) ?? '')
+    .join('|')
+  useEffect(() => {
+    const taken = new Set<string>()
+    stops.fields.forEach((_, idx) => {
+      const nameEn = form.watch(`stops.${idx}.name.en`) ?? ''
+      const base = slugify(nameEn) || `stop-${idx + 1}`
+      const unique = buildUniqueSlug(base, taken)
+      taken.add(unique)
+      if (form.getValues(`stops.${idx}.slug`) !== unique) {
+        form.setValue(`stops.${idx}.slug`, unique, { shouldValidate: true })
+      }
+    })
+    // We deliberately depend on the joined names string so we only re-run
+    // when an actual name field changes, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedStopNames, stops.fields.length])
+
+  // Same treatment for interesting fact slugs, derived from title.en.
+  const watchedFactTitles = facts.fields
+    .map((_, idx) => form.watch(`interestingFacts.${idx}.title.en`) ?? '')
+    .join('|')
+  useEffect(() => {
+    const taken = new Set<string>()
+    facts.fields.forEach((_, idx) => {
+      const titleEn = form.watch(`interestingFacts.${idx}.title.en`) ?? ''
+      const base = slugify(titleEn) || `fact-${idx + 1}`
+      const unique = buildUniqueSlug(base, taken)
+      taken.add(unique)
+      if (form.getValues(`interestingFacts.${idx}.slug`) !== unique) {
+        form.setValue(`interestingFacts.${idx}.slug`, unique, {
+          shouldValidate: true,
+        })
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedFactTitles, facts.fields.length])
+
   const onSubmit = (raw: CreateValues) => {
     startTransition(async () => {
       const cleaned = normalizePayload(raw)
@@ -165,10 +240,17 @@ export function ExcursionForm(props: Props) {
       {!isEdit && (
         <Card>
           <CardContent className="pt-6 flex flex-col gap-2">
-            <Label htmlFor="slug">
-              Slug<span className="text-[var(--color-destructive)] ml-1">*</span>
-            </Label>
-            <Input id="slug" {...form.register('slug')} placeholder="belem" />
+            <Label htmlFor="slug">Slug (auto-generated)</Label>
+            <Input
+              id="slug"
+              value={form.watch('slug') ?? ''}
+              readOnly
+              placeholder="Will fill in once you start typing the name"
+              className="font-mono text-sm bg-[var(--color-muted)]"
+            />
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Derived from the English name. Can't be changed after save.
+            </p>
           </CardContent>
         </Card>
       )}
@@ -198,42 +280,32 @@ export function ExcursionForm(props: Props) {
             name="image"
             label="Hero image"
             required
+            hint="Shown as the excursion card on the city detail screen and at the top of the favorites row."
             folder={`excursion/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
           />
-          <LocalizedInput control={form.control} name="name" label="Name" required />
+          <LocalizedInput
+            control={form.control}
+            name="name"
+            label="Name"
+            required
+            hint="Title of the excursion in lists and at the top of the excursion screen."
+          />
           <LocalizedInput
             control={form.control}
             name="meta"
             label="Meta"
             placeholder="3h · €35"
             required
+            hint="Short line under the excursion name. Conventionally duration + price (e.g. '3h · €35')."
           />
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="pt-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <p className="text-sm font-medium">Stops ({stops.fields.length})</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                stops.append({
-                  slug: '',
-                  order: stops.fields.length,
-                  name: { en: '' },
-                  description: { en: '' },
-                  coords: { latitude: 0, longitude: 0 },
-                  image: '',
-                  images: [],
-                })
-              }
-            >
-              <Plus className="h-4 w-4" />
-              Add stop
-            </Button>
+            <FieldHint text="Each stop becomes a numbered marker on the excursion map and a row in the bottom navigation list. The user is guided to each stop in order during the route." />
           </div>
           {stops.fields.map((field, idx) => (
             <Card key={field.id} className="border-dashed">
@@ -251,11 +323,7 @@ export function ExcursionForm(props: Props) {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs">Slug</Label>
-                    <Input {...form.register(`stops.${idx}.slug`)} placeholder="jeronimos" />
-                  </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-xs">Order</Label>
                     <Input
@@ -316,6 +384,7 @@ export function ExcursionForm(props: Props) {
                   name={`stops.${idx}.image`}
                   label="Hero image"
                   required
+                  hint="Thumbnail in the stops list; on arrival, used as the image in the 'You have arrived' card and as the first slide of the stop detail sheet's image carousel."
                   folder={`excursion/${form.watch('slug') || 'untitled'}/stops/${form.watch(`stops.${idx}.slug`) || `stop-${idx}`}`}
                 />
                 <LocalizedInput
@@ -323,6 +392,7 @@ export function ExcursionForm(props: Props) {
                   name={`stops.${idx}.name`}
                   label="Name"
                   required
+                  hint="Stop label shown in the bottom stops list, on the map marker callout, and at the top of the stop detail sheet."
                 />
                 <LocalizedInput
                   control={form.control}
@@ -330,28 +400,68 @@ export function ExcursionForm(props: Props) {
                   label="Description"
                   required
                   multiline
+                  hint="Long text shown on the arrived card and in the stop detail sheet body. Becomes the script the user reads on arrival."
                 />
                 <ImageListInput
                   control={form.control}
                   name={`stops.${idx}.images`}
                   label="Gallery images"
+                  hint="Swipeable carousel at the top of the stop detail sheet. First image replaces the single hero on the carousel."
                   folder={`excursion/${form.watch('slug') || 'untitled'}/stops/${form.watch(`stops.${idx}.slug`) || `stop-${idx}`}/gallery`}
                 />
                 <AudioInput
                   control={form.control}
                   name={`stops.${idx}.audioUrl`}
                   label="Audio guide"
+                  hint="Plays in the audio card inside the stop detail sheet — the user hears this once they arrive and tap 'More info'."
                   folder={`excursion/${form.watch('slug') || 'untitled'}/stops/${form.watch(`stops.${idx}.slug`) || `stop-${idx}`}`}
                 />
               </CardContent>
             </Card>
           ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              // Seed the new stop's coords from the previous stop so the
+              // editor doesn't have to drop a fresh pin halfway across the
+              // world. Falls back to (0, 0) only on the very first stop.
+              const prevIdx = stops.fields.length - 1
+              const prevCoords =
+                prevIdx >= 0
+                  ? form.getValues(`stops.${prevIdx}.coords`)
+                  : null
+              const seedCoords =
+                prevCoords &&
+                typeof prevCoords.latitude === 'number' &&
+                typeof prevCoords.longitude === 'number' &&
+                !Number.isNaN(prevCoords.latitude) &&
+                !Number.isNaN(prevCoords.longitude)
+                  ? { ...prevCoords }
+                  : { latitude: 0, longitude: 0 }
+              stops.append({
+                slug: '',
+                order: stops.fields.length,
+                name: { en: '' },
+                description: { en: '' },
+                coords: seedCoords,
+                image: '',
+                images: [],
+              })
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Add stop
+          </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="pt-6 flex flex-col gap-3">
-          <p className="text-sm font-medium">POIs along the route</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium">POIs along the route</p>
+            <FieldHint text="POIs render as colored circle markers on the excursion map during the preview phase and as rows interleaved with stops in the bottom navigation list. Tapping a POI marker opens its detail sheet. POIs are hidden while the user is actively navigating to the next stop." />
+          </div>
           <p className="text-xs text-[var(--color-muted-foreground)]">
             POIs are references to places in this city. To create a new POI,
             add it under /discover/places first, then check it here. Order
@@ -408,25 +518,11 @@ export function ExcursionForm(props: Props) {
 
       <Card>
         <CardContent className="pt-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <p className="text-sm font-medium">
               Interesting facts ({facts.fields.length})
             </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                facts.append({
-                  slug: '',
-                  title: { en: '' },
-                  audioUrl: {},
-                })
-              }
-            >
-              <Plus className="h-4 w-4" />
-              Add fact
-            </Button>
+            <FieldHint text="Short narration cards that play during long walking legs (≥150m or ≥2 min), distributed across the excursion. Mobile shows a floating amber 'Did you know?' banner that auto-rotates through the facts you author here." />
           </div>
           <p className="text-xs text-[var(--color-muted-foreground)]">
             Short narration cards attached to the excursion, independent of
@@ -448,28 +544,37 @@ export function ExcursionForm(props: Props) {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs">Slug</Label>
-                  <Input
-                    {...form.register(`interestingFacts.${idx}.slug`)}
-                    placeholder="manueline-stone"
-                  />
-                </div>
                 <LocalizedInput
                   control={form.control}
                   name={`interestingFacts.${idx}.title`}
                   label="Title"
                   required
+                  hint="Short line shown in the floating amber 'Did you know?' banner during walking legs, and at the top of the audio sheet when the user taps the banner."
                 />
                 <AudioInput
                   control={form.control}
                   name={`interestingFacts.${idx}.audioUrl`}
                   label="Narration"
+                  hint="The audio file that plays when the user taps the banner. One file per language; mobile picks the user's locale."
                   folder={`excursion/${form.watch('slug') || 'untitled'}/facts/${form.watch(`interestingFacts.${idx}.slug`) || `fact-${idx}`}`}
                 />
               </CardContent>
             </Card>
           ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              facts.append({
+                slug: '',
+                title: { en: '' },
+                audioUrl: {},
+              })
+            }
+          >
+            <Plus className="h-4 w-4" />
+            Add fact
+          </Button>
         </CardContent>
       </Card>
 

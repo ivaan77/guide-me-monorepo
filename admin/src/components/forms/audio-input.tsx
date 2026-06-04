@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner'
 import { Loader2, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { FieldHint } from '@/components/forms/field-hint'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -23,6 +24,8 @@ type Props<T extends FieldValues> = {
   control: Control<T>
   name: FieldPath<T>
   label: string
+  // Optional one-line hint surfaced as an (i) tooltip next to the label.
+  hint?: string
   // Server-side folder under the bucket's audio/ root. Example:
   //   excursion/belem/jeronimos
   folder: string
@@ -32,11 +35,15 @@ export function AudioInput<T extends FieldValues>({
   control,
   name,
   label,
+  hint,
   folder,
 }: Props<T>) {
   return (
     <div className="flex flex-col gap-2">
-      <Label>{label}</Label>
+      <div className="flex items-center gap-1.5">
+        <Label>{label}</Label>
+        {hint && <FieldHint text={hint} />}
+      </div>
       <p className="text-xs text-[var(--color-muted-foreground)]">
         Upload one audio file per language. All locales are optional.
       </p>

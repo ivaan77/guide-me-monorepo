@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,6 +20,7 @@ import { AudioInput } from '@/components/forms/audio-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
 import { PlacePicker } from '@/components/forms/place-picker'
 import { SingleImageInput } from '@/components/forms/single-image-input'
+import { buildUniqueSlug, slugify } from '@/lib/slug'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
 
@@ -87,7 +88,15 @@ type CreateValues = z.infer<typeof createSchema>
 type UpdateValues = z.infer<typeof updateSchema>
 
 type Props =
-  | { mode: 'create'; initialValues?: undefined }
+  | {
+      mode: 'create'
+      initialValues?: undefined
+      // Existing slugs already in use. Used to suffix the auto-generated
+      // slug (lisbon → lisbon-2) so the api's 409 never fires for a
+      // fixable collision. Empty array works fine; missing collisions are
+      // caught server-side anyway.
+      existingSlugs?: string[]
+    }
   | { mode: 'edit'; initialValues: AdminCity }
 
 export function CityForm(props: Props) {
@@ -121,6 +130,17 @@ export function CityForm(props: Props) {
     defaultValues: defaultValues as CreateValues,
   })
 
+  // Auto-derive the slug from name.en on the create form. Skipped in edit
+  // mode because slugs are immutable once saved.
+  const existingSlugs = !isEdit ? props.existingSlugs ?? [] : []
+  const watchedNameEn = form.watch('name.en')
+  useEffect(() => {
+    if (isEdit) return
+    const base = slugify(watchedNameEn ?? '')
+    const next = buildUniqueSlug(base, existingSlugs)
+    form.setValue('slug', next, { shouldValidate: !!next })
+  }, [watchedNameEn, isEdit, form, existingSlugs])
+
   const onSubmit = (raw: CreateValues) => {
     startTransition(async () => {
       const cleaned = normalizePayload(raw)
@@ -146,10 +166,17 @@ export function CityForm(props: Props) {
       {!isEdit && (
         <Card>
           <CardContent className="pt-6 flex flex-col gap-2">
-            <Label htmlFor="slug">
-              Slug<span className="text-[var(--color-destructive)] ml-1">*</span>
-            </Label>
-            <Input id="slug" {...form.register('slug')} placeholder="lisbon" />
+            <Label htmlFor="slug">Slug (auto-generated)</Label>
+            <Input
+              id="slug"
+              value={form.watch('slug') ?? ''}
+              readOnly
+              placeholder="Will fill in once you start typing the name"
+              className="font-mono text-sm bg-[var(--color-muted)]"
+            />
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Derived from the English name. Can't be changed after save.
+            </p>
             {form.formState.errors.slug?.message && (
               <p className="text-xs text-[var(--color-destructive)]">
                 {form.formState.errors.slug.message}
@@ -166,10 +193,23 @@ export function CityForm(props: Props) {
             name="image"
             label="Image"
             required
+            hint="Used as the city card thumbnail on the discover home and as the full-bleed hero on the city detail screen."
             folder={`city/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
           />
-          <LocalizedInput control={form.control} name="name" label="Name" required />
-          <LocalizedInput control={form.control} name="country" label="Country" required />
+          <LocalizedInput
+            control={form.control}
+            name="name"
+            label="Name"
+            required
+            hint="Big title rendered over the city hero image, and the label on the city's discover card."
+          />
+          <LocalizedInput
+            control={form.control}
+            name="country"
+            label="Country"
+            required
+            hint="Uppercase line shown just under the city name, both on the discover card and city detail."
+          />
         </CardContent>
       </Card>
 
@@ -181,12 +221,14 @@ export function CityForm(props: Props) {
             name="editorPick.headline"
             label="Headline"
             placeholder="Editor's pick"
+            hint="Bold uppercase line in the amber editor's pick card that overlaps the city hero."
           />
           <LocalizedInput
             control={form.control}
             name="editorPick.tagline"
             label="Tagline"
             multiline
+            hint="Short prose below the headline in the editor's pick card. One or two sentences."
           />
         </CardContent>
       </Card>
@@ -197,6 +239,7 @@ export function CityForm(props: Props) {
             control={form.control}
             name="audioUrl"
             label="City intro audio (optional)"
+            hint="Plays in an audio card below the editor's pick on the city detail screen. One file per language; mobile picks the user's locale."
             folder={`city/${isEdit ? props.initialValues!.slug : form.watch('slug') || 'untitled'}`}
           />
         </CardContent>
@@ -211,6 +254,7 @@ export function CityForm(props: Props) {
               form.setValue('cityPlaceSlugs', next, { shouldDirty: true })
             }
             label="Places to show in this city"
+            hint="Mobile groups these into accordion sections by category (Restaurants, Cafés, Bars, Shopping, Events, Parks) on the city detail screen. Order within each section follows your order here."
             emptyHint="Save the city first, then come back to attach places."
           />
         </CardContent>
