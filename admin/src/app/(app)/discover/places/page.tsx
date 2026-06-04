@@ -10,7 +10,14 @@ import { PlacesFilters } from './places-filters'
 
 export const dynamic = 'force-dynamic'
 
-const VALID_CATEGORIES: PoiCategory[] = ['restaurant', 'bar', 'shopping']
+const VALID_CATEGORIES: PoiCategory[] = [
+  'restaurant',
+  'cafe',
+  'bar',
+  'shopping',
+  'event',
+  'park',
+]
 
 export default async function PlacesPage({
   searchParams,
@@ -31,8 +38,8 @@ export default async function PlacesPage({
   return (
     <>
       <PageHeader
-        title="Places"
-        description={`${places.length} matching. Restaurants, bars, and shopping.`}
+        title="Places & Events"
+        description={`${places.length} matching. Restaurants, cafés, bars, shopping, events, and parks.`}
         actions={
           <Button asChild>
             <Link href="/discover/places/new">

@@ -1,5 +1,6 @@
 'use client'
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form'
+import { FieldHint } from '@/components/forms/field-hint'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,6 +20,9 @@ type Props<T extends FieldValues> = {
   required?: boolean
   multiline?: boolean
   placeholder?: string
+  // Optional one-line hint surfaced as an (i) tooltip next to the label.
+  // Use it to explain where the field shows up on mobile.
+  hint?: string
 }
 
 export function LocalizedInput<T extends FieldValues>({
@@ -28,13 +32,17 @@ export function LocalizedInput<T extends FieldValues>({
   required,
   multiline,
   placeholder,
+  hint,
 }: Props<T>) {
   return (
     <div className="flex flex-col gap-2">
-      <Label>
-        {label}
-        {required && <span className="text-[var(--color-destructive)] ml-1">*</span>}
-      </Label>
+      <div className="flex items-center gap-1.5">
+        <Label>
+          {label}
+          {required && <span className="text-[var(--color-destructive)] ml-1">*</span>}
+        </Label>
+        {hint && <FieldHint text={hint} />}
+      </div>
       <Tabs defaultValue="en" className="w-full">
         <TabsList>
           {LOCALES.map((l) => (

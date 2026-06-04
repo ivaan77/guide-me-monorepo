@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -24,10 +24,12 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { AudioInput } from '@/components/forms/audio-input'
+import { FieldHint } from '@/components/forms/field-hint'
 import { ImageListInput } from '@/components/forms/image-list-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
 import { MapCoordsPicker } from '@/components/forms/map-coords-picker'
 import { SingleImageInput } from '@/components/forms/single-image-input'
+import { buildUniqueSlug, slugify } from '@/lib/slug'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
 
@@ -95,8 +97,20 @@ const updateSchema = z.object(baseSchema)
 type CreateValues = z.infer<typeof createSchema>
 
 type Props =
-  | { mode: 'create'; cities: { slug: string; name: string }[]; initialValues?: undefined }
-  | { mode: 'edit'; cities: { slug: string; name: string }[]; initialValues: AdminPlace }
+  | {
+      mode: 'create'
+      cities: { slug: string; name: string }[]
+      // Existing place slugs in use. Used to suffix the auto-generated
+      // slug (time-out → time-out-2) so a click-fast editor doesn't hit
+      // the api's 409.
+      existingSlugs?: string[]
+      initialValues?: undefined
+    }
+  | {
+      mode: 'edit'
+      cities: { slug: string; name: string }[]
+      initialValues: AdminPlace
+    }
 
 export function PlaceForm(props: Props) {
   const router = useRouter()
@@ -138,6 +152,17 @@ export function PlaceForm(props: Props) {
     defaultValues,
   })
 
+  // Auto-derive the slug from name.en on the create form. Skipped in edit
+  // mode because slugs are immutable.
+  const existingSlugs = !isEdit ? props.existingSlugs ?? [] : []
+  const watchedNameEn = form.watch('name.en')
+  useEffect(() => {
+    if (isEdit) return
+    const base = slugify(watchedNameEn ?? '')
+    const next = buildUniqueSlug(base, existingSlugs)
+    form.setValue('slug', next, { shouldValidate: !!next })
+  }, [watchedNameEn, isEdit, form, existingSlugs])
+
   const onSubmit = (raw: CreateValues) => {
     startTransition(async () => {
       const cleaned = normalizePayload(raw)
@@ -164,10 +189,17 @@ export function PlaceForm(props: Props) {
       {!isEdit && (
         <Card>
           <CardContent className="pt-6 flex flex-col gap-2">
-            <Label htmlFor="slug">
-              Slug<span className="text-[var(--color-destructive)] ml-1">*</span>
-            </Label>
-            <Input id="slug" {...form.register('slug')} placeholder="time-out-market" />
+            <Label htmlFor="slug">Slug (auto-generated)</Label>
+            <Input
+              id="slug"
+              value={form.watch('slug') ?? ''}
+              readOnly
+              placeholder="Will fill in once you start typing the name"
+              className="font-mono text-sm bg-[var(--color-muted)]"
+            />
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Derived from the English name. Can't be changed after save.
+            </p>
             {form.formState.errors.slug?.message && (
               <p className="text-xs text-[var(--color-destructive)]">
                 {form.formState.errors.slug.message}
@@ -222,32 +254,43 @@ export function PlaceForm(props: Props) {
             name="image"
             label="Hero image"
             required
+            hint="Used as the row thumbnail in the city detail accordion and as the first slide of the place detail carousel."
             folder={`place/${slugForFolder}`}
           />
-          <LocalizedInput control={form.control} name="name" label="Name" required />
+          <LocalizedInput
+            control={form.control}
+            name="name"
+            label="Name"
+            required
+            hint="Big title at the bottom of the place hero, and the line in the city's category accordion."
+          />
           <LocalizedInput
             control={form.control}
             name="meta"
             label="Meta"
             placeholder="Seafood · €€€"
             required
+            hint="Uppercase line shown just under the place name on the detail screen. Use a short tagline like 'Food hall · €€'."
           />
           <LocalizedInput
             control={form.control}
             name="subCategory"
             label="Sub-category (optional)"
             placeholder="Japanese, Pizza, Recommended…"
+            hint="Free-text group label. Mobile groups same-category places under this label inside the city accordion. Items without it fall into 'Other'."
           />
           <LocalizedInput
             control={form.control}
             name="description"
             label="Description (optional)"
             multiline
+            hint="Body paragraph shown below the hero + meta on the place detail screen."
           />
           <ImageListInput
             control={form.control}
             name="images"
             label="Gallery images"
+            hint="Mobile shows these as a swipeable horizontal hero carousel with paging dots. First image replaces the single hero in the carousel."
             folder={`place/${slugForFolder}/gallery`}
           />
         </CardContent>
@@ -255,7 +298,10 @@ export function PlaceForm(props: Props) {
 
       <Card>
         <CardContent className="pt-6 flex flex-col gap-3">
-          <p className="text-sm font-medium">Location (optional)</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium">Location (optional)</p>
+            <FieldHint text="Sets the map pin on the place detail screen and lets excursions use this place as a navigable POI. Without coords the place shows up in lists but never on a map." />
+          </div>
           <p className="text-xs text-[var(--color-muted-foreground)]">
             Required for the place to appear on the mobile map. Click on the map
             or type coordinates manually.
@@ -295,6 +341,7 @@ export function PlaceForm(props: Props) {
             control={form.control}
             name="audioUrl"
             label="Audio guide (optional)"
+            hint="Plays in an audio card below the description on the place detail screen. One file per language; mobile picks the user's locale."
             folder={`place/${slugForFolder}`}
           />
         </CardContent>

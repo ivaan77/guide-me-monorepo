@@ -18,11 +18,11 @@ const ON_AMBER = palette.navy
 
 // Threshold for a leg to "qualify" as a long walk worth a fact. Either
 // dimension passing is enough — a short distance with many traffic lights
-// can still be 4 minutes of standing around, and a brisk 300m suburb walk
-// counts even if it's only 3:30. Both numbers tuned by feel; revisit if
-// users say the banner shows up at the wrong time.
-const QUALIFYING_DISTANCE_METERS = 300
-const QUALIFYING_DURATION_SECONDS = 4 * 60
+// can still be a couple of minutes of standing around, and a brisk 150m
+// walk counts even if it's under 2 minutes. Tuned to fire on typical
+// city-block legs without being annoying on micro-hops.
+const QUALIFYING_DISTANCE_METERS = 150
+const QUALIFYING_DURATION_SECONDS = 2 * 60
 
 // Show the first fact after the user has consumed this fraction of the
 // leg. Lets them start walking before the banner pops.
@@ -30,8 +30,8 @@ const APPEAR_AT_TRAVELLED_FRACTION = 0.2
 
 // One fact roughly per this much walking time. Caps per-leg fact count
 // so a long walk gets a few facts, a short walk gets one. With this set
-// to 5 minutes: legs >=4min get 1 fact, legs >=10min get 2, etc.
-const SECONDS_PER_FACT = 5 * 60
+// to 4 minutes: legs >=2min get 1 fact, legs >=8min get 2, etc.
+const SECONDS_PER_FACT = 4 * 60
 
 type Props = {
   // Per-leg active fact (chosen by the parent from the unseen pool) plus the

@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react'
 import type { AdminPlace, PoiCategory } from '@guide-me-app/core'
 import { listPlacesAction } from '@/actions/places'
 import { Button } from '@/components/ui/button'
+import { FieldHint } from './field-hint'
 import { Label } from '@/components/ui/label'
 
 // Category labels match what the place form / mobile UI render. Keep in sync
@@ -35,6 +36,7 @@ type Props = {
   value: string[]
   onChange: (next: string[]) => void
   label: string
+  hint?: string
   emptyHint?: string
 }
 
@@ -48,6 +50,7 @@ export function PlacePicker({
   value,
   onChange,
   label,
+  hint,
   emptyHint,
 }: Props) {
   const [places, setPlaces] = useState<AdminPlace[] | null>(null)
@@ -113,7 +116,10 @@ export function PlacePicker({
   if (!citySlug) {
     return (
       <div className="flex flex-col gap-1.5">
-        <Label>{label}</Label>
+        <div className="flex items-center gap-1.5">
+          <Label>{label}</Label>
+          {hint && <FieldHint text={hint} />}
+        </div>
         <p className="text-xs text-[var(--color-muted-foreground)]">
           {emptyHint ?? 'Save the parent first to attach places.'}
         </p>
@@ -124,7 +130,10 @@ export function PlacePicker({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <Label>{label}</Label>
+        <div className="flex items-center gap-1.5">
+          <Label>{label}</Label>
+          {hint && <FieldHint text={hint} />}
+        </div>
         <span className="text-xs text-[var(--color-muted-foreground)]">
           {value.length} selected
         </span>
