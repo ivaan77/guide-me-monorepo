@@ -207,17 +207,23 @@ export function useFactBannerSchedule(params: {
   // initialised for. When the leg changes we reset.
   const [legId, setLegId] = useState(currentIndex)
   const [legFacts, setLegFacts] = useState<PublicInterestingFact[]>([])
-  const [factIndexInLeg, setFactIndexInLeg] = useState(0)
+  // -1 means "no fact visible yet on this leg". The rotation effect moves
+  // it up monotonically once the user crosses the appearance fraction.
+  const [factIndexInLeg, setFactIndexInLeg] = useState(-1)
   const [dismissed, setDismissed] = useState(false)
   const [travelled, setTravelled] = useState(0)
 
   // Reset per-leg state whenever the leg changes. Also recompute the leg's
   // fact quota from its duration and pop that many facts from the pool.
+  // Note `factIndexInLeg` starts at -1 (not 0) so a fresh leg is "hidden"
+  // until the rotation effect explicitly moves it up. With 0 the banner
+  // would briefly show fact #0 during the first render before the rotation
+  // effect ran, then snap to -1 — visible flicker.
   useEffect(() => {
     if (currentIndex === legId && legFacts.length > 0) return
     setLegId(currentIndex)
     setDismissed(false)
-    setFactIndexInLeg(0)
+    setFactIndexInLeg(-1)
     setTravelled(0)
 
     // Defer fact selection until we know the leg's duration. Until then
@@ -259,27 +265,35 @@ export function useFactBannerSchedule(params: {
   // Schedule rotation through `legFacts` based on travelled distance. Facts
   // are spaced evenly across the leg starting at APPEAR_AT_TRAVELLED_FRACTION
   // — so 3 facts on a leg show at 20%, 60%, 100% (approx).
+  //
+  // High-water-mark behaviour: once a fact has appeared, we never go back to
+  // -1 (hidden) on the same leg even if GPS jitter pushes the projected
+  // fraction temporarily below the threshold. Likewise we never decrement
+  // the index. This keeps the banner stable on real walks where remaining-
+  // distance estimates wobble by a few meters tick-to-tick.
   useEffect(() => {
     if (legFacts.length === 0 || legDistanceMeters == null) return
     const fraction = travelled / legDistanceMeters
     if (fraction < APPEAR_AT_TRAVELLED_FRACTION) {
-      // Not far enough into the walk; hide.
-      setFactIndexInLeg(-1)
+      // Not far enough into the walk yet. Only hide if we never showed a
+      // fact this leg; otherwise keep the current index pinned.
+      if (factIndexInLeg < 0) setFactIndexInLeg(-1)
       return
     }
+    let nextIdx: number
     if (legFacts.length === 1) {
-      setFactIndexInLeg(0)
-      return
+      nextIdx = 0
+    } else {
+      const span = 1 - APPEAR_AT_TRAVELLED_FRACTION
+      const step = span / legFacts.length
+      nextIdx = Math.min(
+        legFacts.length - 1,
+        Math.floor((fraction - APPEAR_AT_TRAVELLED_FRACTION) / step),
+      )
     }
-    // Map fraction → fact index: 1st fact at 20%, last at ~100%.
-    const span = 1 - APPEAR_AT_TRAVELLED_FRACTION
-    const step = span / legFacts.length
-    const idx = Math.min(
-      legFacts.length - 1,
-      Math.floor((fraction - APPEAR_AT_TRAVELLED_FRACTION) / step),
-    )
-    setFactIndexInLeg(idx)
-  }, [travelled, legDistanceMeters, legFacts.length])
+    // Monotonic: never go backwards.
+    if (nextIdx > factIndexInLeg) setFactIndexInLeg(nextIdx)
+  }, [travelled, legDistanceMeters, legFacts.length, factIndexInLeg])
 
   const visible =
     phase === 'navigating' &&
