@@ -116,7 +116,8 @@ export class DiscoverService {
         if (!place) return null;
         return this.toPublicPoi(place, ref.order, locale);
       })
-      .filter((p): p is PublicPoi => p !== null);
+      .filter((p): p is PublicPoi => p !== null)
+      .sort((a, b) => a.order - b.order);
 
     const resolvedFacts: PublicInterestingFact[] = (
       excursion.interestingFacts ?? []
@@ -137,7 +138,9 @@ export class DiscoverService {
       name: pickLocalized(excursion.name, locale),
       meta: pickLocalized(excursion.meta, locale),
       image: excursion.image,
-      stops: excursion.stops.map((stop) => this.toPublicStop(stop, locale)),
+      stops: [...excursion.stops]
+        .sort((a, b) => a.order - b.order)
+        .map((stop) => this.toPublicStop(stop, locale)),
       pois: resolvedPois.length > 0 ? resolvedPois : undefined,
       interestingFacts: resolvedFacts.length > 0 ? resolvedFacts : undefined,
     };

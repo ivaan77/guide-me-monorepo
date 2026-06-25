@@ -54,4 +54,13 @@ export class UsersRepository {
       .lean<UserDocument>()
       .exec();
   }
+
+  // Strips a favorite ref from every user. Called when admin deletes the
+  // underlying entity so the favorite doesn't linger as an orphan.
+  async pullFavoriteFromAll(fav: FavoriteRef): Promise<number> {
+    const result = await this.userModel
+      .updateMany({}, { $pull: { favorites: { type: fav.type, id: fav.id } } })
+      .exec();
+    return result.modifiedCount ?? 0;
+  }
 }

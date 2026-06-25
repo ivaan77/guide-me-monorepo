@@ -19,6 +19,7 @@ import { DiscoverRepository } from '../../discover/discover.repository';
 import { DiscoverCityDocument } from '../../discover/schemas/discover-city.schema';
 import { DiscoverExcursionDocument } from '../../discover/schemas/discover-excursion.schema';
 import { DiscoverPlaceDocument } from '../../discover/schemas/discover-place.schema';
+import { UsersRepository } from '../../users/users.repository';
 import { CreateCityDto, UpdateCityDto } from './dto/city.dto';
 import { CreateExcursionDto, UpdateExcursionDto } from './dto/excursion.dto';
 import { CreatePlaceDto, UpdatePlaceDto } from './dto/place.dto';
@@ -28,6 +29,7 @@ export class AdminDiscoverService {
   constructor(
     private readonly repo: DiscoverRepository,
     private readonly cache: CacheService,
+    private readonly usersRepo: UsersRepository,
   ) {}
 
   // ---------------- Cities ----------------
@@ -80,6 +82,7 @@ export class AdminDiscoverService {
     const result = await this.repo.deleteCityBySlug(slug);
     if (result.deletedCount === 0)
       throw new NotFoundException(`City not found: ${slug}`);
+    await this.usersRepo.pullFavoriteFromAll({ type: 'city', id: slug });
     await this.bustCache();
   }
 
@@ -147,6 +150,7 @@ export class AdminDiscoverService {
     const result = await this.repo.deleteExcursionBySlug(slug);
     if (result.deletedCount === 0)
       throw new NotFoundException(`Excursion not found: ${slug}`);
+    await this.usersRepo.pullFavoriteFromAll({ type: 'excursion', id: slug });
     await this.bustCache();
   }
 
@@ -209,6 +213,7 @@ export class AdminDiscoverService {
     const result = await this.repo.deletePlaceBySlug(slug);
     if (result.deletedCount === 0)
       throw new NotFoundException(`Place not found: ${slug}`);
+    await this.usersRepo.pullFavoriteFromAll({ type: 'place', id: slug });
     await this.bustCache();
   }
 
