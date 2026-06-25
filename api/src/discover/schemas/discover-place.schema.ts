@@ -12,10 +12,17 @@ import {
 export const PLACE_CATEGORIES = [
   'restaurant',
   'cafe',
+  'pastry',
+  'brunch',
   'bar',
   'shopping',
   'event',
   'park',
+  'museum',
+  'viewpoint',
+  'local',
+  'workshop',
+  'playarea',
 ] as const;
 export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];
 

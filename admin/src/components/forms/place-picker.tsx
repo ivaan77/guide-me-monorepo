@@ -13,19 +13,33 @@ import { Label } from '@/components/ui/label'
 const CATEGORY_LABEL: Record<PoiCategory, string> = {
   restaurant: 'Restaurants',
   cafe: 'Cafés',
+  pastry: 'Pastry shops',
+  brunch: 'Brunch',
   bar: 'Bars',
   shopping: 'Shopping',
   event: 'Events',
   park: 'Parks',
+  museum: 'Museums',
+  viewpoint: 'Viewpoints',
+  local: 'Local picks',
+  workshop: 'Workshops',
+  playarea: 'Play areas',
 }
 
 const CATEGORY_ORDER: PoiCategory[] = [
   'restaurant',
   'cafe',
+  'pastry',
+  'brunch',
   'bar',
   'shopping',
   'event',
   'park',
+  'museum',
+  'viewpoint',
+  'local',
+  'workshop',
+  'playarea',
 ]
 
 type Props = {

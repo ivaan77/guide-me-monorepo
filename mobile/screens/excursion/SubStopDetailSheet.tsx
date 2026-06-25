@@ -8,23 +8,36 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
-import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
+import { H3, Paragraph, XStack, YStack } from 'tamagui'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { BottomSheet } from '../../common/BottomSheet'
-import type { PublicExcursionStop as ExcursionStop } from '@guide-me-app/core'
-import { BUNDLE_ACCENT } from './StopBundlePin'
+import { FavoriteButton } from '../../common/FavoriteButton'
+import type { PublicSubStop } from '@guide-me-app/core'
 
 const H_PADDING = 20
 
 type Props = {
   visible: boolean
-  stop: ExcursionStop | null
+  sub: PublicSubStop | null
+  // Parent excursion + stop slugs — used to build the composite favorite id
+  // `excursionId:stopId:subStopId`.
+  excursionId: string
+  stopId: string
   onClose: () => void
 }
 
-export function StopDetailSheet({ visible, stop, onClose }: Props) {
-  if (!stop) return null
-
+// Dedicated detail sheet for a single sub-stop. Mirrors StopDetailSheet's
+// layout (image carousel + audio + description) so sub-stops feel like
+// first-class destinations rather than nested afterthoughts. Opened by
+// tapping a sub-stop row in the stops list or a sub-stop dot on the map.
+export function SubStopDetailSheet({
+  visible,
+  sub,
+  excursionId,
+  stopId,
+  onClose,
+}: Props) {
+  if (!sub) return null
   return (
     <BottomSheet
       visible={visible}
@@ -33,29 +46,31 @@ export function StopDetailSheet({ visible, stop, onClose }: Props) {
       header={
         <XStack px={H_PADDING} pt="$2" pb="$3" items="center">
           <H3 fontFamily="$body" fontWeight="700" color="$color" flex={1}>
-            {stop.name}
+            {sub.name}
           </H3>
         </XStack>
       }
     >
-      <StopBody stop={stop} />
+      <SubStopBody sub={sub} excursionId={excursionId} stopId={stopId} />
     </BottomSheet>
   )
 }
 
-function StopBody({ stop }: { stop: ExcursionStop }) {
+function SubStopBody({
+  sub,
+  excursionId,
+  stopId,
+}: {
+  sub: PublicSubStop
+  excursionId: string
+  stopId: string
+}) {
   const { width: screenWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const { t } = useTranslation()
 
-  const images = stop.images?.length ? stop.images : [stop.image]
+  const images = sub.images?.length ? sub.images : [sub.image]
   const [carouselIndex, setCarouselIndex] = useState(0)
-  // Bundle = stop with sub-stops. The parent sheet keeps its own
-  // description but loses the audio (schema rule: parent audioUrl is
-  // ignored when sub-stops exist). Sub-stops have their own dedicated
-  // sheets opened from the stops list rows.
-  const isBundle = (stop.subStops?.length ?? 0) > 0
-
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       const first = viewableItems[0]
@@ -66,6 +81,11 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
     () => ({ itemVisiblePercentThreshold: 60 }),
     [],
   )
+
+  const favoriteRef = {
+    type: 'sub-stop' as const,
+    id: `${excursionId}:${stopId}:${sub.id}`,
+  }
 
   return (
     <>
@@ -108,6 +128,9 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
             ))}
           </XStack>
         )}
+        <YStack position="absolute" t="$3" r="$3" z={1}>
+          <FavoriteButton refToFavorite={favoriteRef} />
+        </YStack>
       </YStack>
 
       <ScrollView
@@ -116,34 +139,12 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
         showsVerticalScrollIndicator={false}
       >
         <YStack px={H_PADDING} pt="$4" gap="$3">
-          {isBundle && (
-            <SizableText
-              size="$2"
-              fontFamily="$body"
-              fontWeight="700"
-              style={{
-                color: BUNDLE_ACCENT,
-                textTransform: 'uppercase',
-                letterSpacing: 0.6,
-              }}
-            >
-              {t('excursion.stopSheet.bundleHeader', {
-                count: stop.subStops!.length,
-                defaultValue: `${stop.subStops!.length} stops at this place`,
-              })}
-            </SizableText>
-          )}
           <AudioPlayer
-            audioUrl={stop.audioUrl}
+            audioUrl={sub.audioUrl}
             title={t('excursion.stopSheet.audioTitle')}
           />
-          <Paragraph
-            color="$color"
-            fontFamily="$body"
-            size="$4"
-            lineHeight="$6"
-          >
-            {stop.description}
+          <Paragraph color="$color" fontFamily="$body" size="$4" lineHeight="$6">
+            {sub.description}
           </Paragraph>
         </YStack>
       </ScrollView>

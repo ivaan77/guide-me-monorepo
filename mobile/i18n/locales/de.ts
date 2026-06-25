@@ -3,8 +3,6 @@ import type { Translations } from './en'
 export const de: Translations = {
   common: {
     tryAgain: 'Erneut versuchen',
-    cancel: 'Abbrechen',
-    done: 'Fertig',
     skip: 'Überspringen',
     somethingWentWrong: 'Etwas ist schiefgelaufen',
     offline: 'Keine Internetverbindung',
@@ -67,10 +65,17 @@ export const de: Translations = {
       excursions: 'Ausflüge',
       restaurants: 'Restaurants',
       cafes: 'Cafés',
+      pastries: 'Konditoreien',
+      brunches: 'Brunch',
       bars: 'Bars',
       shopping: 'Shopping',
       events: 'Veranstaltungen',
+      museums: 'Museen',
+      viewpoints: 'Aussichtspunkte',
       parks: 'Parks',
+      workshops: 'Workshops',
+      playareas: 'Spielecken',
+      locals: 'Lokale Tipps',
     },
     subCategoryOther: 'Sonstige',
   },
@@ -84,16 +89,23 @@ export const de: Translations = {
     category: {
       restaurant: 'Restaurant',
       cafe: 'Café',
+      pastry: 'Konditorei',
+      brunch: 'Brunch',
       bar: 'Bar',
       shopping: 'Shopping',
       event: 'Veranstaltung',
       park: 'Park',
+      museum: 'Museum',
+      viewpoint: 'Aussichtspunkt',
+      local: 'Lokaler Tipp',
+      workshop: 'Workshop',
+      playarea: 'Spielecke',
     },
   },
   excursion: {
     notFound: 'Diesen Ausflug konnten wir nicht finden.',
-    locationDenied:
-      'Standortzugriff verweigert. Aktiviere ihn in den Einstellungen, um zu jeder Station geführt zu werden.',
+    waitingForGps: 'Warte auf Standort…',
+    farFromStop: 'Weit von der Station',
     preview: {
       title: 'Bereit zur Entdeckung?',
       subtitle: '{{count}} Stationen · wir führen dich zwischen ihnen.',
@@ -107,6 +119,15 @@ export const de: Translations = {
       moreInfo: 'Mehr Infos',
       continue: 'Weiter',
       finish: 'Beenden',
+      next: 'Weiter',
+      bundleIntro: '{{count}} Stationen bei {{bundle}}',
+      bundlePosition: '{{index}} von {{total}} · {{bundle}}',
+      startStops: '{{count}} Stationen starten',
+      skipSubStop: '{{name}} überspringen',
+      skipBundle: 'Alle Stationen bei {{bundle}} überspringen',
+    },
+    outro: {
+      finish: 'Beenden',
     },
     complete: {
       title: 'Tour abgeschlossen',
@@ -115,18 +136,37 @@ export const de: Translations = {
     },
     list: {
       current: 'Aktuell',
+      bundleCount: '{{count}} Stationen',
     },
     stopSheet: {
       audioTitle: 'Audioguide',
       audioPrompt: 'Zum Abspielen tippen',
       audioPlaying: 'Wird abgespielt…',
       audioMissing: 'Für diese Station gibt es noch kein Audio.',
+      bundleHeader: '{{count}} Stationen an diesem Ort',
     },
     facts: {
-      sectionTitle: 'Wissenswertes',
       sheetPrompt: 'Zum Abspielen tippen',
       playing: 'Wird abgespielt…',
       bannerLabel: 'Wusstest du schon?',
+    },
+    undoSkip: {
+      title: 'Tippen zum Rückgängig machen',
+    },
+    locationDenied: {
+      title: 'Standort erforderlich',
+      body: 'Diese Tour braucht deinen Standort, um dich zwischen den Stationen zu führen. Aktiviere ihn in den Einstellungen, um fortzufahren.',
+      cta: 'Einstellungen öffnen',
+      goBack: 'Zurück',
+    },
+    offRoute: {
+      title: 'Du bist von der Route abgekommen',
+      cta: 'Zum Neuberechnen tippen',
+    },
+    farFromRoute: {
+      title: 'Du bist weit von dieser Tour entfernt',
+      body: 'Die nächste Station ist etwa {{km}} km entfernt.',
+      startAnyway: 'Trotzdem starten',
     },
   },
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { Image, Pressable, ScrollView } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Check } from '@tamagui/lucide-icons'
@@ -6,8 +6,10 @@ import { SizableText, XStack, YStack } from 'tamagui'
 import type {
   PublicExcursionStop as ExcursionStop,
   PublicPoi as Poi,
+  PublicSubStop,
 } from '@guide-me-app/core'
 import { POI_CATEGORY_META } from './poiCategory'
+import { BUNDLE_ACCENT } from './StopBundlePin'
 
 type Status = 'visited' | 'current' | 'upcoming'
 
@@ -15,12 +17,16 @@ type Props = {
   stops: ExcursionStop[]
   pois: Poi[]
   currentIndex: number
-  phase: 'preview' | 'navigating' | 'arrived' | 'complete'
+  phase: 'preview' | 'navigating' | 'arrived' | 'outro' | 'complete'
   onPoiPress: (poi: Poi) => void
   // Optional: tap a stop row to enlarge its image in a lightbox. Excursion
   // screen passes this to drive its <ImageLightbox>. List works fine without
   // it — rows just become non-tappable in that case.
   onStopPress?: (stop: ExcursionStop) => void
+  // Optional: tap a sub-stop row under a bundle to open its detail sheet.
+  // Receives both the sub-stop and its parent stop so the caller can build
+  // the composite favorite id.
+  onSubStopPress?: (sub: PublicSubStop, parent: ExcursionStop) => void
 }
 
 type StopEntry = { kind: 'stop'; data: ExcursionStop; stopIndex: number }
@@ -34,6 +40,7 @@ export function StopsList({
   phase,
   onPoiPress,
   onStopPress,
+  onSubStopPress,
 }: Props) {
   const entries = useMemo<Entry[]>(() => {
     const stopEntries: Entry[] = stops.map((stop, stopIndex) => ({
@@ -56,15 +63,29 @@ export function StopsList({
       <YStack gap="$2">
         {entries.map((entry) =>
           entry.kind === 'stop' ? (
-            <StopRow
-              key={entry.data.id}
-              stop={entry.data}
-              stopIndex={entry.stopIndex}
-              status={statusFor(entry.stopIndex, currentIndex, phase)}
-              onPress={
-                onStopPress ? () => onStopPress(entry.data) : undefined
-              }
-            />
+            <Fragment key={entry.data.id}>
+              <StopRow
+                stop={entry.data}
+                stopIndex={entry.stopIndex}
+                status={statusFor(entry.stopIndex, currentIndex, phase)}
+                onPress={
+                  onStopPress ? () => onStopPress(entry.data) : undefined
+                }
+              />
+              {(entry.data.subStops?.length ?? 0) > 0 &&
+                entry.data.subStops!.map((sub, subIdx) => (
+                  <SubStopRow
+                    key={`${entry.data.id}:${sub.id}`}
+                    sub={sub}
+                    subIndex={subIdx}
+                    onPress={
+                      onSubStopPress
+                        ? () => onSubStopPress(sub, entry.data)
+                        : undefined
+                    }
+                  />
+                ))}
+            </Fragment>
           ) : (
             <PoiRow
               key={entry.data.id}
@@ -105,6 +126,12 @@ function StopRow({
   const { t } = useTranslation()
   const isVisited = status === 'visited'
   const isCurrent = status === 'current'
+  // A "bundle" stop is one with sub-stops. We use a different accent
+  // (violet) across map pin, list row, and bundle-related controls so the
+  // user identifies it consistently.
+  const subCount = stop.subStops?.length ?? 0
+  const isBundle = subCount > 0
+  const numberBg = isBundle ? BUNDLE_ACCENT : undefined
 
   const row = (
     <XStack
@@ -115,7 +142,7 @@ function StopRow({
       rounded="$5"
       bg={isCurrent ? '$surfaceMuted' : 'transparent'}
       borderWidth={isCurrent ? 1 : 0}
-      borderColor="$primary"
+      borderColor={isBundle ? (BUNDLE_ACCENT as any) : '$primary'}
     >
       <YStack
         width={28}
@@ -123,18 +150,29 @@ function StopRow({
         rounded={14}
         items="center"
         justify="center"
-        bg={isCurrent ? '$primary' : '$surfaceMuted'}
-        borderWidth={isVisited || isCurrent ? 0 : 1}
+        bg={
+          isCurrent && !isBundle
+            ? '$primary'
+            : isBundle
+              ? (numberBg as any)
+              : '$surfaceMuted'
+        }
+        borderWidth={isVisited || isCurrent || isBundle ? 0 : 1}
         borderColor="$borderColor"
       >
         {isVisited ? (
-          <Check size={16} color="$primary" />
+          <Check
+            size={16}
+            color={isBundle ? '#FFFFFF' : ('$primary' as any)}
+          />
         ) : (
           <SizableText
             size="$2"
             fontFamily="$body"
             fontWeight="700"
-            color={isCurrent ? '$colorOnBrand' : '$colorPress'}
+            color={
+              isCurrent || isBundle ? '$colorOnBrand' : '$colorPress'
+            }
           >
             {stopIndex + 1}
           </SizableText>
@@ -148,21 +186,48 @@ function StopRow({
       />
 
       <YStack flex={1} gap="$0.5">
-        <SizableText
-          size="$4"
-          fontFamily="$body"
-          fontWeight={isCurrent ? '700' : '600'}
-          color={isVisited ? '$colorPress' : '$color'}
-          numberOfLines={1}
-        >
-          {stop.name}
-        </SizableText>
+        <XStack items="center" gap="$2">
+          <SizableText
+            size="$4"
+            fontFamily="$body"
+            fontWeight={isCurrent ? '700' : '600'}
+            color={isVisited ? '$colorPress' : '$color'}
+            numberOfLines={1}
+            flex={1}
+          >
+            {stop.name}
+          </SizableText>
+          {isBundle && (
+            <YStack
+              px="$1.5"
+              py="$0.5"
+              rounded="$2"
+              style={{ backgroundColor: BUNDLE_ACCENT }}
+            >
+              <SizableText
+                size="$1"
+                fontFamily="$body"
+                fontWeight="800"
+                style={{
+                  color: '#FFFFFF',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.6,
+                }}
+              >
+                {t('excursion.list.bundleCount', {
+                  count: subCount,
+                  defaultValue: `${subCount} stops`,
+                })}
+              </SizableText>
+            </YStack>
+          )}
+        </XStack>
         {isCurrent && (
           <SizableText
             size="$2"
             fontFamily="$body"
             fontWeight="600"
-            color="$primary"
+            color={isBundle ? (BUNDLE_ACCENT as any) : '$primary'}
             style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
           >
             {t('excursion.list.current')}
@@ -172,6 +237,59 @@ function StopRow({
     </XStack>
   )
 
+  if (!onPress) return row
+  return <Pressable onPress={onPress}>{row}</Pressable>
+}
+
+// Indented child row under a bundle's StopRow. Visually distinct from the
+// parent: smaller image, indented from the left, violet dot badge with the
+// 1-based position in the bundle. Tap opens the sub-stop's own detail sheet.
+function SubStopRow({
+  sub,
+  subIndex,
+  onPress,
+}: {
+  sub: PublicSubStop
+  subIndex: number
+  onPress?: () => void
+}) {
+  const row = (
+    <XStack items="center" gap="$3" pl="$8" pr="$3" py="$1.5">
+      <YStack
+        width={22}
+        height={22}
+        rounded={11}
+        items="center"
+        justify="center"
+        style={{ backgroundColor: BUNDLE_ACCENT }}
+      >
+        <SizableText
+          size="$1"
+          fontFamily="$body"
+          fontWeight="800"
+          style={{ color: '#FFFFFF' }}
+        >
+          {subIndex + 1}
+        </SizableText>
+      </YStack>
+      <Image
+        source={{ uri: sub.image }}
+        style={{ width: 36, height: 36, borderRadius: 8 }}
+        resizeMode="cover"
+      />
+      <YStack flex={1}>
+        <SizableText
+          size="$3"
+          fontFamily="$body"
+          fontWeight="600"
+          color="$color"
+          numberOfLines={1}
+        >
+          {sub.name}
+        </SizableText>
+      </YStack>
+    </XStack>
+  )
   if (!onPress) return row
   return <Pressable onPress={onPress}>{row}</Pressable>
 }

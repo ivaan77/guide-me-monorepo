@@ -18,6 +18,7 @@ import {
   AdminCityResponse,
   AdminExcursionResponse,
   AdminPath,
+  AdminPlaceReferencesResponse,
   AdminPlaceResponse,
   AdminStatsResponse,
   PoiCategory,
@@ -116,6 +117,13 @@ export class AdminDiscoverController {
   @Get(AdminPath.Discover.placeBySlug)
   async getPlace(@Param('slug') slug: string): Promise<AdminPlaceResponse> {
     return { place: await this.service.getPlace(slug) };
+  }
+
+  @Get(AdminPath.Discover.placeReferencesBySlug)
+  async getPlaceReferences(
+    @Param('slug') slug: string,
+  ): Promise<AdminPlaceReferencesResponse> {
+    return this.service.getPlaceReferences(slug);
   }
 
   @Post(AdminPath.Discover.places)

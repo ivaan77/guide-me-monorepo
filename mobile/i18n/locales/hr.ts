@@ -3,8 +3,6 @@ import type { Translations } from './en'
 export const hr: Translations = {
   common: {
     tryAgain: 'Pokušaj ponovno',
-    cancel: 'Odustani',
-    done: 'Gotovo',
     skip: 'Preskoči',
     somethingWentWrong: 'Nešto je pošlo po zlu',
     offline: 'Nema internetske veze',
@@ -67,10 +65,17 @@ export const hr: Translations = {
       excursions: 'Izleti',
       restaurants: 'Restorani',
       cafes: 'Kafići',
+      pastries: 'Slastičarnice',
+      brunches: 'Brunch',
       bars: 'Barovi',
       shopping: 'Kupovina',
       events: 'Događanja',
+      museums: 'Muzeji',
+      viewpoints: 'Vidikovci',
       parks: 'Parkovi',
+      workshops: 'Radionice',
+      playareas: 'Igraonice',
+      locals: 'Lokalne preporuke',
     },
     subCategoryOther: 'Ostalo',
   },
@@ -84,16 +89,23 @@ export const hr: Translations = {
     category: {
       restaurant: 'Restoran',
       cafe: 'Kafić',
+      pastry: 'Slastičarnica',
+      brunch: 'Brunch',
       bar: 'Bar',
       shopping: 'Kupovina',
       event: 'Događanje',
       park: 'Park',
+      museum: 'Muzej',
+      viewpoint: 'Vidikovac',
+      local: 'Lokalna preporuka',
+      workshop: 'Radionica',
+      playarea: 'Igraonica',
     },
   },
   excursion: {
     notFound: 'Taj izlet nismo uspjeli pronaći.',
-    locationDenied:
-      'Pristup lokaciji odbijen. Omogući ga u Postavkama kako bismo te vodili do svake postaje.',
+    waitingForGps: 'Čekam lokaciju…',
+    farFromStop: 'Daleko od postaje',
     preview: {
       title: 'Spreman za istraživanje?',
       subtitle: '{{count}} postaja · vodimo te između njih.',
@@ -107,6 +119,15 @@ export const hr: Translations = {
       moreInfo: 'Više informacija',
       continue: 'Nastavi',
       finish: 'Završi',
+      next: 'Sljedeće',
+      bundleIntro: '{{count}} postaja na {{bundle}}',
+      bundlePosition: '{{index}} od {{total}} · {{bundle}}',
+      startStops: 'Započni {{count}} postaja',
+      skipSubStop: 'Preskoči {{name}}',
+      skipBundle: 'Preskoči sve postaje na {{bundle}}',
+    },
+    outro: {
+      finish: 'Završi',
     },
     complete: {
       title: 'Tura završena',
@@ -115,18 +136,37 @@ export const hr: Translations = {
     },
     list: {
       current: 'Trenutno',
+      bundleCount: '{{count}} postaja',
     },
     stopSheet: {
       audioTitle: 'Audio vodič',
       audioPrompt: 'Dodirni za reprodukciju',
       audioPlaying: 'Reproducira se…',
       audioMissing: 'Za ovu postaju još nema audio zapisa.',
+      bundleHeader: '{{count}} postaja na ovom mjestu',
     },
     facts: {
-      sectionTitle: 'Zanimljivosti',
       sheetPrompt: 'Dodirni za reprodukciju',
       playing: 'Reproducira se…',
       bannerLabel: 'Jeste li znali?',
+    },
+    undoSkip: {
+      title: 'Dodirni za poništavanje',
+    },
+    locationDenied: {
+      title: 'Potrebna je lokacija',
+      body: 'Ovom izletu treba tvoja lokacija za navigaciju između postaja. Uključi je u Postavkama za nastavak.',
+      cta: 'Otvori Postavke',
+      goBack: 'Natrag',
+    },
+    offRoute: {
+      title: 'Skrenuo si s rute',
+      cta: 'Dodirni za ponovni izračun',
+    },
+    farFromRoute: {
+      title: 'Daleko si od ovog izleta',
+      body: 'Najbliža postaja je oko {{km}} km daleko.',
+      startAnyway: 'Ipak započni',
     },
   },
 }

@@ -17,10 +17,17 @@ const H_PADDING = 20
 const CATEGORY_EMOJI: Record<PoiCategory, string> = {
   restaurant: '🍴',
   cafe: '☕',
+  pastry: '🧁',
+  brunch: '🥐',
   bar: '🍸',
   shopping: '🛍️',
   event: '🎉',
   park: '🌳',
+  museum: '🏛️',
+  viewpoint: '🏔️',
+  local: '❤️',
+  workshop: '🎨',
+  playarea: '🧸',
 }
 
 type Props = {

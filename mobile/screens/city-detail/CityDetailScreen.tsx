@@ -9,10 +9,17 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
+  Baby,
+  Brush,
+  Cake,
   CalendarDays,
   ChevronLeft,
   Coffee,
   Compass,
+  EggFried,
+  Heart,
+  Landmark,
+  Mountain,
   ShoppingBag,
   Trees,
   UtensilsCrossed,
@@ -169,6 +176,18 @@ export function CityDetailScreen({ id }: Props) {
             hrefFor={(item) => `/place/${item.id}`}
           />
           <CategorySection
+            title={t('city.sections.pastries')}
+            icon={Cake}
+            items={city.pastries}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.brunches')}
+            icon={EggFried}
+            items={city.brunches}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
             title={t('city.sections.bars')}
             icon={Wine}
             items={city.bars}
@@ -187,9 +206,39 @@ export function CityDetailScreen({ id }: Props) {
             hrefFor={(item) => `/place/${item.id}`}
           />
           <CategorySection
+            title={t('city.sections.museums')}
+            icon={Landmark}
+            items={city.museums}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.viewpoints')}
+            icon={Mountain}
+            items={city.viewpoints}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
             title={t('city.sections.parks')}
             icon={Trees}
             items={city.parks}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.workshops')}
+            icon={Brush}
+            items={city.workshops}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.playareas')}
+            icon={Baby}
+            items={city.playareas}
+            hrefFor={(item) => `/place/${item.id}`}
+          />
+          <CategorySection
+            title={t('city.sections.locals')}
+            icon={Heart}
+            items={city.locals}
             hrefFor={(item) => `/place/${item.id}`}
           />
         </YStack>

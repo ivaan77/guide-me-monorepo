@@ -39,6 +39,12 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      # Pin the exact yarn version that wrote yarn.lock. Without this CI
+      # may end up on a newer 4.x point release whose lockfile cacheKey
+      # differs, which breaks `yarn install --immutable`.
+      - name: Activate pinned yarn
+        run: corepack prepare yarn@4.16.0 --activate
+
       - name: Restore yarn cache
         uses: actions/cache@v4
         with:

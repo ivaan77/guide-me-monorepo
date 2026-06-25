@@ -108,7 +108,42 @@ export function trimPolylineFromUser(
   polyline: LatLng[],
 ): LatLng[] {
   if (polyline.length < 2) return polyline
+  const { bestSegmentIndex, bestProjection } = closestSegmentToUser(
+    user,
+    polyline,
+  )
+  return [user, bestProjection, ...polyline.slice(bestSegmentIndex + 1)]
+}
 
+// Splits a route polyline at the user's closest projection. The walked half
+// goes from the route start up to the projection point; the remaining half
+// goes from the user's pin to the route end. Caller uses these to render two
+// styled polylines (e.g. grey for walked, accent for remaining) so the user
+// keeps visual context of where they've been.
+export function splitPolylineAtUser(
+  user: LatLng,
+  polyline: LatLng[],
+): { walked: LatLng[]; remaining: LatLng[] } {
+  if (polyline.length < 2) {
+    return { walked: [], remaining: polyline }
+  }
+  const { bestSegmentIndex, bestProjection } = closestSegmentToUser(
+    user,
+    polyline,
+  )
+  const walked = [...polyline.slice(0, bestSegmentIndex + 1), bestProjection]
+  const remaining = [
+    user,
+    bestProjection,
+    ...polyline.slice(bestSegmentIndex + 1),
+  ]
+  return { walked, remaining }
+}
+
+function closestSegmentToUser(
+  user: LatLng,
+  polyline: LatLng[],
+): { bestSegmentIndex: number; bestProjection: LatLng; bestDistance: number } {
   let bestSegmentIndex = 0
   let bestDistance = Infinity
   let bestProjection: LatLng = polyline[0]
@@ -125,8 +160,19 @@ export function trimPolylineFromUser(
       bestProjection = projection
     }
   }
+  return { bestSegmentIndex, bestProjection, bestDistance }
+}
 
-  return [user, bestProjection, ...polyline.slice(bestSegmentIndex + 1)]
+// Returns the perpendicular distance in meters from `user` to the nearest
+// point on the polyline. Used to decide when a GPS jump (or a real off-route
+// detour) has moved the user so far from the active route that we should
+// refetch a new one from their current position.
+export function distanceFromPolyline(
+  user: LatLng,
+  polyline: LatLng[],
+): number {
+  if (polyline.length < 2) return 0
+  return closestSegmentToUser(user, polyline).bestDistance
 }
 
 function projectOntoSegment(

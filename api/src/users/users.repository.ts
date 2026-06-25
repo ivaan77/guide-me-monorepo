@@ -54,4 +54,40 @@ export class UsersRepository {
       .lean<UserDocument>()
       .exec();
   }
+
+  // Strips a favorite ref from every user. Called when admin deletes the
+  // underlying entity so the favorite doesn't linger as an orphan.
+  async pullFavoriteFromAll(fav: FavoriteRef): Promise<number> {
+    const result = await this.userModel
+      .updateMany({}, { $pull: { favorites: { type: fav.type, id: fav.id } } })
+      .exec();
+    return result.modifiedCount ?? 0;
+  }
+
+  // Strips every 'sub-stop' favorite whose composite id starts with the
+  // given excursion slug. Called when an excursion is deleted — kills the
+  // parent + all of its descendant sub-stop favorites in one update.
+  async pullSubStopFavoritesByExcursionSlug(
+    excursionSlug: string,
+  ): Promise<number> {
+    const prefix = `${excursionSlug}:`;
+    const result = await this.userModel
+      .updateMany(
+        {},
+        {
+          $pull: {
+            favorites: {
+              type: 'sub-stop',
+              id: { $regex: `^${escapeRegex(prefix)}` },
+            },
+          },
+        },
+      )
+      .exec();
+    return result.modifiedCount ?? 0;
+  }
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

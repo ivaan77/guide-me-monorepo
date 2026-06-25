@@ -19,6 +19,7 @@ import { DiscoverRepository } from '../../discover/discover.repository';
 import { DiscoverCityDocument } from '../../discover/schemas/discover-city.schema';
 import { DiscoverExcursionDocument } from '../../discover/schemas/discover-excursion.schema';
 import { DiscoverPlaceDocument } from '../../discover/schemas/discover-place.schema';
+import { UsersRepository } from '../../users/users.repository';
 import { CreateCityDto, UpdateCityDto } from './dto/city.dto';
 import { CreateExcursionDto, UpdateExcursionDto } from './dto/excursion.dto';
 import { CreatePlaceDto, UpdatePlaceDto } from './dto/place.dto';
@@ -28,6 +29,7 @@ export class AdminDiscoverService {
   constructor(
     private readonly repo: DiscoverRepository,
     private readonly cache: CacheService,
+    private readonly usersRepo: UsersRepository,
   ) {}
 
   // ---------------- Cities ----------------
@@ -80,6 +82,7 @@ export class AdminDiscoverService {
     const result = await this.repo.deleteCityBySlug(slug);
     if (result.deletedCount === 0)
       throw new NotFoundException(`City not found: ${slug}`);
+    await this.usersRepo.pullFavoriteFromAll({ type: 'city', id: slug });
     await this.bustCache();
   }
 
@@ -147,6 +150,10 @@ export class AdminDiscoverService {
     const result = await this.repo.deleteExcursionBySlug(slug);
     if (result.deletedCount === 0)
       throw new NotFoundException(`Excursion not found: ${slug}`);
+    await this.usersRepo.pullFavoriteFromAll({ type: 'excursion', id: slug });
+    // Also drop any 'sub-stop' favorites that pointed into this excursion.
+    // Their composite ids share the excursion slug prefix.
+    await this.usersRepo.pullSubStopFavoritesByExcursionSlug(slug);
     await this.bustCache();
   }
 
@@ -196,6 +203,20 @@ export class AdminDiscoverService {
     return this.toAdminPlace(doc);
   }
 
+  // Lightweight read for the admin place edit form: how many cities and
+  // excursions reference this place. Used to render a 'not visible to
+  // users' banner when both are zero (the place exists but nothing
+  // surfaces it). Cheap — both are countDocuments queries.
+  async getPlaceReferences(
+    slug: string,
+  ): Promise<{ cities: number; excursions: number }> {
+    const [cities, excursions] = await Promise.all([
+      this.repo.countCitiesReferencingPlace(slug),
+      this.repo.countExcursionsReferencingPlace(slug),
+    ]);
+    return { cities, excursions };
+  }
+
   async deletePlace(slug: string): Promise<void> {
     const [cityRefs, excursionRefs] = await Promise.all([
       this.repo.countCitiesReferencingPlace(slug),
@@ -209,6 +230,7 @@ export class AdminDiscoverService {
     const result = await this.repo.deletePlaceBySlug(slug);
     if (result.deletedCount === 0)
       throw new NotFoundException(`Place not found: ${slug}`);
+    await this.usersRepo.pullFavoriteFromAll({ type: 'place', id: slug });
     await this.bustCache();
   }
 
@@ -383,6 +405,7 @@ export class AdminDiscoverService {
       pois: (doc.pois ?? []) as AdminExcursion['pois'],
       interestingFacts: (doc.interestingFacts ??
         []) as AdminExcursion['interestingFacts'],
+      outro: doc.outro as AdminExcursion['outro'],
       isEnabled: doc.isEnabled,
       createdAt: (doc as any).createdAt?.toISOString?.(),
       updatedAt: (doc as any).updatedAt?.toISOString?.(),

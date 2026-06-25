@@ -28,15 +28,19 @@ export function UserHeadingPin({ coords, heading }: Props) {
   // pointing "up" (heading 0); we rotate the whole SVG by `heading` so the
   // cone aligns with the device's true north. When heading is null we
   // suppress the cone entirely.
+  // Android's react-native-maps silently ignores CSS transforms on Marker
+  // children, so SVG-side `transform: rotate(...)` works only on iOS. To get
+  // a heading-following cone on both platforms we rotate the Marker itself
+  // via its `rotation` prop (which `flat` makes a flat in-plane rotation).
+  // The inner dot is rotation-invariant so spinning the whole marker is
+  // visually identical for the dot and correct for the cone.
   return (
     <Marker
       coordinate={coords}
       anchor={{ x: 0.5, y: 0.5 }}
-      // Without tracksViewChanges=false the marker re-renders constantly
-      // and burns CPU. We bump it manually via the SVG re-rendering on
-      // heading changes (the View key forces native to refresh the bitmap).
       tracksViewChanges
       flat
+      rotation={heading ?? 0}
     >
       <View
         style={{
@@ -52,7 +56,6 @@ export function UserHeadingPin({ coords, heading }: Props) {
           viewBox={`0 0 ${CONE_SIZE} ${CONE_SIZE}`}
           style={{
             position: 'absolute',
-            transform: [{ rotate: `${heading ?? 0}deg` }],
             opacity: heading == null ? 0 : 1,
           }}
         >

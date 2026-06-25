@@ -9,12 +9,14 @@ import {
   PublicCityDetailResponse,
   PublicEditorPick,
   PublicExcursion,
+  PublicExcursionOutro,
   PublicExcursionResponse,
   PublicExcursionStop,
   PublicInterestingFact,
   PublicPlaceDetail,
   PublicPlaceResponse,
   PublicPoi,
+  PublicSubStop,
 } from '@guide-me-app/core';
 import type { LocalizedAudioSub } from './schemas/locale.subdocuments';
 import { DiscoverCityDocument } from './schemas/discover-city.schema';
@@ -88,10 +90,17 @@ export class DiscoverService {
       })),
       restaurants: bucket('restaurant'),
       cafes: bucket('cafe'),
+      pastries: bucket('pastry'),
+      brunches: bucket('brunch'),
       bars: bucket('bar'),
       shopping: bucket('shopping'),
       events: bucket('event'),
       parks: bucket('park'),
+      museums: bucket('museum'),
+      viewpoints: bucket('viewpoint'),
+      locals: bucket('local'),
+      workshops: bucket('workshop'),
+      playareas: bucket('playarea'),
     };
 
     return { city: detail, locale };
@@ -116,30 +125,46 @@ export class DiscoverService {
         if (!place) return null;
         return this.toPublicPoi(place, ref.order, locale);
       })
-      .filter((p): p is PublicPoi => p !== null);
+      .filter((p): p is PublicPoi => p !== null)
+      .sort((a, b) => a.order - b.order);
 
     const resolvedFacts: PublicInterestingFact[] = (
       excursion.interestingFacts ?? []
     )
-      .map((fact) => {
+      .map((fact): PublicInterestingFact | null => {
         const audioUrl = resolveAudio(fact.audioUrl, locale);
         if (!audioUrl) return null;
         return {
           id: fact.slug,
           title: pickLocalized(fact.title, locale),
           audioUrl,
+          coords: fact.coords,
+          triggerRadius: fact.triggerRadius,
         };
       })
       .filter((f): f is PublicInterestingFact => f !== null);
+
+    const outro: PublicExcursionOutro | undefined = excursion.outro
+      ? {
+          title: pickLocalized(excursion.outro.title, locale),
+          description: pickLocalized(excursion.outro.description, locale),
+          image: excursion.outro.image,
+          images: excursion.outro.images,
+          audioUrl: resolveAudio(excursion.outro.audioUrl, locale),
+        }
+      : undefined;
 
     const publicExcursion: PublicExcursion = {
       id: excursion.slug,
       name: pickLocalized(excursion.name, locale),
       meta: pickLocalized(excursion.meta, locale),
       image: excursion.image,
-      stops: excursion.stops.map((stop) => this.toPublicStop(stop, locale)),
+      stops: [...excursion.stops]
+        .sort((a, b) => a.order - b.order)
+        .map((stop) => this.toPublicStop(stop, locale)),
       pois: resolvedPois.length > 0 ? resolvedPois : undefined,
       interestingFacts: resolvedFacts.length > 0 ? resolvedFacts : undefined,
+      outro,
     };
 
     return { excursion: publicExcursion, locale };
@@ -198,6 +223,18 @@ export class DiscoverService {
     stop: DiscoverExcursionDocument['stops'][number],
     locale: Locale,
   ): PublicExcursionStop {
+    // Bundle handling: if subStops is non-empty, we serialize them and the
+    // mobile app ignores the parent's audioUrl. The parent's coords +
+    // triggerRadius still drive arrival detection.
+    const subStops: PublicSubStop[] = (stop.subStops ?? []).map((sub) => ({
+      id: sub.slug,
+      name: pickLocalized(sub.name, locale),
+      description: pickLocalized(sub.description, locale),
+      coords: sub.coords,
+      image: sub.image,
+      images: sub.images,
+      audioUrl: resolveAudio(sub.audioUrl, locale),
+    }));
     return {
       id: stop.slug,
       order: stop.order,
@@ -208,6 +245,7 @@ export class DiscoverService {
       images: stop.images,
       audioUrl: resolveAudio(stop.audioUrl, locale),
       triggerRadius: stop.triggerRadius,
+      subStops: subStops.length > 0 ? subStops : undefined,
     };
   }
 

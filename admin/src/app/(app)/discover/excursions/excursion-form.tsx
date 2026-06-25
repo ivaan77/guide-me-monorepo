@@ -31,10 +31,11 @@ import { FieldHint } from '@/components/forms/field-hint'
 import { ImageListInput } from '@/components/forms/image-list-input'
 import { LocalizedInput } from '@/components/forms/localized-input'
 import { MapCoordsPicker } from '@/components/forms/map-coords-picker'
+import { ExcursionFormFloatingNav } from '@/components/forms/excursion-form-floating-nav'
 import { PlacePicker } from '@/components/forms/place-picker'
 import { SingleImageInput } from '@/components/forms/single-image-input'
 import { buildUniqueSlug, slugify } from '@/lib/slug'
-import { Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
 
@@ -64,6 +65,21 @@ const optionalPositiveInt = z.preprocess((v) => {
   return v
 }, z.coerce.number().int().min(1).optional())
 
+// Sub-stops live inside a parent stop. They inherit the parent's
+// triggerRadius (arrival is detected on the parent), but each has its own
+// coords so the dots on the map land at real locations. Array order =
+// display order; editors reorder via the up/down arrow controls inside
+// the editor.
+const subStopSchema = z.object({
+  slug: z.string().regex(SLUG_REGEX),
+  name: localizedSchema,
+  description: localizedSchema,
+  coords: latLngSchema,
+  image: z.string().url(),
+  images: z.array(z.string().url()).optional(),
+  audioUrl: localizedAudioSchema.optional(),
+})
+
 const stopSchema = z.object({
   slug: z.string().regex(SLUG_REGEX),
   order: z.coerce.number().int().min(0),
@@ -74,6 +90,7 @@ const stopSchema = z.object({
   images: z.array(z.string().url()).optional(),
   audioUrl: localizedAudioSchema.optional(),
   triggerRadius: optionalPositiveInt,
+  subStops: z.array(subStopSchema).optional(),
 })
 
 // Excursion POIs are references into the places collection. Order is
@@ -84,6 +101,31 @@ const poiRefSchema = z.object({
   order: z.coerce.number().int().min(0),
 })
 
+// Optional geocoded trigger: when coords are set, mobile fires the fact
+// the moment the user enters the radius (default 30m). Both lat and lng
+// must be valid numbers OR both must be blank (in which case coords is
+// stripped out of the payload). Preprocess turns NaN/empty into undefined
+// so a half-filled pair doesn't fail validation outright; the
+// normalizePayload step handles the strip-when-blank case.
+const optionalLatLngSchema = z
+  .object({
+    latitude: z.preprocess(
+      (v) =>
+        v === '' || v == null || (typeof v === 'number' && Number.isNaN(v))
+          ? undefined
+          : v,
+      z.coerce.number().min(-90).max(90).optional(),
+    ),
+    longitude: z.preprocess(
+      (v) =>
+        v === '' || v == null || (typeof v === 'number' && Number.isNaN(v))
+          ? undefined
+          : v,
+      z.coerce.number().min(-180).max(180).optional(),
+    ),
+  })
+  .optional()
+
 const interestingFactSchema = z.object({
   slug: z.string().regex(SLUG_REGEX),
   title: localizedSchema,
@@ -92,6 +134,20 @@ const interestingFactSchema = z.object({
     de: z.string().url().optional(),
     hr: z.string().url().optional(),
   }),
+  coords: optionalLatLngSchema,
+  triggerRadius: optionalPositiveInt,
+})
+
+// Optional sign-off card shown after the last stop. Required fields
+// (title, description, image) become required only when the editor has
+// enabled the outro — handled by the enabled flag check inside the
+// onSubmit path so editors who don't author one don't see false errors.
+const outroSchema = z.object({
+  title: localizedSchema,
+  description: localizedSchema,
+  image: z.string().url(),
+  images: z.array(z.string().url()).optional(),
+  audioUrl: localizedAudioSchema.optional(),
 })
 
 const baseSchema = {
@@ -102,6 +158,11 @@ const baseSchema = {
   stops: z.array(stopSchema),
   pois: z.array(poiRefSchema).optional(),
   interestingFacts: z.array(interestingFactSchema).optional(),
+  outro: outroSchema.optional(),
+  // Companion flag for the form only — toggles whether the outro is
+  // submitted. Stripped from the payload in normalizePayload. Lets editors
+  // disable the outro without wiping authored content.
+  outroEnabled: z.boolean(),
   isEnabled: z.boolean(),
 }
 
@@ -136,9 +197,20 @@ export function ExcursionForm(props: Props) {
         name: props.initialValues.name,
         meta: props.initialValues.meta,
         image: props.initialValues.image,
-        stops: props.initialValues.stops,
-        pois: props.initialValues.pois ?? [],
+        // Pre-sort by order so reopening an excursion shows stops/POIs in
+        // the same sequence the user last saved. Without this, the form
+        // would render in raw mongo array order, which may diverge after a
+        // reorder save (though saving renumbers them, defensive sort here
+        // protects against any other source of out-of-order data).
+        stops: [...props.initialValues.stops].sort(
+          (a, b) => a.order - b.order,
+        ),
+        pois: [...(props.initialValues.pois ?? [])].sort(
+          (a, b) => a.order - b.order,
+        ),
         interestingFacts: props.initialValues.interestingFacts ?? [],
+        outro: props.initialValues.outro,
+        outroEnabled: !!props.initialValues.outro,
         isEnabled: props.initialValues.isEnabled,
       }
     : {
@@ -150,6 +222,8 @@ export function ExcursionForm(props: Props) {
         stops: [],
         pois: [],
         interestingFacts: [],
+        outro: undefined,
+        outroEnabled: false,
         isEnabled: true,
       }
 
@@ -181,6 +255,17 @@ export function ExcursionForm(props: Props) {
   const watchedStopNames = stops.fields
     .map((_, idx) => form.watch(`stops.${idx}.name.en`) ?? '')
     .join('|')
+
+  // Options for the floating "Jump to stop" select. Built off the same
+  // watched names so editing a name updates the dropdown live. Falls back
+  // to "Stop N" when the name is empty (newly added stops).
+  const stopJumpOptions = stops.fields.map((_, idx) => {
+    const nameEn = form.watch(`stops.${idx}.name.en`) ?? ''
+    return {
+      id: `stop-card-${idx}`,
+      label: `${idx + 1}. ${nameEn || `Stop ${idx + 1}`}`,
+    }
+  })
   useEffect(() => {
     const taken = new Set<string>()
     stops.fields.forEach((_, idx) => {
@@ -237,6 +322,7 @@ export function ExcursionForm(props: Props) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-3xl">
+      <ExcursionFormFloatingNav stops={stopJumpOptions} />
       {!isEdit && (
         <Card>
           <CardContent className="pt-6 flex flex-col gap-2">
@@ -308,7 +394,11 @@ export function ExcursionForm(props: Props) {
             <FieldHint text="Each stop becomes a numbered marker on the excursion map and a row in the bottom navigation list. The user is guided to each stop in order during the route." />
           </div>
           {stops.fields.map((field, idx) => (
-            <Card key={field.id} className="border-dashed">
+            <Card
+              key={field.id}
+              id={`stop-card-${idx}`}
+              className="border-dashed"
+            >
               <CardContent className="pt-6 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-mono text-[var(--color-muted-foreground)]">
@@ -413,8 +503,16 @@ export function ExcursionForm(props: Props) {
                   control={form.control}
                   name={`stops.${idx}.audioUrl`}
                   label="Audio guide"
-                  hint="Plays in the audio card inside the stop detail sheet — the user hears this once they arrive and tap 'More info'."
+                  hint="Plays in the audio card inside the stop detail sheet. Ignored when this stop has sub-stops (the bundle case) — sub-stops carry their own audio."
                   folder={`excursion/${form.watch('slug') || 'untitled'}/stops/${form.watch(`stops.${idx}.slug`) || `stop-${idx}`}`}
+                />
+                <SubStopsEditor
+                  form={form}
+                  stopIdx={idx}
+                  excursionSlug={form.watch('slug') || 'untitled'}
+                  stopSlug={
+                    form.watch(`stops.${idx}.slug`) || `stop-${idx}`
+                  }
                 />
               </CardContent>
             </Card>
@@ -447,6 +545,7 @@ export function ExcursionForm(props: Props) {
                 coords: seedCoords,
                 image: '',
                 images: [],
+                subStops: [],
               })
             }}
           >
@@ -558,6 +657,73 @@ export function ExcursionForm(props: Props) {
                   hint="The audio file that plays when the user taps the banner. One file per language; mobile picks the user's locale."
                   folder={`excursion/${form.watch('slug') || 'untitled'}/facts/${form.watch(`interestingFacts.${idx}.slug`) || `fact-${idx}`}`}
                 />
+                <div className="flex flex-col gap-2 pt-3 border-t border-dashed border-[var(--color-border)]">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-medium">
+                      Geocoded trigger (optional)
+                    </p>
+                    <FieldHint text="Set coords + radius to fire this fact when the user enters that area, regardless of which leg they're on. Leave blank to use the default 'distance into the leg' heuristic. Set both fields or neither." />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs">Latitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        {...form.register(
+                          `interestingFacts.${idx}.coords.latitude`,
+                          { valueAsNumber: true },
+                        )}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs">Longitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        {...form.register(
+                          `interestingFacts.${idx}.coords.longitude`,
+                          { valueAsNumber: true },
+                        )}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs">Radius (m)</Label>
+                      <Input
+                        type="number"
+                        placeholder="30"
+                        {...form.register(
+                          `interestingFacts.${idx}.triggerRadius`,
+                          { valueAsNumber: true },
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <MapCoordsPicker
+                    latitude={
+                      form.watch(
+                        `interestingFacts.${idx}.coords.latitude`,
+                      ) ?? 0
+                    }
+                    longitude={
+                      form.watch(
+                        `interestingFacts.${idx}.coords.longitude`,
+                      ) ?? 0
+                    }
+                    onChange={({ latitude, longitude }) => {
+                      form.setValue(
+                        `interestingFacts.${idx}.coords.latitude`,
+                        latitude,
+                        { shouldDirty: true },
+                      )
+                      form.setValue(
+                        `interestingFacts.${idx}.coords.longitude`,
+                        longitude,
+                        { shouldDirty: true },
+                      )
+                    }}
+                  />
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -575,6 +741,64 @@ export function ExcursionForm(props: Props) {
             <Plus className="h-4 w-4" />
             Add fact
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">Outro</p>
+              <FieldHint text="A wrap-up card shown to the user after they finish (or skip past) the last stop. Use it for a thank-you, sign-off, and any final recommendations. No GPS — opens automatically after the last stop." />
+            </div>
+            <Switch
+              checked={!!form.watch('outroEnabled')}
+              onCheckedChange={(v) =>
+                form.setValue('outroEnabled', v, { shouldDirty: true })
+              }
+            />
+          </div>
+          {form.watch('outroEnabled') && (
+            <div className="flex flex-col gap-3">
+              <SingleImageInput
+                control={form.control}
+                name="outro.image"
+                label="Hero image"
+                required
+                hint="Image at the top of the outro card."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/outro`}
+              />
+              <LocalizedInput
+                control={form.control}
+                name="outro.title"
+                label="Title"
+                required
+                hint="Short heading at the top of the outro. e.g. 'Thank you for joining'."
+              />
+              <LocalizedInput
+                control={form.control}
+                name="outro.description"
+                label="Description"
+                required
+                multiline
+                hint="Long-form sign-off + recommendations. Shown alongside the audio."
+              />
+              <ImageListInput
+                control={form.control}
+                name="outro.images"
+                label="Gallery images"
+                hint="Optional swipeable carousel for the outro."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/outro/gallery`}
+              />
+              <AudioInput
+                control={form.control}
+                name="outro.audioUrl"
+                label="Audio narration"
+                hint="Plays in the outro card. Optional."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/outro`}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -611,12 +835,24 @@ export function ExcursionForm(props: Props) {
 }
 
 function normalizePayload(raw: CreateValues): CreateValues {
-  const out = stripEmpties(raw) as Record<string, unknown>
+  // Strip the form-only outroEnabled flag and drop outro entirely when
+  // disabled. The api treats absence as "no outro" rather than an empty
+  // shell.
+  const outroEnabled = (raw as Record<string, unknown>).outroEnabled === true
+  const cloned = { ...raw } as Record<string, unknown>
+  delete cloned.outroEnabled
+  if (!outroEnabled) delete cloned.outro
+  const out = stripEmpties(cloned) as Record<string, unknown>
 
   // Drop optional fact audio locales that are empty strings (the upload
-  // input writes '' before a file is chosen).
+  // input writes '' before a file is chosen). Also strip half-filled
+  // coords pairs — if either lat or lng is missing, treat the geocoded
+  // trigger as unset rather than sending a broken coord pair.
   const facts = out.interestingFacts as
-    | Array<{ audioUrl?: Record<string, unknown> }>
+    | Array<{
+        audioUrl?: Record<string, unknown>
+        coords?: { latitude?: number; longitude?: number }
+      }>
     | undefined
   if (facts) {
     for (const f of facts) {
@@ -625,7 +861,38 @@ function normalizePayload(raw: CreateValues): CreateValues {
           if (!v) delete (f.audioUrl as Record<string, unknown>)[k]
         }
       }
+      if (
+        f.coords &&
+        (typeof f.coords.latitude !== 'number' ||
+          typeof f.coords.longitude !== 'number' ||
+          Number.isNaN(f.coords.latitude) ||
+          Number.isNaN(f.coords.longitude))
+      ) {
+        delete f.coords
+      }
     }
+  }
+
+  // Sort + renumber stops by their typed `order` field so what the editor
+  // wrote matches what's persisted. Without this the array would save in
+  // form-render order (the order the editor added them) regardless of the
+  // numbers they typed. Renumbering 0..N-1 keeps the field contiguous so
+  // future edits stay readable. Same treatment for POIs which also carry
+  // an explicit order. Sub-stops are intentionally left alone — their
+  // array position IS the order (no `order` field).
+  const stops = out.stops as Array<{ order?: number }> | undefined
+  if (stops) {
+    stops.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    stops.forEach((s, i) => {
+      s.order = i
+    })
+  }
+  const pois = out.pois as Array<{ order?: number }> | undefined
+  if (pois) {
+    pois.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    pois.forEach((p, i) => {
+      p.order = i
+    })
   }
 
   return out as CreateValues
@@ -642,4 +909,215 @@ function stripEmpties<T>(value: T): T {
     return out as T
   }
   return value
+}
+
+// Per-stop sub-stops editor. Nested useFieldArray keyed inside its own
+// component so the parent stops array doesn't have to know the row count.
+// Sub-stops have no `order` field — array position drives display order on
+// mobile. Editors reorder with the up/down arrow buttons.
+function SubStopsEditor({
+  form,
+  stopIdx,
+  excursionSlug,
+  stopSlug,
+}: {
+  form: ReturnType<typeof useForm<CreateValues>>
+  stopIdx: number
+  excursionSlug: string
+  stopSlug: string
+}) {
+  const subStops = useFieldArray({
+    control: form.control,
+    name: `stops.${stopIdx}.subStops` as const,
+  })
+  const count = subStops.fields.length
+
+  // Auto-derive each sub-stop's slug from its name.en, unique within this
+  // parent stop's subStops array.
+  const watchedNames = subStops.fields
+    .map((_, i) =>
+      form.watch(`stops.${stopIdx}.subStops.${i}.name.en`) ?? '',
+    )
+    .join('|')
+  useEffect(() => {
+    const taken = new Set<string>()
+    subStops.fields.forEach((_, i) => {
+      const nameEn =
+        form.watch(`stops.${stopIdx}.subStops.${i}.name.en`) ?? ''
+      const base = slugify(nameEn) || `sub-stop-${i + 1}`
+      const unique = buildUniqueSlug(base, taken)
+      taken.add(unique)
+      const path =
+        `stops.${stopIdx}.subStops.${i}.slug` as const
+      if (form.getValues(path) !== unique) {
+        form.setValue(path, unique, { shouldValidate: true })
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedNames, count, stopIdx])
+
+  return (
+    <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-dashed border-[var(--color-border)]">
+      <div className="flex items-center gap-2">
+        <p className="text-xs font-medium">Sub-stops ({count})</p>
+        <FieldHint text="Sub-stops turn this stop into a 'bundle'. Use them when one location (e.g. a square) has multiple narrated points. The user arrives once and steps through each sub-stop's content in order. Map shows a numbered pin; the parent stop's audio is ignored when sub-stops exist." />
+      </div>
+
+      {subStops.fields.map((field, i) => (
+        <Card key={field.id} className="border-dashed">
+          <CardContent className="pt-6 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-mono text-[var(--color-muted-foreground)]">
+                Sub-stop {i + 1}
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={i === 0}
+                  onClick={() => subStops.move(i, i - 1)}
+                  title="Move up"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={i === count - 1}
+                  onClick={() => subStops.move(i, i + 1)}
+                  title="Move down"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => subStops.remove(i)}
+                  title="Remove"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <SingleImageInput
+              control={form.control}
+              name={`stops.${stopIdx}.subStops.${i}.image`}
+              label="Hero image"
+              required
+              hint="Shown at the top of the sub-stop card during arrival."
+              folder={`excursion/${excursionSlug}/stops/${stopSlug}/sub-stops/${form.watch(`stops.${stopIdx}.subStops.${i}.slug`) || `sub-stop-${i}`}`}
+            />
+            <LocalizedInput
+              control={form.control}
+              name={`stops.${stopIdx}.subStops.${i}.name`}
+              label="Name"
+              required
+              hint="Sub-stop label shown in the arrival card header."
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Latitude</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  {...form.register(
+                    `stops.${stopIdx}.subStops.${i}.coords.latitude`,
+                    { valueAsNumber: true },
+                  )}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Longitude</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  {...form.register(
+                    `stops.${stopIdx}.subStops.${i}.coords.longitude`,
+                    { valueAsNumber: true },
+                  )}
+                />
+              </div>
+            </div>
+            <MapCoordsPicker
+              latitude={
+                form.watch(`stops.${stopIdx}.subStops.${i}.coords.latitude`) ?? 0
+              }
+              longitude={
+                form.watch(`stops.${stopIdx}.subStops.${i}.coords.longitude`) ?? 0
+              }
+              onChange={({ latitude, longitude }) => {
+                form.setValue(
+                  `stops.${stopIdx}.subStops.${i}.coords.latitude`,
+                  latitude,
+                  { shouldDirty: true },
+                )
+                form.setValue(
+                  `stops.${stopIdx}.subStops.${i}.coords.longitude`,
+                  longitude,
+                  { shouldDirty: true },
+                )
+              }}
+            />
+            <LocalizedInput
+              control={form.control}
+              name={`stops.${stopIdx}.subStops.${i}.description`}
+              label="Description"
+              required
+              multiline
+              hint="Long-form text shown alongside the audio when the user reaches this sub-stop."
+            />
+            <ImageListInput
+              control={form.control}
+              name={`stops.${stopIdx}.subStops.${i}.images`}
+              label="Gallery images"
+              hint="Optional swipeable carousel for this sub-stop."
+              folder={`excursion/${excursionSlug}/stops/${stopSlug}/sub-stops/${form.watch(`stops.${stopIdx}.subStops.${i}.slug`) || `sub-stop-${i}`}/gallery`}
+            />
+            <AudioInput
+              control={form.control}
+              name={`stops.${stopIdx}.subStops.${i}.audioUrl`}
+              label="Audio guide"
+              hint="Plays when the user reaches this sub-stop in the bundle."
+              folder={`excursion/${excursionSlug}/stops/${stopSlug}/sub-stops/${form.watch(`stops.${stopIdx}.subStops.${i}.slug`) || `sub-stop-${i}`}`}
+            />
+          </CardContent>
+        </Card>
+      ))}
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          // Seed new sub-stops at the parent's coords so the editor only
+          // has to nudge the pin, not drop one halfway across the world.
+          // Falls back to (0, 0) if the parent has no coords yet (which
+          // shouldn't happen since coords are required on the parent).
+          const parentCoords = form.getValues(`stops.${stopIdx}.coords`)
+          const seedCoords =
+            parentCoords &&
+            typeof parentCoords.latitude === 'number' &&
+            typeof parentCoords.longitude === 'number' &&
+            !Number.isNaN(parentCoords.latitude) &&
+            !Number.isNaN(parentCoords.longitude)
+              ? { ...parentCoords }
+              : { latitude: 0, longitude: 0 }
+          subStops.append({
+            slug: '',
+            name: { en: '' },
+            description: { en: '' },
+            coords: seedCoords,
+            image: '',
+            images: [],
+          })
+        }}
+      >
+        <Plus className="h-4 w-4" />
+        Add sub-stop
+      </Button>
+    </div>
+  )
 }

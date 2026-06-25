@@ -6,6 +6,7 @@ import type {
   AdminAllPlacesResponse,
   AdminCreatePlaceRequest,
   AdminPlace,
+  AdminPlaceReferencesResponse,
   AdminPlaceResponse,
   AdminUpdatePlaceRequest,
   PoiCategory,
@@ -30,6 +31,14 @@ export async function listPlacesAction(
 export async function getPlaceAction(slug: string): Promise<AdminPlace> {
   const res = await adminApi.get<AdminPlaceResponse>(AdminPath.Discover.getPlace(slug))
   return res.place
+}
+
+export async function getPlaceReferencesAction(
+  slug: string,
+): Promise<AdminPlaceReferencesResponse> {
+  return adminApi.get<AdminPlaceReferencesResponse>(
+    AdminPath.Discover.getPlaceReferences(slug),
+  )
 }
 
 export async function createPlaceAction(

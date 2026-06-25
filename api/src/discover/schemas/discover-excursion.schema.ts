@@ -9,6 +9,36 @@ import {
   LocalizedStringSubSchema,
 } from './locale.subdocuments';
 
+// One sub-stop inside a bundle. A "bundle" is a top-level ExcursionStopSub
+// whose `subStops` array is non-empty — used when several distinct things
+// (statue, fountain, building) share a single arrival location (a square).
+// Order is implicit by array position; admin reorders via drag.
+//
+// `coords` is required on every sub-stop so each has a real pin on the
+// map. (Legacy sub-stops without coords were backfilled before this field
+// became required.)
+@Schema({ _id: false })
+class SubStopSub {
+  @Prop({ required: true }) slug: string;
+
+  @Prop({ type: LocalizedStringSubSchema, required: true })
+  name: LocalizedStringSub;
+
+  @Prop({ type: LocalizedStringSubSchema, required: true })
+  description: LocalizedStringSub;
+
+  @Prop({ type: LatLngSubSchema, required: true })
+  coords: LatLngSub;
+
+  @Prop({ required: true }) image: string;
+  @Prop([String]) images?: string[];
+
+  @Prop({ type: LocalizedAudioSubSchema })
+  audioUrl?: LocalizedAudioSub;
+}
+
+const SubStopSubSchema = SchemaFactory.createForClass(SubStopSub);
+
 @Schema({ _id: false })
 class ExcursionStopSub {
   @Prop({ required: true }) slug: string;
@@ -34,6 +64,12 @@ class ExcursionStopSub {
   // or tighten it for precise photo-ops.
   @Prop()
   triggerRadius?: number;
+
+  // When non-empty this stop becomes a "bundle" — mobile shows a numbered
+  // pin, ignores this stop's own audioUrl, and on arrival sequences through
+  // each sub-stop's name + description + audio.
+  @Prop({ type: [SubStopSubSchema], default: [] })
+  subStops?: SubStopSub[];
 }
 
 const ExcursionStopSubSchema = SchemaFactory.createForClass(ExcursionStopSub);
@@ -52,6 +88,11 @@ const ExcursionPoiRefSubSchema =
 
 // Free-form narration cards attached to an excursion (not tied to any stop).
 // Each has its own localized audio.
+//
+// Optional geocoded trigger: when `coords` is set, the mobile app fires the
+// fact the moment the user is within `triggerRadius` meters (defaulting to
+// a per-fact value if unset, then the mobile-wide default). Facts without
+// coords fall back to the distance-along-leg heuristic.
 @Schema({ _id: false })
 class InterestingFactSub {
   @Prop({ required: true }) slug: string;
@@ -61,10 +102,37 @@ class InterestingFactSub {
 
   @Prop({ type: LocalizedAudioSubSchema, required: true })
   audioUrl: LocalizedAudioSub;
+
+  @Prop({ type: LatLngSubSchema })
+  coords?: LatLngSub;
+
+  @Prop()
+  triggerRadius?: number;
 }
 
 const InterestingFactSubSchema =
   SchemaFactory.createForClass(InterestingFactSub);
+
+// Optional sign-off shown after the user finishes (or skips past) the
+// last stop. Lets editors author a thank-you + final recommendations
+// without faking a GPS-bound stop. When unset, mobile transitions
+// straight from the last stop to the complete screen.
+@Schema({ _id: false })
+class OutroSub {
+  @Prop({ type: LocalizedStringSubSchema, required: true })
+  title: LocalizedStringSub;
+
+  @Prop({ type: LocalizedStringSubSchema, required: true })
+  description: LocalizedStringSub;
+
+  @Prop({ required: true }) image: string;
+  @Prop([String]) images?: string[];
+
+  @Prop({ type: LocalizedAudioSubSchema })
+  audioUrl?: LocalizedAudioSub;
+}
+
+const OutroSubSchema = SchemaFactory.createForClass(OutroSub);
 
 @Schema({ collection: 'excursions', timestamps: true })
 export class DiscoverExcursion {
@@ -91,6 +159,10 @@ export class DiscoverExcursion {
 
   @Prop({ type: [InterestingFactSubSchema], default: [] })
   interestingFacts: InterestingFactSub[];
+
+  // Optional outro card shown after the last stop. See OutroSub above.
+  @Prop({ type: OutroSubSchema })
+  outro?: OutroSub;
 
   @Prop({ required: true, default: true, index: true })
   isEnabled: boolean;

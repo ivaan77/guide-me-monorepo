@@ -84,6 +84,27 @@ export class DiscoverRepository {
       .exec();
   }
 
+  // Bulk slug lookups used to hydrate user favorites. Anything missing
+  // from the result (disabled or deleted) is silently dropped at the
+  // call site.
+  findEnabledCitiesBySlugs(slugs: string[]): Promise<DiscoverCityDocument[]> {
+    if (slugs.length === 0) return Promise.resolve([]);
+    return this.cityModel
+      .find({ slug: { $in: slugs }, ...ENABLED_FILTER })
+      .lean<DiscoverCityDocument[]>()
+      .exec();
+  }
+
+  findEnabledExcursionsBySlugs(
+    slugs: string[],
+  ): Promise<DiscoverExcursionDocument[]> {
+    if (slugs.length === 0) return Promise.resolve([]);
+    return this.excursionModel
+      .find({ slug: { $in: slugs }, ...ENABLED_FILTER })
+      .lean<DiscoverExcursionDocument[]>()
+      .exec();
+  }
+
   findEnabledExcursionBySlug(
     slug: string,
   ): Promise<DiscoverExcursionDocument | null> {
