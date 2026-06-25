@@ -87,9 +87,22 @@ export default function HelpPage() {
             no duplication.
           </p>
           <p>
-            <strong>Category</strong> is one of six values:{' '}
-            <code>restaurant</code>, <code>cafe</code>, <code>bar</code>,{' '}
-            <code>shopping</code>, <code>event</code>, <code>park</code>.
+            <strong>Category</strong> is one of 13 values:{' '}
+            <code>restaurant</code>, <code>cafe</code>, <code>pastry</code>,{' '}
+            <code>brunch</code>, <code>bar</code>, <code>shopping</code>,{' '}
+            <code>event</code>, <code>park</code>, <code>museum</code>,{' '}
+            <code>viewpoint</code>, <code>local</code>, <code>workshop</code>,{' '}
+            <code>playarea</code>. Each shows as its own section on the
+            mobile city detail screen and as a colored circle marker on
+            the excursion map.
+          </p>
+          <p>
+            <strong>Visibility heads-up:</strong> creating a place does NOT
+            automatically make it appear in the mobile app. A place is only
+            visible when it's referenced from a city's{' '}
+            <em>Places to show in this city</em> list OR an excursion's
+            POIs. If a place isn't linked anywhere, the place edit page
+            shows an amber warning banner telling you exactly what to do.
           </p>
           <p>
             <strong>Sub-category</strong> is free-text (localized) and optional.
@@ -141,10 +154,56 @@ export default function HelpPage() {
             with stops in the mobile list.
           </p>
           <p>
-            <strong>Interesting facts</strong> are short audio cards tied to the
-            excursion as a whole, not any particular stop. Each card needs a
-            slug, a localized title, and at least one audio file in any locale.
-            Mobile renders them as a horizontal list of playable cards.
+            <strong>Sub-stops (bundles).</strong> Each top-level stop can
+            host an array of sub-stops — used when one location (e.g. a
+            square) has several distinct narrated points (statue, fountain,
+            building). A stop with sub-stops becomes a "bundle": mobile
+            shows a violet pin with a number badge, the parent's audio is
+            ignored, and on arrival the user steps through each sub-stop
+            in array order with Next / Skip [name] / Skip all spots at X
+            buttons. Each sub-stop has its own name, description, image,
+            audio, AND its own coords — the dots cluster inside a dashed
+            violet ring on the map. Reorder with the up/down arrows on
+            each sub-stop card.
+          </p>
+          <p>
+            <strong>Interesting facts</strong> are short audio cards tied
+            to the excursion as a whole. Each card needs a slug, a
+            localized title, and at least one audio file in any locale.
+            By default mobile rotates through them based on how far the
+            user has walked into a leg ("20% travelled" trigger).
+          </p>
+          <p>
+            <strong>Geocoded facts (optional).</strong> Set <em>coords</em>{' '}
+            + <em>radius</em> on an interesting fact to make it
+            location-based instead. When the user enters that area, the
+            banner fires immediately — regardless of which leg they're
+            on. Leave coords blank to use the default distance-along-leg
+            heuristic. Fill both coords AND lat/lng (or neither) — the
+            form drops half-filled coord pairs on save.
+          </p>
+          <p>
+            <strong>Outro (optional).</strong> A sign-off card shown
+            after the user finishes (or skips past) the last stop. Toggle
+            it on at the bottom of the excursion form and fill image,
+            title, description, optional audio. Use it for thank-yous and
+            final recommendations. The mobile app auto-opens the outro
+            on any completion path; a single Finish button exits the
+            excursion.
+          </p>
+          <p>
+            <strong>Reorder + auto-renumber.</strong> Stop and POI{' '}
+            <code>order</code> values are sorted ASC and renumbered{' '}
+            <code>0..N-1</code> on save. Type any numbers you want — the
+            form normalizes them so reopening shows stops in the saved
+            sequence. Sub-stops have no <code>order</code> field; array
+            position drives display order.
+          </p>
+          <p>
+            <strong>Floating navigation.</strong> Long excursion forms
+            (Zagreb has 29 stops) get a fixed top-right cluster: scroll-
+            to-top, scroll-to-bottom, and a "Jump to stop…" select that
+            lists every stop by name. Names update live as you edit them.
           </p>
         </Section>
 
@@ -199,6 +258,14 @@ export default function HelpPage() {
               places — the place picker only appears in edit mode.
             </li>
             <li>
+              <strong>A new place isn't visible until it's linked.</strong>{' '}
+              Creating a café in <code>/discover/places</code> only puts it
+              in the global pool. To surface it, add its slug to a city's{' '}
+              <em>Places to show in this city</em> list AND/OR to an
+              excursion's POIs. Unlinked places trigger the warning banner
+              on their edit page.
+            </li>
+            <li>
               <strong>Deleting a place that's referenced</strong> by a city or
               excursion is blocked with a 409 error. The toast tells you which
               entity references it. Unlink first, then delete.
@@ -219,6 +286,31 @@ export default function HelpPage() {
             <li>
               <strong>Excursion POIs picker hides if no city is chosen.</strong>{' '}
               Set the city dropdown above before picking POIs.
+            </li>
+            <li>
+              <strong>Sub-stops have required coords.</strong> When you add
+              one inside a bundle stop, lat/lng default to the parent's
+              coords — just nudge the pin to the real location. The map
+              ring auto-grows to enclose the farthest sub-stop.
+            </li>
+            <li>
+              <strong>Bundle stop audio is ignored on mobile.</strong> If a
+              stop has sub-stops, the parent stop's <code>audioUrl</code>{' '}
+              isn't played — sub-stops carry their own audio. The bundle
+              detail sheet does still play parent audio if uploaded (acts
+              as a bundle intro).
+            </li>
+            <li>
+              <strong>Geocoded fact coords pair must be complete.</strong>{' '}
+              Half-filled (lat without lng or vice versa) is silently
+              dropped on save — mobile then falls back to the default
+              distance-based heuristic for that fact.
+            </li>
+            <li>
+              <strong>Outro toggle preserves authored content.</strong>{' '}
+              Turning the outro switch off doesn't wipe the title /
+              description / audio — it just omits them from the save
+              payload. Flip back on and the fields reappear.
             </li>
             <li>
               <strong>Empty optional LocalizedString fields get dropped on
