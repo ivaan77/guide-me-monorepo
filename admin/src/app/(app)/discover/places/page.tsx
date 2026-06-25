@@ -13,10 +13,17 @@ export const dynamic = 'force-dynamic'
 const VALID_CATEGORIES: PoiCategory[] = [
   'restaurant',
   'cafe',
+  'pastry',
+  'brunch',
   'bar',
   'shopping',
   'event',
   'park',
+  'museum',
+  'viewpoint',
+  'local',
+  'workshop',
+  'playarea',
 ]
 
 export default async function PlacesPage({

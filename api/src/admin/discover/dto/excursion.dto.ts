@@ -16,6 +16,40 @@ import { LocalizedStringDto } from './localized-string.dto';
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
+class SubStopDto {
+  @IsString()
+  @Matches(SLUG_REGEX)
+  slug: string;
+
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  name: LocalizedStringDto;
+
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  description: LocalizedStringDto;
+
+  // Required at the write boundary so new sub-stops always have a real
+  // location on the map. Schema-level is optional to keep legacy reads
+  // alive (see SubStopSub comment in discover-excursion.schema.ts).
+  @ValidateNested()
+  @Type(() => LatLngDto)
+  coords: LatLngDto;
+
+  @IsString()
+  image: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
+}
+
 class ExcursionStopDto {
   @IsString()
   @Matches(SLUG_REGEX)
@@ -54,6 +88,15 @@ class ExcursionStopDto {
   @IsNumber()
   @Min(1)
   triggerRadius?: number;
+
+  // Array order is the display order on mobile — no `order` field on
+  // sub-stops; admin reorders by dragging. When non-empty this stop is a
+  // bundle (see schema comment).
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SubStopDto)
+  subStops?: SubStopDto[];
 }
 
 class ExcursionPoiRefDto {
@@ -78,6 +121,39 @@ class InterestingFactDto {
   @ValidateNested()
   @Type(() => LocalizedAudioDto)
   audioUrl: LocalizedAudioDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LatLngDto)
+  coords?: LatLngDto;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  triggerRadius?: number;
+}
+
+class OutroDto {
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  title: LocalizedStringDto;
+
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  description: LocalizedStringDto;
+
+  @IsString()
+  image: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
 }
 
 export class CreateExcursionDto {
@@ -117,6 +193,11 @@ export class CreateExcursionDto {
   @ValidateNested({ each: true })
   @Type(() => InterestingFactDto)
   interestingFacts?: InterestingFactDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OutroDto)
+  outro?: OutroDto;
 
   @IsOptional()
   @IsBoolean()
@@ -160,6 +241,11 @@ export class UpdateExcursionDto {
   @ValidateNested({ each: true })
   @Type(() => InterestingFactDto)
   interestingFacts?: InterestingFactDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OutroDto)
+  outro?: OutroDto;
 
   @IsOptional()
   @IsBoolean()

@@ -36,19 +36,33 @@ const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
 const CATEGORIES = [
   'restaurant',
   'cafe',
+  'pastry',
+  'brunch',
   'bar',
   'shopping',
   'event',
   'park',
+  'museum',
+  'viewpoint',
+  'local',
+  'workshop',
+  'playarea',
 ] as const
 
 const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
   restaurant: 'Restaurant',
   cafe: 'Café',
+  pastry: 'Pastry shop',
+  brunch: 'Brunch',
   bar: 'Bar',
   shopping: 'Shopping',
   event: 'Event',
   park: 'Park',
+  museum: 'Museum',
+  viewpoint: 'Viewpoint',
+  local: 'Local pick',
+  workshop: 'Workshop',
+  playarea: 'Play area',
 }
 
 const localizedSchema = z.object({

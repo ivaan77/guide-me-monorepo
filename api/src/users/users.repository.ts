@@ -63,4 +63,31 @@ export class UsersRepository {
       .exec();
     return result.modifiedCount ?? 0;
   }
+
+  // Strips every 'sub-stop' favorite whose composite id starts with the
+  // given excursion slug. Called when an excursion is deleted — kills the
+  // parent + all of its descendant sub-stop favorites in one update.
+  async pullSubStopFavoritesByExcursionSlug(
+    excursionSlug: string,
+  ): Promise<number> {
+    const prefix = `${excursionSlug}:`;
+    const result = await this.userModel
+      .updateMany(
+        {},
+        {
+          $pull: {
+            favorites: {
+              type: 'sub-stop',
+              id: { $regex: `^${escapeRegex(prefix)}` },
+            },
+          },
+        },
+      )
+      .exec();
+    return result.modifiedCount ?? 0;
+  }
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

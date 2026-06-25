@@ -151,6 +151,9 @@ export class AdminDiscoverService {
     if (result.deletedCount === 0)
       throw new NotFoundException(`Excursion not found: ${slug}`);
     await this.usersRepo.pullFavoriteFromAll({ type: 'excursion', id: slug });
+    // Also drop any 'sub-stop' favorites that pointed into this excursion.
+    // Their composite ids share the excursion slug prefix.
+    await this.usersRepo.pullSubStopFavoritesByExcursionSlug(slug);
     await this.bustCache();
   }
 
@@ -198,6 +201,20 @@ export class AdminDiscoverService {
     if (!doc) throw new NotFoundException(`Place not found: ${slug}`);
     await this.bustCache();
     return this.toAdminPlace(doc);
+  }
+
+  // Lightweight read for the admin place edit form: how many cities and
+  // excursions reference this place. Used to render a 'not visible to
+  // users' banner when both are zero (the place exists but nothing
+  // surfaces it). Cheap — both are countDocuments queries.
+  async getPlaceReferences(
+    slug: string,
+  ): Promise<{ cities: number; excursions: number }> {
+    const [cities, excursions] = await Promise.all([
+      this.repo.countCitiesReferencingPlace(slug),
+      this.repo.countExcursionsReferencingPlace(slug),
+    ]);
+    return { cities, excursions };
   }
 
   async deletePlace(slug: string): Promise<void> {
@@ -388,6 +405,7 @@ export class AdminDiscoverService {
       pois: (doc.pois ?? []) as AdminExcursion['pois'],
       interestingFacts: (doc.interestingFacts ??
         []) as AdminExcursion['interestingFacts'],
+      outro: doc.outro as AdminExcursion['outro'],
       isEnabled: doc.isEnabled,
       createdAt: (doc as any).createdAt?.toISOString?.(),
       updatedAt: (doc as any).updatedAt?.toISOString?.(),

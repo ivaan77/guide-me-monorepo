@@ -64,17 +64,25 @@ export type PublicCategoryItem = {
     subCategory?: string
 }
 
-// City detail now also exposes events and parks, plus an optional
-// city-level audio narration.
+// City detail exposes each POI category as its own optional list so the
+// mobile app can render a section per category in any order it wants.
+// Optional city-level audio narration is also surfaced here.
 export type PublicCityDetail = PublicCity & {
     audioUrl?: string
     excursions?: PublicCategoryItem[]
     restaurants?: PublicCategoryItem[]
     cafes?: PublicCategoryItem[]
+    pastries?: PublicCategoryItem[]
+    brunches?: PublicCategoryItem[]
     bars?: PublicCategoryItem[]
     shopping?: PublicCategoryItem[]
     events?: PublicCategoryItem[]
     parks?: PublicCategoryItem[]
+    museums?: PublicCategoryItem[]
+    viewpoints?: PublicCategoryItem[]
+    locals?: PublicCategoryItem[]
+    workshops?: PublicCategoryItem[]
+    playareas?: PublicCategoryItem[]
 }
 
 export type PublicCityDetailResponse = {
@@ -89,8 +97,24 @@ export type PublicLatLng = {
     longitude: number
 }
 
+// A sub-stop is one item inside a "bundle" stop. Carries its own content
+// (image, description, audio, coords). Each sub-stop gets a real pin on
+// the map at its own coords.
+export type PublicSubStop = {
+    id: string
+    name: string
+    description: string
+    coords: PublicLatLng
+    image: string
+    images?: string[]
+    audioUrl?: string
+}
+
 // triggerRadius (meters) is per-stop and optional. When unset, the mobile
 // app falls back to its global default arrival radius.
+// When `subStops` is non-empty this stop becomes a "bundle": mobile shows
+// a numbered pin, ignores the stop's own audioUrl, and sequences the user
+// through each sub-stop's content on arrival.
 export type PublicExcursionStop = {
     id: string
     order: number
@@ -101,15 +125,23 @@ export type PublicExcursionStop = {
     images?: string[]
     audioUrl?: string
     triggerRadius?: number
+    subStops?: PublicSubStop[]
 }
 
 export type PoiCategory =
     | 'restaurant'
     | 'cafe'
+    | 'pastry'
+    | 'brunch'
     | 'bar'
     | 'shopping'
     | 'event'
     | 'park'
+    | 'museum'
+    | 'viewpoint'
+    | 'local'
+    | 'workshop'
+    | 'playarea'
 
 // PublicPoi is now the resolved Place reference: the api dereferences
 // excursion.pois[].placeSlug into the full Place document so mobile gets
@@ -128,10 +160,25 @@ export type PublicPoi = {
 
 // Interesting facts are excursion-level narration cards. Each has its own
 // localized audio narration; resolved to a single string on the public side.
+// When `coords` is set, the mobile app fires the fact as soon as the user
+// is within `triggerRadius` meters of those coords (overriding the default
+// "distance into the leg" heuristic). Facts without coords use the heuristic.
 export type PublicInterestingFact = {
     id: string
     title: string
     audioUrl: string
+    coords?: PublicLatLng
+    triggerRadius?: number
+}
+
+// Optional sign-off shown after the user finishes (or skips) the last
+// stop. Authored in admin; resolves localized strings + audio.
+export type PublicExcursionOutro = {
+    title: string
+    description: string
+    image: string
+    images?: string[]
+    audioUrl?: string
 }
 
 export type PublicExcursion = {
@@ -142,6 +189,7 @@ export type PublicExcursion = {
     stops: PublicExcursionStop[]
     pois?: PublicPoi[]
     interestingFacts?: PublicInterestingFact[]
+    outro?: PublicExcursionOutro
 }
 
 export type PublicExcursionResponse = {

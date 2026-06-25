@@ -8,8 +8,12 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated'
-import type { PublicInterestingFact } from '@guide-me-app/core'
+import type {
+  PublicInterestingFact,
+  PublicLatLng,
+} from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
+import { haversineMeters } from '../../lib/directions'
 import { playFactFeedback } from '../../lib/feedback'
 
 // Navy renders well on amber; not a registered Tamagui color token, so we
@@ -32,6 +36,11 @@ const APPEAR_AT_TRAVELLED_FRACTION = 0.2
 // so a long walk gets a few facts, a short walk gets one. With this set
 // to 4 minutes: legs >=2min get 1 fact, legs >=8min get 2, etc.
 const SECONDS_PER_FACT = 4 * 60
+
+// Default radius for geocoded facts when the editor didn't set one.
+// Tighter than the stop arrival default (30m) since facts often anchor
+// to a precise object (statue, fountain) rather than a square.
+const GEOCODED_FACT_DEFAULT_RADIUS_M = 30
 
 type Props = {
   // Per-leg active fact (chosen by the parent from the unseen pool) plus the
@@ -171,11 +180,15 @@ export function FloatingFactBanner({
 //     "20% travelled" trigger.
 export function useFactBannerSchedule(params: {
   allFacts: PublicInterestingFact[]
-  phase: 'preview' | 'navigating' | 'arrived' | 'complete'
+  phase: 'preview' | 'navigating' | 'arrived' | 'outro' | 'complete'
   currentIndex: number
   legDistanceMeters: number | null
   legDurationSeconds: number | null
   remainingMeters: number | null
+  // Live user location for geocoded fact triggers. When set, any fact
+  // whose coords + radius covers the user fires immediately, preempting
+  // the distance-based heuristic.
+  userLocation: PublicLatLng | null
 }): {
   visible: boolean
   fact: PublicInterestingFact | null
@@ -190,15 +203,21 @@ export function useFactBannerSchedule(params: {
     legDistanceMeters,
     legDurationSeconds,
     remainingMeters,
+    userLocation,
   } = params
 
   // Pool of fact ids not yet shown this excursion. Mutated as we pop entries
-  // each time a fact surfaces. Re-initialized when the excursion's fact set
-  // changes (different excursion loaded).
-  const poolRef = useRef<PublicInterestingFact[]>([])
+  // each time a fact surfaces (heuristic OR geocoded). Re-initialized when
+  // the excursion's fact set changes. We split the source list: geocoded
+  // facts (with coords) only fire via the geofence effect; non-geocoded
+  // facts feed the per-leg heuristic. This way an editor-authored geocoded
+  // fact never bleeds into the heuristic pool and double-fires.
+  const heuristicPoolRef = useRef<PublicInterestingFact[]>([])
+  const geocodedPoolRef = useRef<PublicInterestingFact[]>([])
   const lastFactsRef = useRef<PublicInterestingFact[] | null>(null)
   if (lastFactsRef.current !== allFacts) {
-    poolRef.current = [...allFacts]
+    heuristicPoolRef.current = allFacts.filter((f) => !f.coords)
+    geocodedPoolRef.current = allFacts.filter((f) => !!f.coords)
     lastFactsRef.current = allFacts
   }
 
@@ -225,6 +244,11 @@ export function useFactBannerSchedule(params: {
     setDismissed(false)
     setFactIndexInLeg(-1)
     setTravelled(0)
+    // Geocoded facts are excursion-scoped (not leg-scoped) — they're
+    // already removed from the pool when consumed. But the *display* of
+    // an active one shouldn't span legs: clear it so the new leg starts
+    // with whatever the new leg deserves (heuristic or fresh geocoded).
+    setGeocodedActive(null)
 
     // Defer fact selection until we know the leg's duration. Until then
     // legFacts stays empty and the banner stays hidden.
@@ -235,13 +259,14 @@ export function useFactBannerSchedule(params: {
   }, [currentIndex])
 
   // When the route metadata arrives for this leg, decide how many facts to
-  // surface and pop them from the pool. Skips legs that don't qualify or
-  // when the pool is empty.
+  // surface and pop them from the heuristic pool. Skips legs that don't
+  // qualify or when the pool is empty. Geocoded facts are handled by their
+  // own effect below and never enter this pool.
   useEffect(() => {
     if (phase !== 'navigating') return
     if (legFacts.length > 0) return
     if (legDistanceMeters == null || legDurationSeconds == null) return
-    if (poolRef.current.length === 0) return
+    if (heuristicPoolRef.current.length === 0) return
 
     const qualifies =
       legDistanceMeters >= QUALIFYING_DISTANCE_METERS ||
@@ -249,11 +274,42 @@ export function useFactBannerSchedule(params: {
     if (!qualifies) return
 
     const quota = Math.max(1, Math.floor(legDurationSeconds / SECONDS_PER_FACT))
-    const take = Math.min(quota, poolRef.current.length)
-    const chosen = poolRef.current.slice(0, take)
-    poolRef.current = poolRef.current.slice(take)
+    const take = Math.min(quota, heuristicPoolRef.current.length)
+    const chosen = heuristicPoolRef.current.slice(0, take)
+    heuristicPoolRef.current = heuristicPoolRef.current.slice(take)
     setLegFacts(chosen)
   }, [phase, legDistanceMeters, legDurationSeconds, legFacts.length])
+
+  // Geocoded fact trigger. On each GPS update during navigation, check
+  // every fact in the geocoded pool: if the user is within its radius,
+  // consume it and surface it as the active fact (preempts any heuristic
+  // pick). One-shot — once consumed, the fact is gone from the pool for
+  // the rest of the excursion. Bypasses qualification + budget.
+  const [geocodedActive, setGeocodedActive] =
+    useState<PublicInterestingFact | null>(null)
+  useEffect(() => {
+    if (phase !== 'navigating') return
+    if (!userLocation) return
+    if (geocodedPoolRef.current.length === 0) return
+    for (let i = 0; i < geocodedPoolRef.current.length; i++) {
+      const fact = geocodedPoolRef.current[i]
+      if (!fact.coords) continue
+      const radius = fact.triggerRadius ?? GEOCODED_FACT_DEFAULT_RADIUS_M
+      const dist = haversineMeters(userLocation, fact.coords)
+      if (dist <= radius) {
+        // Consume this fact: remove from pool, set as the active geocoded
+        // one. The visible/currentFact selectors prefer the geocoded fact
+        // over the heuristic one.
+        geocodedPoolRef.current = geocodedPoolRef.current.filter(
+          (f) => f.id !== fact.id,
+        )
+        setGeocodedActive(fact)
+        // Also un-dismiss the banner — a new fact deserves to be seen.
+        setDismissed(false)
+        break
+      }
+    }
+  }, [phase, userLocation])
 
   // Track travelled distance. We only have remaining + total, so derive
   // travelled = total - remaining (clamped non-negative).
@@ -295,18 +351,26 @@ export function useFactBannerSchedule(params: {
     if (nextIdx > factIndexInLeg) setFactIndexInLeg(nextIdx)
   }, [travelled, legDistanceMeters, legFacts.length, factIndexInLeg])
 
-  const visible =
-    phase === 'navigating' &&
-    !dismissed &&
+  // Visibility: a geocoded fact (if active) always wins over the heuristic
+  // pick. Both paths still respect the user's dismiss action.
+  const heuristicVisible =
     legFacts.length > 0 &&
     factIndexInLeg >= 0 &&
     factIndexInLeg < legFacts.length
+  const visible =
+    phase === 'navigating' &&
+    !dismissed &&
+    (geocodedActive != null || heuristicVisible)
 
-  const currentFact = useMemo(
-    () =>
-      visible && factIndexInLeg >= 0 ? legFacts[factIndexInLeg] ?? null : null,
-    [visible, factIndexInLeg, legFacts],
-  )
+  const currentFact = useMemo(() => {
+    if (!visible) return null
+    if (geocodedActive) return geocodedActive
+    return factIndexInLeg >= 0 ? (legFacts[factIndexInLeg] ?? null) : null
+  }, [visible, geocodedActive, factIndexInLeg, legFacts])
+
+  // When a geocoded fact is active, the index/total labels in the banner
+  // make less sense ("Fact 1/1"). Hide them by reporting 1 of 1.
+  const factsForThisLeg = geocodedActive ? 1 : legFacts.length
 
   // Fire haptic + ping whenever a new fact actually appears. We watch the
   // fact id (not the index) so a swap to a different fact in the same slot
@@ -323,8 +387,14 @@ export function useFactBannerSchedule(params: {
   return {
     visible,
     fact: currentFact,
-    factIndexInLeg: Math.max(0, factIndexInLeg),
-    factsForThisLeg: legFacts.length,
-    dismiss: () => setDismissed(true),
+    factIndexInLeg: geocodedActive ? 0 : Math.max(0, factIndexInLeg),
+    factsForThisLeg,
+    dismiss: () => {
+      // Clear any geocoded active fact too — dismiss means "I saw it,
+      // don't show it again right now". The heuristic also halts via
+      // the dismissed flag.
+      setGeocodedActive(null)
+      setDismissed(true)
+    },
   }
 }

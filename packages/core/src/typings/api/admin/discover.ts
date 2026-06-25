@@ -46,6 +46,19 @@ export type AdminUpdateCityRequest = Partial<Omit<AdminCreateCityRequest, 'slug'
 // mapper resolves to a single string for the requested locale at read time.
 export type LocalizedAudio = Partial<Record<'en' | 'de' | 'hr', string>>
 
+// A sub-stop sits inside a parent stop (a "bundle"). Has its own content
+// and coords; inherits the parent's triggerRadius. Array position drives
+// display order (no `order` field).
+export type AdminSubStop = {
+    slug: string
+    name: LocalizedString
+    description: LocalizedString
+    coords: PublicLatLng
+    image: string
+    images?: string[]
+    audioUrl?: LocalizedAudio
+}
+
 export type AdminExcursionStop = {
     slug: string
     order: number
@@ -58,6 +71,19 @@ export type AdminExcursionStop = {
     // Per-stop arrival radius (meters). Optional; mobile falls back to the
     // global default when unset.
     triggerRadius?: number
+    // When non-empty this stop becomes a "bundle" — see PublicExcursionStop
+    // comment for the mobile rendering rules.
+    subStops?: AdminSubStop[]
+}
+
+// Optional sign-off shown after the last stop. See PublicExcursionOutro
+// for the mobile-side rendering contract.
+export type AdminExcursionOutro = {
+    title: LocalizedString
+    description: LocalizedString
+    image: string
+    images?: string[]
+    audioUrl?: LocalizedAudio
 }
 
 // Excursions reference Places by slug rather than embedding their own POI
@@ -72,6 +98,8 @@ export type AdminInterestingFact = {
     slug: string
     title: LocalizedString
     audioUrl: LocalizedAudio
+    coords?: PublicLatLng
+    triggerRadius?: number
 }
 
 export type AdminExcursion = {
@@ -83,6 +111,7 @@ export type AdminExcursion = {
     stops: AdminExcursionStop[]
     pois?: AdminExcursionPoiRef[]
     interestingFacts?: AdminInterestingFact[]
+    outro?: AdminExcursionOutro
     isEnabled: boolean
     createdAt?: string
     updatedAt?: string
@@ -97,6 +126,7 @@ export type AdminCreateExcursionRequest = {
     stops?: AdminExcursionStop[]
     pois?: AdminExcursionPoiRef[]
     interestingFacts?: AdminInterestingFact[]
+    outro?: AdminExcursionOutro
     isEnabled?: boolean
 }
 
@@ -198,3 +228,11 @@ export type AdminStats = {
 }
 
 export type AdminStatsResponse = { stats: AdminStats }
+
+// How many cities and excursions currently reference a place. Used by the
+// admin place edit form to surface a warning when a place isn't linked to
+// anything — meaning users can't see it.
+export type AdminPlaceReferencesResponse = {
+    cities: number
+    excursions: number
+}

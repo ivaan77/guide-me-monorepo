@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   AppState,
@@ -12,7 +12,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import * as Location from 'expo-location'
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, {
+  Circle,
+  Marker,
+  Polyline,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps'
 import {
   ChevronLeft,
   Info,
@@ -24,10 +29,12 @@ import {
   Undo2,
 } from '@tamagui/lucide-icons'
 import type {
+  PublicExcursionOutro,
   PublicExcursionStop,
   PublicInterestingFact,
   PublicLatLng,
   PublicPoi,
+  PublicSubStop,
 } from '@guide-me-app/core'
 import {
   H2,
@@ -38,6 +45,7 @@ import {
   YStack,
   useTheme,
 } from 'tamagui'
+import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { useExcursion } from '../../hooks/useExcursion'
 import {
@@ -61,6 +69,14 @@ import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
 import { ImageLightbox } from '../../common/ImageLightbox'
+import {
+  BUNDLE_ACCENT,
+  StopBundlePin,
+  SUB_STOP_RING_RADIUS_METERS,
+  SubStopDot,
+  ringPositionsAroundParent,
+} from './StopBundlePin'
+import { SubStopDetailSheet } from './SubStopDetailSheet'
 import { UserHeadingPin } from './UserHeadingPin'
 
 // Local aliases — the screen used these names heavily.
@@ -73,7 +89,7 @@ type Props = {
   id: string
 }
 
-type Phase = 'preview' | 'navigating' | 'arrived' | 'complete'
+type Phase = 'preview' | 'navigating' | 'arrived' | 'outro' | 'complete'
 
 // Default arrival geofence. Per-stop overrides come from `stop.triggerRadius`
 // (set in admin). Increase for stops in dense urban areas where GPS jitters;
@@ -122,6 +138,7 @@ export function ExcursionScreen({ id }: Props) {
       stops={excursion.stops}
       pois={excursion.pois ?? []}
       facts={excursion.interestingFacts ?? []}
+      outro={excursion.outro}
       title={excursion.name}
       topInset={insets.top}
       bottomInset={insets.bottom}
@@ -137,6 +154,7 @@ function ExcursionBody({
   stops,
   pois,
   facts,
+  outro,
   title,
   topInset,
   bottomInset,
@@ -148,6 +166,7 @@ function ExcursionBody({
   stops: ExcursionStop[]
   pois: Poi[]
   facts: Fact[]
+  outro?: PublicExcursionOutro
   title: string
   topInset: number
   bottomInset: number
@@ -165,6 +184,17 @@ function ExcursionBody({
   useEffect(() => {
     currentIndexRef.current = currentIndex
   }, [currentIndex])
+  // Pointer into the current stop's subStops array. -1 means "showing the
+  // parent intro panel" — bundles start there so the editor-authored
+  // bundle audio + description play first, then Next advances into the
+  // sub-stops one by one. For single stops the value is irrelevant (the
+  // ArrivedPanel branches on isBundle). Mirrored to a ref for the same
+  // rapid-tap reason as currentIndex.
+  const [currentSubStopIndex, setCurrentSubStopIndex] = useState(-1)
+  const currentSubStopIndexRef = useRef(-1)
+  useEffect(() => {
+    currentSubStopIndexRef.current = currentSubStopIndex
+  }, [currentSubStopIndex])
   const [userLocation, setUserLocation] = useState<LatLng | null>(null)
   // Compass heading in degrees (0 = north, clockwise). Null until the first
   // sample arrives; also null on devices without a magnetometer.
@@ -210,15 +240,36 @@ function ExcursionBody({
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
   const [selectedFact, setSelectedFact] = useState<Fact | null>(null)
+  // Sub-stop currently displayed in the SubStopDetailSheet. Holds the
+  // sub-stop itself plus its parent stop's id so the favorite button can
+  // build the composite id (excursionId:stopId:subStopId).
+  const [selectedSubStop, setSelectedSubStop] = useState<{
+    sub: PublicSubStop
+    parentStopId: string
+  } | null>(null)
   // URL of the stop image currently shown in the lightbox; null when closed.
   const [lightboxUri, setLightboxUri] = useState<string | null>(null)
   // Queue of pending undo-skip pills, one per recent skip. Each has its own
   // 10s lifetime and is keyed by `skipKey` so back-to-back skips don't
   // collide. Pills stack visually above the BottomPanel and dismiss
-  // independently — tapping one restores that specific stop.
+  // independently — tapping one restores that specific skip.
+  //
+  // Three flavors:
+  //  - Stop skip: kind='stop', skippedIndex points at the skipped stop. Undo
+  //    restores currentIndex.
+  //  - Bundle skip: kind='bundle', skippedIndex points at the parent bundle
+  //    stop. Undo restores currentIndex + sets currentSubStopIndex=0 + phase
+  //    back to 'arrived'.
+  //  - Sub-stop skip: kind='sub-stop', skippedIndex is the parent stop
+  //    index, skippedSubStopIndex is the sub-stop position. Undo restores
+  //    currentSubStopIndex (parent already correct since we never left the
+  //    bundle) and phase to 'arrived'.
   type UndoSkipEntry = {
     skipKey: number
+    kind: 'stop' | 'bundle' | 'sub-stop'
     skippedIndex: number
+    skippedSubStopIndex?: number
+    label: string
     expiresAt: number
   }
   const [undoSkips, setUndoSkips] = useState<UndoSkipEntry[]>([])
@@ -584,67 +635,140 @@ function ExcursionBody({
     setPhase('navigating')
     currentIndexRef.current = 0
     setCurrentIndex(0)
+    currentSubStopIndexRef.current = -1
+    setCurrentSubStopIndex(-1)
     setRoutePolyline([])
     setRouteMeta(null)
   }
 
-  const continueNext = () => {
+  // Helper: advance to the next top-level stop. Used by both Continue and
+  // Skip — they share index/phase mechanics, only the undo pill differs.
+  // When we're already past the last stop, transition into the outro
+  // (if the excursion has one) or jump straight to complete.
+  const goToNextStop = () => {
     const nextIndex = currentIndexRef.current + 1
     if (nextIndex >= stops.length) {
-      setPhase('complete')
+      setPhase(outro ? 'outro' : 'complete')
       return
     }
     currentIndexRef.current = nextIndex
     setCurrentIndex(nextIndex)
+    currentSubStopIndexRef.current = -1
+    setCurrentSubStopIndex(-1)
     setPhase('navigating')
     setRoutePolyline([])
     setRouteMeta(null)
   }
 
-  // Skip differs from Continue only in that it surfaces an Undo pill — the
-  // index/phase mechanics are identical. We remember the index that was
-  // skipped so the pill can restore it within a 10s window.
+  const continueNext = () => {
+    goToNextStop()
+  }
+
   const UNDO_WINDOW_MS = 10_000
-  const skip = () => {
-    // Read + write through the ref so back-to-back taps (faster than React
-    // batches state) each see the freshest index. Using just `currentIndex`
-    // from the closure here would make every rapid-fire skip target stop 0
-    // and the undo pill would lock onto the first skipped name.
-    const skippedIndex = currentIndexRef.current
-    const nextIndex = skippedIndex + 1
-    if (nextIndex >= stops.length) {
-      setPhase('complete')
-    } else {
-      currentIndexRef.current = nextIndex
-      setCurrentIndex(nextIndex)
-      setPhase('navigating')
-      setRoutePolyline([])
-      setRouteMeta(null)
-    }
+  const pushUndoEntry = (
+    kind: 'stop' | 'bundle' | 'sub-stop',
+    skippedIndex: number,
+    label: string,
+    skippedSubStopIndex?: number,
+  ) => {
     skipKeyRef.current += 1
     const entry: UndoSkipEntry = {
       skipKey: skipKeyRef.current,
+      kind,
       skippedIndex,
+      skippedSubStopIndex,
+      label,
       expiresAt: Date.now() + UNDO_WINDOW_MS,
     }
     setUndoSkips((prev) => [...prev, entry])
   }
 
-  // Tap of a specific undo pill — restore that pill's skipped stop. Pills
-  // are independent: tapping one doesn't dismiss the others. They each fall
+  // Top-level Skip (from the navigating panel, or "Skip all spots at X"
+  // from a bundle). Drops the entire stop (bundle or single) and pushes
+  // an undo pill labeled with the stop's name.
+  const skip = () => {
+    const skippedIndex = currentIndexRef.current
+    const stop = stops[skippedIndex]
+    const isBundle = (stop?.subStops?.length ?? 0) > 0
+    pushUndoEntry(
+      isBundle ? 'bundle' : 'stop',
+      skippedIndex,
+      stop?.name ?? '',
+    )
+    goToNextStop()
+  }
+
+  // Advance within a bundle. Called by the Next button on the bundle
+  // ArrivedPanel. If we're already on the last sub-stop, behaves like
+  // continueNext and exits the bundle.
+  const advanceSubStop = () => {
+    const stop = stops[currentIndexRef.current]
+    const total = stop?.subStops?.length ?? 0
+    const nextSubIdx = currentSubStopIndexRef.current + 1
+    if (nextSubIdx >= total) {
+      goToNextStop()
+      return
+    }
+    currentSubStopIndexRef.current = nextSubIdx
+    setCurrentSubStopIndex(nextSubIdx)
+  }
+
+  // Skip a single sub-stop within a bundle. Pushes an undo pill labeled
+  // with the sub-stop's name (not the bundle). If this was the last
+  // sub-stop, advances to the next top-level stop.
+  const skipSubStop = () => {
+    const stop = stops[currentIndexRef.current]
+    const total = stop?.subStops?.length ?? 0
+    const subIdx = currentSubStopIndexRef.current
+    const subName = stop?.subStops?.[subIdx]?.name ?? ''
+    pushUndoEntry('sub-stop', currentIndexRef.current, subName, subIdx)
+    const nextSubIdx = subIdx + 1
+    if (nextSubIdx >= total) {
+      goToNextStop()
+      return
+    }
+    currentSubStopIndexRef.current = nextSubIdx
+    setCurrentSubStopIndex(nextSubIdx)
+  }
+
+  // Tap of a specific undo pill — restore that pill's skip. Pills are
+  // independent: tapping one doesn't dismiss the others. They each fall
   // off on their own 10s timer.
   const undoSkipByKey = useCallback(
     (skipKey: number) => {
       const entry = undoSkips.find((e) => e.skipKey === skipKey)
       if (!entry) return
-      currentIndexRef.current = entry.skippedIndex
-      setCurrentIndex(entry.skippedIndex)
-      setPhase('navigating')
-      setRoutePolyline([])
-      setRouteMeta(null)
+      if (entry.kind === 'sub-stop' && entry.skippedSubStopIndex != null) {
+        // Sub-stop skip happened while we were arrived at the bundle. The
+        // user may have since skipped or advanced past the bundle entirely
+        // — restoring means jumping back to the bundle's arrived state.
+        currentIndexRef.current = entry.skippedIndex
+        setCurrentIndex(entry.skippedIndex)
+        currentSubStopIndexRef.current = entry.skippedSubStopIndex
+        setCurrentSubStopIndex(entry.skippedSubStopIndex)
+        setPhase('arrived')
+      } else if (entry.kind === 'bundle') {
+        currentIndexRef.current = entry.skippedIndex
+        setCurrentIndex(entry.skippedIndex)
+        currentSubStopIndexRef.current = -1
+        setCurrentSubStopIndex(-1)
+        setPhase('arrived')
+        setRoutePolyline([])
+        setRouteMeta(null)
+      } else {
+        // 'stop' kind — restore the navigating state and let the route
+        // refetch effect re-plan from current GPS.
+        currentIndexRef.current = entry.skippedIndex
+        setCurrentIndex(entry.skippedIndex)
+        currentSubStopIndexRef.current = -1
+        setCurrentSubStopIndex(-1)
+        setPhase('navigating')
+        setRoutePolyline([])
+        setRouteMeta(null)
+      }
       setUndoSkips((prev) => prev.filter((e) => e.skipKey !== skipKey))
     },
-    [undoSkips],
+    [undoSkips, stops.length],
   )
 
   // Auto-dismiss each pill at its own expiry. A single timer drives a
@@ -782,6 +906,7 @@ function ExcursionBody({
     legDistanceMeters: routeMeta?.distanceMeters ?? null,
     legDurationSeconds: routeMeta?.durationSeconds ?? null,
     remainingMeters: liveRouteInfo?.remainingMeters ?? null,
+    userLocation,
   })
 
   return (
@@ -823,26 +948,105 @@ function ExcursionBody({
         }}
       >
         {/* Stops: hidden during navigation except the current target, so
-            the user isn't distracted by behind-them or ahead-of-them pins. */}
+            the user isn't distracted by behind-them or ahead-of-them pins.
+            Bundle stops (subStops non-empty) render as a violet pin with a
+            number badge instead of the system pin. */}
         {phase !== 'navigating' &&
-          stops.map((stop, idx) => (
+          stops.map((stop, idx) => {
+            const subCount = stop.subStops?.length ?? 0
+            if (subCount > 0) {
+              return (
+                <StopBundlePin
+                  key={stop.id}
+                  coords={stop.coords}
+                  count={subCount}
+                  visited={idx < currentIndex}
+                  title={`${idx + 1}. ${stop.name}`}
+                  description={stop.description}
+                />
+              )
+            }
+            return (
+              <Marker
+                key={stop.id}
+                coordinate={stop.coords}
+                title={`${idx + 1}. ${stop.name}`}
+                description={stop.description}
+                pinColor={idx < currentIndex ? '#9CA3AF' : undefined}
+              />
+            )
+          })}
+        {/* Sub-stop dots + auto-sized cluster ring. Always rendered
+            (preview, navigating, arrived, complete). Sub-stops have no
+            navigation of their own; the dots are informational and
+            tappable to open the sub-stop detail sheet. The ring's radius
+            is the max distance from the parent to any sub-stop (plus a
+            small padding) so every dot sits inside it by construction. */}
+        {stops.map((stop) => {
+          const subStops = stop.subStops ?? []
+          if (subStops.length === 0) return null
+          // Real coords drive position; fall back to ring positions only
+          // for legacy data (shouldn't happen after the coords backfill,
+          // but keeps reads safe).
+          const fallbackRing = ringPositionsAroundParent(
+            stop.coords,
+            subStops.length,
+          )
+          const dotCoords = subStops.map(
+            (s, i) => s.coords ?? fallbackRing[i],
+          )
+          // Auto-size the ring to encompass every dot. Pad by 30% above
+          // the farthest dot and enforce a sensible minimum so a single
+          // close sub-stop still shows a visible ring.
+          const farthestMeters = dotCoords.reduce(
+            (acc, c) => Math.max(acc, haversineMeters(stop.coords, c)),
+            0,
+          )
+          const ringRadius = Math.max(
+            SUB_STOP_RING_RADIUS_METERS,
+            farthestMeters * 1.3,
+          )
+          return (
+            <Fragment key={`subs:${stop.id}`}>
+              <Circle
+                center={stop.coords}
+                radius={ringRadius}
+                strokeColor={BUNDLE_ACCENT}
+                strokeWidth={1.5}
+                lineDashPattern={[4, 4]}
+                fillColor="rgba(124, 58, 237, 0.06)"
+              />
+              {subStops.map((sub, subIdx) => (
+                <SubStopDot
+                  key={`${stop.id}:${sub.id}`}
+                  coords={dotCoords[subIdx]}
+                  onPress={() =>
+                    setSelectedSubStop({ sub, parentStopId: stop.id })
+                  }
+                />
+              ))}
+            </Fragment>
+          )
+        })}
+        {phase === 'navigating' &&
+          currentStop &&
+          (currentStop.subStops && currentStop.subStops.length > 0 ? (
+            <StopBundlePin
+              key={currentStop.id}
+              coords={currentStop.coords}
+              count={currentStop.subStops.length}
+              title={`${currentIndex + 1}. ${currentStop.name}`}
+              description={currentStop.description}
+            />
+          ) : (
             <Marker
-              key={stop.id}
-              coordinate={stop.coords}
-              title={`${idx + 1}. ${stop.name}`}
-              description={stop.description}
-              pinColor={idx < currentIndex ? '#9CA3AF' : undefined}
+              key={currentStop.id}
+              coordinate={currentStop.coords}
+              title={`${currentIndex + 1}. ${currentStop.name}`}
+              description={currentStop.description}
+              pinColor={primary}
             />
           ))}
-        {phase === 'navigating' && currentStop && (
-          <Marker
-            key={currentStop.id}
-            coordinate={currentStop.coords}
-            title={`${currentIndex + 1}. ${currentStop.name}`}
-            description={currentStop.description}
-            pinColor={primary}
-          />
-        )}
 
         {phase === 'navigating' && legPolylineParts.walked.length > 1 && (
           <Polyline
@@ -987,6 +1191,7 @@ function ExcursionBody({
               phase={phase}
               onPoiPress={setSelectedPoi}
               onStopPress={(stop) => setLightboxUri(stop.image)}
+              onSubStopPress={(sub) => setLightboxUri(sub.image)}
             />
           </YStack>
           <YStack
@@ -998,7 +1203,9 @@ function ExcursionBody({
               phase={phase}
               currentStop={currentStop}
               currentIndex={currentIndex}
+              currentSubStopIndex={currentSubStopIndex}
               totalStops={stops.length}
+              outro={outro}
               userLocation={userLocation}
               permissionDenied={permissionDenied}
               liveRouteInfo={liveRouteInfo}
@@ -1009,9 +1216,31 @@ function ExcursionBody({
               onStart={start}
               onContinue={continueNext}
               onSkip={skip}
+              onAdvanceSubStop={advanceSubStop}
+              onSkipSubStop={skipSubStop}
               onRecalculate={recalculateRoute}
               onFinish={finish}
-              onMoreInfo={() => setDetailSheetOpen(true)}
+              onMoreInfo={() => {
+                // On a bundle ArrivedPanel, More info should open whichever
+                // panel is currently visible: parent sheet when subStopIndex
+                // is -1 (parent intro), or the sub-stop's own sheet otherwise.
+                // For non-bundle stops we always open the parent sheet.
+                const subs = currentStop?.subStops
+                const isBundle = !!subs && subs.length > 0
+                if (
+                  isBundle &&
+                  currentSubStopIndex >= 0 &&
+                  currentSubStopIndex < subs!.length &&
+                  currentStop
+                ) {
+                  setSelectedSubStop({
+                    sub: subs![currentSubStopIndex],
+                    parentStopId: currentStop.id,
+                  })
+                } else {
+                  setDetailSheetOpen(true)
+                }
+              }}
             />
           </YStack>
         </YStack>
@@ -1082,6 +1311,14 @@ function ExcursionBody({
         visible={!!selectedFact}
         fact={selectedFact}
         onClose={() => setSelectedFact(null)}
+      />
+
+      <SubStopDetailSheet
+        visible={!!selectedSubStop}
+        sub={selectedSubStop?.sub ?? null}
+        excursionId={id}
+        stopId={selectedSubStop?.parentStopId ?? ''}
+        onClose={() => setSelectedSubStop(null)}
       />
 
       <ImageLightbox uri={lightboxUri} onClose={() => setLightboxUri(null)} />
@@ -1339,7 +1576,9 @@ function BottomPanel({
   phase,
   currentStop,
   currentIndex,
+  currentSubStopIndex,
   totalStops,
+  outro,
   userLocation,
   liveRouteInfo,
   isOffRoute,
@@ -1349,6 +1588,8 @@ function BottomPanel({
   onStart,
   onContinue,
   onSkip,
+  onAdvanceSubStop,
+  onSkipSubStop,
   onRecalculate,
   onFinish,
   onMoreInfo,
@@ -1356,7 +1597,9 @@ function BottomPanel({
   phase: Phase
   currentStop?: ExcursionStop
   currentIndex: number
+  currentSubStopIndex: number
   totalStops: number
+  outro?: PublicExcursionOutro
   userLocation: LatLng | null
   permissionDenied: boolean
   liveRouteInfo: { remainingMeters: number; remainingSeconds: number } | null
@@ -1367,6 +1610,8 @@ function BottomPanel({
   onStart: () => void
   onContinue: () => void
   onSkip: () => void
+  onAdvanceSubStop: () => void
+  onSkipSubStop: () => void
   onRecalculate: () => void
   onFinish: () => void
   onMoreInfo: () => void
@@ -1415,9 +1660,17 @@ function BottomPanel({
           stop={currentStop}
           index={currentIndex}
           total={totalStops}
+          subStopIndex={currentSubStopIndex}
           onContinue={onContinue}
+          onAdvanceSubStop={onAdvanceSubStop}
+          onSkipSubStop={onSkipSubStop}
+          onSkipBundle={onSkip}
           onMoreInfo={onMoreInfo}
         />
+      )}
+
+      {phase === 'outro' && outro && (
+        <OutroPanel outro={outro} onFinish={onFinish} />
       )}
 
       {phase === 'complete' && (
@@ -1666,17 +1919,199 @@ function ArrivedPanel({
   stop,
   index,
   total,
+  subStopIndex,
   onContinue,
+  onAdvanceSubStop,
+  onSkipSubStop,
+  onSkipBundle,
   onMoreInfo,
 }: {
   stop: ExcursionStop
   index: number
   total: number
+  subStopIndex: number
   onContinue: () => void
+  onAdvanceSubStop: () => void
+  onSkipSubStop: () => void
+  onSkipBundle: () => void
   onMoreInfo: () => void
 }) {
   const { t } = useTranslation()
   const isLast = index + 1 === total
+  const subStops = stop.subStops ?? []
+  const isBundle = subStops.length > 0
+
+  if (isBundle) {
+    // -1 = parent intro panel; 0..N-1 = sub-stops.
+    const onParent = subStopIndex < 0
+    const sub = onParent ? null : (subStops[subStopIndex] ?? subStops[0])
+    const isLastSubStop = !onParent && subStopIndex + 1 >= subStops.length
+    const displayImage = onParent ? stop.image : sub!.image
+    const displayName = onParent ? stop.name : sub!.name
+    const displayDescription = onParent ? stop.description : sub!.description
+    const headerLabel = onParent
+      ? t('excursion.arrived.bundleIntro', {
+          count: subStops.length,
+          bundle: stop.name,
+          defaultValue: `${subStops.length} stops at ${stop.name}`,
+        })
+      : t('excursion.arrived.bundlePosition', {
+          index: subStopIndex + 1,
+          total: subStops.length,
+          bundle: stop.name,
+          defaultValue: `${subStopIndex + 1} of ${subStops.length} · ${stop.name}`,
+        })
+    return (
+      <YStack gap="$3">
+        <XStack items="center" gap="$3">
+          <Image
+            source={{ uri: displayImage }}
+            style={{ width: 56, height: 56, borderRadius: 12 }}
+            resizeMode="cover"
+          />
+          <YStack flex={1} gap="$0.5">
+            <SizableText
+              size="$2"
+              fontFamily="$body"
+              fontWeight="700"
+              style={{
+                color: BUNDLE_ACCENT,
+                textTransform: 'uppercase',
+                letterSpacing: 0.6,
+              }}
+            >
+              {headerLabel}
+            </SizableText>
+            <SizableText
+              size="$5"
+              color="$color"
+              fontFamily="$body"
+              fontWeight="600"
+            >
+              {displayName}
+            </SizableText>
+          </YStack>
+        </XStack>
+        <Paragraph
+          color="$color"
+          fontFamily="$body"
+          size="$3"
+          lineHeight="$3"
+          numberOfLines={3}
+        >
+          {displayDescription}
+        </Paragraph>
+        <XStack gap="$2">
+          <Pressable onPress={onMoreInfo} style={{ flex: 1 }}>
+            <XStack
+              flex={1}
+              items="center"
+              justify="center"
+              gap="$2"
+              bg="$surfaceMuted"
+              borderWidth={1}
+              borderColor="$borderColor"
+              rounded="$5"
+              py="$3.5"
+              px="$4"
+            >
+              <Info size={18} color={BUNDLE_ACCENT as any} />
+              <SizableText
+                size="$4"
+                color="$color"
+                fontFamily="$body"
+                fontWeight="600"
+              >
+                {t('excursion.arrived.moreInfo')}
+              </SizableText>
+            </XStack>
+          </Pressable>
+          <YStack flex={1}>
+            <ActionButton
+              label={
+                onParent
+                  ? t('excursion.arrived.startStops', {
+                      count: subStops.length,
+                      defaultValue: `Start ${subStops.length} stops`,
+                    })
+                  : isLastSubStop
+                    ? isLast
+                      ? t('excursion.arrived.finish')
+                      : t('excursion.arrived.continue')
+                    : t('excursion.arrived.next', {
+                        defaultValue: 'Next',
+                      })
+              }
+              icon={isLastSubStop && isLast ? MapPin : Navigation}
+              onPress={
+                onParent
+                  ? onAdvanceSubStop
+                  : isLastSubStop
+                    ? onContinue
+                    : onAdvanceSubStop
+              }
+              tint={BUNDLE_ACCENT}
+            />
+          </YStack>
+        </XStack>
+        <XStack gap="$2">
+          {!onParent && (
+            <Pressable onPress={onSkipSubStop} style={{ flex: 1 }} hitSlop={6}>
+              <YStack
+                items="center"
+                justify="center"
+                bg="transparent"
+                borderWidth={1}
+                borderColor="$borderColor"
+                rounded="$5"
+                py="$2.5"
+                px="$3"
+              >
+                <SizableText
+                  size="$2"
+                  color="$colorPress"
+                  fontFamily="$body"
+                  fontWeight="600"
+                  numberOfLines={1}
+                >
+                  {t('excursion.arrived.skipSubStop', {
+                    name: sub!.name,
+                    defaultValue: `Skip ${sub!.name}`,
+                  })}
+                </SizableText>
+              </YStack>
+            </Pressable>
+          )}
+          <Pressable onPress={onSkipBundle} style={{ flex: 1 }} hitSlop={6}>
+            <YStack
+              items="center"
+              justify="center"
+              bg="transparent"
+              borderWidth={1}
+              borderColor="$borderColor"
+              rounded="$5"
+              py="$2.5"
+              px="$3"
+            >
+              <SizableText
+                size="$2"
+                color="$colorPress"
+                fontFamily="$body"
+                fontWeight="600"
+                numberOfLines={1}
+              >
+                {t('excursion.arrived.skipBundle', {
+                  bundle: stop.name,
+                  defaultValue: `Skip all spots at ${stop.name}`,
+                })}
+              </SizableText>
+            </YStack>
+          </Pressable>
+        </XStack>
+      </YStack>
+    )
+  }
+
   return (
     <YStack gap="$3">
       <XStack items="center" gap="$3">
@@ -1744,6 +2179,51 @@ function ArrivedPanel({
   )
 }
 
+// Sign-off card shown after the last stop, before the final 'complete'
+// screen. Editor-authored: image, title, optional audio, long description.
+// Single 'Finish' button transitions out (callers map this to the existing
+// finish behavior — exiting the excursion screen).
+function OutroPanel({
+  outro,
+  onFinish,
+}: {
+  outro: PublicExcursionOutro
+  onFinish: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <YStack gap="$3">
+      <Image
+        source={{ uri: outro.image }}
+        style={{ width: '100%', height: 160, borderRadius: 12 }}
+        resizeMode="cover"
+      />
+      <H2 color="$color" fontFamily="$body" fontWeight="700" fontSize="$7">
+        {outro.title}
+      </H2>
+      <AudioPlayer
+        audioUrl={outro.audioUrl}
+        title={t('excursion.stopSheet.audioTitle')}
+      />
+      <Paragraph
+        color="$color"
+        fontFamily="$body"
+        size="$3"
+        lineHeight="$5"
+      >
+        {outro.description}
+      </Paragraph>
+      <ActionButton
+        label={t('excursion.outro.finish', {
+          defaultValue: 'Finish',
+        })}
+        icon={MapPin}
+        onPress={onFinish}
+      />
+    </YStack>
+  )
+}
+
 function CompletePanel({ total, onFinish }: { total: number; onFinish: () => void }) {
   const { t } = useTranslation()
   return (
@@ -1767,10 +2247,15 @@ function ActionButton({
   label,
   icon: Icon,
   onPress,
+  tint,
 }: {
   label: string
   icon: typeof Play
   onPress: () => void
+  // Optional override for the button's accent (background + icon glow).
+  // Used by bundle ArrivedPanel to make Next/Continue read as violet.
+  // Falls back to the theme's $primary when unset.
+  tint?: string
 }) {
   return (
     <Pressable onPress={onPress}>
@@ -1778,10 +2263,11 @@ function ActionButton({
         items="center"
         justify="center"
         gap="$2"
-        bg="$primary"
+        bg={tint ? undefined : '$primary'}
         rounded="$5"
         py="$3.5"
         px="$4"
+        style={tint ? { backgroundColor: tint } : undefined}
       >
         <Icon size={18} color="$colorOnBrand" />
         <SizableText
