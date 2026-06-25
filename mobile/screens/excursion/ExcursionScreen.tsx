@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Animated,
+  AppState,
   Image,
+  Linking,
+  PanResponder,
   Pressable,
   useWindowDimensions,
 } from 'react-native'
@@ -9,7 +13,16 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import * as Location from 'expo-location'
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
-import { ChevronLeft, Info, MapPin, Navigation, Play } from '@tamagui/lucide-icons'
+import {
+  ChevronLeft,
+  Info,
+  LocateFixed,
+  MapPin,
+  MapPinOff,
+  Navigation,
+  Play,
+  Undo2,
+} from '@tamagui/lucide-icons'
 import type {
   PublicExcursionStop,
   PublicInterestingFact,
@@ -28,10 +41,11 @@ import {
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { useExcursion } from '../../hooks/useExcursion'
 import {
+  distanceFromPolyline,
   fetchWalkingRoute,
   haversineMeters,
   remainingMetersAlongPolyline,
-  trimPolylineFromUser,
+  splitPolylineAtUser,
 } from '../../lib/directions'
 import { playArrivalFeedback } from '../../lib/feedback'
 import { EmptyState } from '../discover/EmptyState'
@@ -143,6 +157,14 @@ function ExcursionBody({
 }) {
   const [phase, setPhase] = useState<Phase>('preview')
   const [currentIndex, setCurrentIndex] = useState(0)
+  // Mirror of currentIndex so handlers like `skip` that fire faster than
+  // React batches can read the up-to-date value. Without this, rapid skip
+  // taps captured a stale `currentIndex` from their closure and the undo
+  // pill kept showing the first-skipped stop's name.
+  const currentIndexRef = useRef(0)
+  useEffect(() => {
+    currentIndexRef.current = currentIndex
+  }, [currentIndex])
   const [userLocation, setUserLocation] = useState<LatLng | null>(null)
   // Compass heading in degrees (0 = north, clockwise). Null until the first
   // sample arrives; also null on devices without a magnetometer.
@@ -153,17 +175,112 @@ function ExcursionBody({
     durationSeconds: number
   } | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
+  // Flips on after a delay so the "Waiting for location…" toast only
+  // appears for users who really aren't getting a fix (poor signal, indoors,
+  // simulator with location set to None). Cleared on first GPS arrival.
+  const [waitingForGps, setWaitingForGps] = useState(false)
+  // Bumped whenever we want to re-evaluate location permission — most
+  // importantly when the app foregrounds (user may have just toggled the
+  // permission in Settings). Including it in the watch effect's dep array
+  // causes the subscription to restart with a fresh permission check.
+  const [permissionAttempt, setPermissionAttempt] = useState(0)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setPermissionAttempt((n) => n + 1)
+    })
+    return () => sub.remove()
+  }, [])
+
+  // If permission is granted but no GPS fix lands within 8 seconds, surface
+  // a small "Waiting for location…" toast. Auto-dismisses as soon as the
+  // first sample arrives. We re-arm on each permission attempt so returning
+  // from Settings restarts the timer.
+  useEffect(() => {
+    if (permissionDenied) {
+      setWaitingForGps(false)
+      return
+    }
+    if (userLocation) {
+      setWaitingForGps(false)
+      return
+    }
+    const t = setTimeout(() => setWaitingForGps(true), 8000)
+    return () => clearTimeout(t)
+  }, [permissionDenied, userLocation, permissionAttempt])
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
   const [selectedFact, setSelectedFact] = useState<Fact | null>(null)
   // URL of the stop image currently shown in the lightbox; null when closed.
   const [lightboxUri, setLightboxUri] = useState<string | null>(null)
+  // Queue of pending undo-skip pills, one per recent skip. Each has its own
+  // 10s lifetime and is keyed by `skipKey` so back-to-back skips don't
+  // collide. Pills stack visually above the BottomPanel and dismiss
+  // independently — tapping one restores that specific stop.
+  type UndoSkipEntry = {
+    skipKey: number
+    skippedIndex: number
+    expiresAt: number
+  }
+  const [undoSkips, setUndoSkips] = useState<UndoSkipEntry[]>([])
+  const skipKeyRef = useRef(0)
+  // Measured height of the BottomPanel — pills anchor relative to its top.
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(0)
 
   const { height: screenHeight } = useWindowDimensions()
-  const mapHeight = screenHeight * 0.5
+
+  // Three snap points for the bottom container as a fraction of the screen
+  // (mini / default / max). The map fills the inverse so resizing the bottom
+  // shrinks the map and vice versa. Default matches the prior 50/50 split
+  // closely enough that the screen reads unchanged when first opened.
+  const BOTTOM_SNAP_FRACTIONS = [0.15, 0.45, 0.7] as const
+  const DEFAULT_SNAP_INDEX = 1
+  const snapHeights = useMemo(
+    () => BOTTOM_SNAP_FRACTIONS.map((f) => screenHeight * f),
+    [screenHeight],
+  )
+  const [snapIndex, setSnapIndex] = useState<number>(DEFAULT_SNAP_INDEX)
+  const bottomHeightAnim = useRef(
+    new Animated.Value(snapHeights[DEFAULT_SNAP_INDEX]),
+  ).current
+  // Plain JS mirror of the animated height — kept in sync via an addListener
+  // subscription so PanResponder can read the current value at gesture-grant
+  // time without poking the Animated.Value's private _value.
+  const bottomHeightRef = useRef(snapHeights[DEFAULT_SNAP_INDEX])
+  // Snapshot of the height at the moment a drag begins; used to compute the
+  // delta-from-start without accumulating rounding drift across moves.
+  const dragStartHeightRef = useRef(snapHeights[DEFAULT_SNAP_INDEX])
+  useEffect(() => {
+    const id = bottomHeightAnim.addListener(({ value }) => {
+      bottomHeightRef.current = value
+    })
+    return () => bottomHeightAnim.removeListener(id)
+  }, [bottomHeightAnim])
+
+  // When the screen height changes (rotation / split-screen on tablets),
+  // recompute the snap targets and re-pin the current snap.
+  useEffect(() => {
+    bottomHeightRef.current = snapHeights[snapIndex]
+    bottomHeightAnim.setValue(snapHeights[snapIndex])
+  }, [snapHeights, snapIndex, bottomHeightAnim])
+
+  const mapHeightAnim = useMemo(
+    () =>
+      Animated.subtract(new Animated.Value(screenHeight), bottomHeightAnim),
+    [screenHeight, bottomHeightAnim],
+  )
+
+  // Map height as a plain number, derived from the current snap. Used by the
+  // initial map fit logic (the camera math needs a scalar, not an animated
+  // value); the visible <Animated.View> uses mapHeightAnim directly.
+  const mapHeight = screenHeight - snapHeights[snapIndex]
 
   const currentStop = stops[currentIndex]
 
+  // While navigating, push GPS into BestForNavigation + 1Hz so the user pin
+  // and remaining-distance feel snappy. Otherwise we use High + 5m distance
+  // interval — cheap and good enough for preview / arrived. The subscription
+  // restarts whenever the phase toggles in/out of navigating.
+  const isNavigating = phase === 'navigating'
   useEffect(() => {
     let posSub: Location.LocationSubscription | null = null
     let headSub: Location.LocationSubscription | null = null
@@ -171,10 +288,15 @@ function ExcursionBody({
 
     async function start() {
       const { status } = await Location.requestForegroundPermissionsAsync()
+      if (cancelled) return
       if (status !== 'granted') {
         setPermissionDenied(true)
         return
       }
+      // Permission is granted (possibly just now, after the user returned
+      // from Settings). Clear the denied flag so the overlay dismisses on
+      // the next render.
+      setPermissionDenied(false)
       const initial = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       })
@@ -183,15 +305,19 @@ function ExcursionBody({
         latitude: initial.coords.latitude,
         longitude: initial.coords.longitude,
       })
-      posSub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, distanceInterval: 5 },
-        (loc) => {
-          setUserLocation({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-          })
-        },
-      )
+      const watchOptions: Location.LocationOptions = isNavigating
+        ? {
+            accuracy: Location.Accuracy.BestForNavigation,
+            timeInterval: 1000,
+            distanceInterval: 0,
+          }
+        : { accuracy: Location.Accuracy.High, distanceInterval: 5 }
+      posSub = await Location.watchPositionAsync(watchOptions, (loc) => {
+        setUserLocation({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        })
+      })
       // Compass heading. Prefer trueHeading (calibrated against true north,
       // matches map orientation); fall back to magHeading when the device
       // can't compute trueHeading (low accuracy / no GPS lock yet).
@@ -211,7 +337,7 @@ function ExcursionBody({
       posSub?.remove()
       headSub?.remove()
     }
-  }, [])
+  }, [isNavigating, permissionAttempt])
 
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || !currentStop) return
@@ -249,6 +375,7 @@ function ExcursionBody({
     }
   }, [phase, currentIndex, currentStop])
 
+
   const initialRegion = useMemo(() => {
     const lats = stops.map((s) => s.coords.latitude)
     const lngs = stops.map((s) => s.coords.longitude)
@@ -264,14 +391,19 @@ function ExcursionBody({
     }
   }, [stops])
 
-  // Fit map to show all stops + POIs + user location when in preview. Fires
-  // on phase entry and again the moment GPS arrives (so the user pin is
-  // included in the bounding box without us hopping the camera twice).
+  // Fit map to show all stops + POIs + user location when in preview. We
+  // want this to fire ONCE per preview entry: the moment we have either
+  // GPS or just the stop coords, we frame everything and then leave the
+  // camera alone so the user can pan/zoom freely. Re-running on every
+  // userLocation tick (the previous behavior) caused the camera to zoom
+  // out every time the simulator location changed.
+  const hasFittedPreviewRef = useRef(false)
   useEffect(() => {
-    if (phase !== 'preview') return
-    // Exclude any coordinates that look like accidental zero/zero entries
-    // (e.g. a place authored without coords). Including them would skew
-    // the bounding box halfway to the Gulf of Guinea.
+    if (phase !== 'preview') {
+      hasFittedPreviewRef.current = false
+      return
+    }
+    if (hasFittedPreviewRef.current) return
     const isReal = (c: LatLng) =>
       typeof c.latitude === 'number' &&
       typeof c.longitude === 'number' &&
@@ -283,13 +415,76 @@ function ExcursionBody({
     if (userLocation) coords.push(userLocation)
     if (coords.length === 0) return
     mapRef.current?.fitToCoordinates(coords, {
-      // Match the navigating-fit padding so the bottom panel + stops list
-      // never overlap pins. Top inset reserves space for the back button +
-      // favorite button.
-      edgePadding: { top: 80, right: 60, bottom: 220, left: 60 },
+      edgePadding: makeEdgePadding(mapHeight),
       animated: true,
     })
-  }, [phase, stops, pois, userLocation, mapRef])
+    hasFittedPreviewRef.current = true
+  }, [phase, stops, pois, userLocation, mapRef, mapHeight])
+
+  // Drag-handle PanResponder for resizing the bottom container. The handle
+  // is a small bar at the top of the bottom container; only the handle owns
+  // this responder so the inner ScrollView still scrolls normally. On
+  // release we snap to the nearest of the three target heights and update
+  // `snapIndex` so the camera-fit logic (which uses scalar `mapHeight`) can
+  // re-fire.
+  const snapPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 2,
+        onPanResponderGrant: () => {
+          // Snapshot the current animated height (mirrored by the listener)
+          // so we can compute the drag delta against a stable starting point.
+          dragStartHeightRef.current = bottomHeightRef.current
+        },
+        onPanResponderMove: (_, gesture) => {
+          // Drag down (positive dy) shrinks the bottom container; drag up
+          // (negative dy) grows it. Clamp to the min/max snap targets so we
+          // can't drag outside the snap range.
+          const next = dragStartHeightRef.current - gesture.dy
+          const min = snapHeights[0]
+          const max = snapHeights[snapHeights.length - 1]
+          bottomHeightAnim.setValue(Math.max(min, Math.min(max, next)))
+        },
+        onPanResponderRelease: (_, gesture) => {
+          const released = dragStartHeightRef.current - gesture.dy
+          let nearestIdx = 0
+          let nearestDist = Infinity
+          for (let i = 0; i < snapHeights.length; i++) {
+            const d = Math.abs(snapHeights[i] - released)
+            if (d < nearestDist) {
+              nearestDist = d
+              nearestIdx = i
+            }
+          }
+          Animated.spring(bottomHeightAnim, {
+            toValue: snapHeights[nearestIdx],
+            useNativeDriver: false,
+            bounciness: 6,
+          }).start()
+          setSnapIndex(nearestIdx)
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(bottomHeightAnim, {
+            toValue: snapHeights[snapIndex],
+            useNativeDriver: false,
+            bounciness: 6,
+          }).start()
+        },
+      }),
+    [bottomHeightAnim, snapHeights, snapIndex],
+  )
+
+  // User-interaction cooldown for the auto-camera. While `Date.now()` is
+  // below `userInteractingUntilRef.current` the heading-up animation skips,
+  // so the user can pan/zoom freely without the camera yanking back. The
+  // re-center button (rendered as an overlay below) clears this immediately
+  // and resets the per-leg fitted flag so the next tick re-fires.
+  const userInteractingUntilRef = useRef(0)
+  const GESTURE_COOLDOWN_MS = 8000
+  const markUserInteraction = useCallback(() => {
+    userInteractingUntilRef.current = Date.now() + GESTURE_COOLDOWN_MS
+  }, [])
 
   // On entering navigating (or each new leg), zoom the camera to fit both
   // the user and the next stop with padding. After that initial overview
@@ -305,6 +500,7 @@ function ExcursionBody({
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || !currentStop) return
     if (hasFittedThisLegRef.current) return
+    if (Date.now() < userInteractingUntilRef.current) return
     // If the user is already on top of the stop (within ~5m of the same
     // coordinate), fitToCoordinates degenerates to absurd zoom. Fall back
     // to a centered camera at the user with the same zoom heading-up uses.
@@ -319,15 +515,13 @@ function ExcursionBody({
       mapRef.current?.fitToCoordinates(
         [userLocation, currentStop.coords],
         {
-          // Generous bottom padding so the next-stop pin doesn't sit
-          // under the bottom panel / stops list.
-          edgePadding: { top: 80, right: 60, bottom: 220, left: 60 },
+          edgePadding: makeEdgePadding(mapHeight),
           animated: true,
         },
       )
     }
     hasFittedThisLegRef.current = true
-  }, [phase, currentIndex, userLocation, currentStop, mapRef])
+  }, [phase, currentIndex, userLocation, currentStop, mapRef, mapHeight])
 
   // Heading-up rotation during navigation. We re-animate the camera whenever
   // the heading changes by at least 5° so the map turns visibly without
@@ -337,6 +531,7 @@ function ExcursionBody({
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || heading == null) return
     if (!hasFittedThisLegRef.current) return
+    if (Date.now() < userInteractingUntilRef.current) return
     const prev = lastAnimatedHeadingRef.current
     if (prev != null) {
       const diff = Math.abs(((heading - prev + 540) % 360) - 180)
@@ -365,33 +560,194 @@ function ExcursionBody({
     )
   }, [phase, mapRef])
 
+  // Re-center button: clear the gesture cooldown and force the auto-camera
+  // to re-fit immediately. Resets the per-leg fitted flag (triggers the fit
+  // effect) and the last-heading ref (so heading-up animates next tick).
+  const recenter = useCallback(() => {
+    userInteractingUntilRef.current = 0
+    hasFittedThisLegRef.current = false
+    lastAnimatedHeadingRef.current = null
+    if (userLocation) {
+      mapRef.current?.animateCamera(
+        {
+          center: userLocation,
+          heading: heading ?? 0,
+          pitch: 0,
+          zoom: 17,
+        },
+        { duration: 500 },
+      )
+    }
+  }, [userLocation, heading])
+
   const start = () => {
     setPhase('navigating')
+    currentIndexRef.current = 0
     setCurrentIndex(0)
     setRoutePolyline([])
     setRouteMeta(null)
   }
 
   const continueNext = () => {
-    const nextIndex = currentIndex + 1
+    const nextIndex = currentIndexRef.current + 1
     if (nextIndex >= stops.length) {
       setPhase('complete')
       return
     }
+    currentIndexRef.current = nextIndex
     setCurrentIndex(nextIndex)
     setPhase('navigating')
     setRoutePolyline([])
     setRouteMeta(null)
   }
 
+  // Skip differs from Continue only in that it surfaces an Undo pill — the
+  // index/phase mechanics are identical. We remember the index that was
+  // skipped so the pill can restore it within a 10s window.
+  const UNDO_WINDOW_MS = 10_000
+  const skip = () => {
+    // Read + write through the ref so back-to-back taps (faster than React
+    // batches state) each see the freshest index. Using just `currentIndex`
+    // from the closure here would make every rapid-fire skip target stop 0
+    // and the undo pill would lock onto the first skipped name.
+    const skippedIndex = currentIndexRef.current
+    const nextIndex = skippedIndex + 1
+    if (nextIndex >= stops.length) {
+      setPhase('complete')
+    } else {
+      currentIndexRef.current = nextIndex
+      setCurrentIndex(nextIndex)
+      setPhase('navigating')
+      setRoutePolyline([])
+      setRouteMeta(null)
+    }
+    skipKeyRef.current += 1
+    const entry: UndoSkipEntry = {
+      skipKey: skipKeyRef.current,
+      skippedIndex,
+      expiresAt: Date.now() + UNDO_WINDOW_MS,
+    }
+    setUndoSkips((prev) => [...prev, entry])
+  }
+
+  // Tap of a specific undo pill — restore that pill's skipped stop. Pills
+  // are independent: tapping one doesn't dismiss the others. They each fall
+  // off on their own 10s timer.
+  const undoSkipByKey = useCallback(
+    (skipKey: number) => {
+      const entry = undoSkips.find((e) => e.skipKey === skipKey)
+      if (!entry) return
+      currentIndexRef.current = entry.skippedIndex
+      setCurrentIndex(entry.skippedIndex)
+      setPhase('navigating')
+      setRoutePolyline([])
+      setRouteMeta(null)
+      setUndoSkips((prev) => prev.filter((e) => e.skipKey !== skipKey))
+    },
+    [undoSkips],
+  )
+
+  // Auto-dismiss each pill at its own expiry. A single timer drives a
+  // garbage-collection pass: it wakes on the next-expiring pill, prunes,
+  // and reschedules. Keeps the timeout count bounded at 1 regardless of how
+  // many pills are queued.
+  useEffect(() => {
+    if (undoSkips.length === 0) return
+    const earliest = undoSkips.reduce(
+      (acc, e) => Math.min(acc, e.expiresAt),
+      Infinity,
+    )
+    const ms = Math.max(0, earliest - Date.now())
+    const t = setTimeout(() => {
+      const now = Date.now()
+      setUndoSkips((prev) => prev.filter((e) => e.expiresAt > now))
+    }, ms)
+    return () => clearTimeout(t)
+  }, [undoSkips])
+
   const finish = () => goBack()
 
-  // Live polyline anchored at the user's pin so the line shrinks as they walk.
-  const displayPolyline = useMemo(() => {
-    if (phase !== 'navigating' || !userLocation || routePolyline.length < 2) {
-      return routePolyline
+  // Distance to the nearest stop in this excursion. Used to gate the Start
+  // button: if the user is wildly far from any stop (i.e. they're not in the
+  // city yet), we show a warning + override instead of misleading distances
+  // and ETAs. Returns null until GPS arrives so the preview falls back to a
+  // normal Start button rather than flashing the warning.
+  const FAR_FROM_ROUTE_METERS = 3000
+  const nearestStopMeters = useMemo(() => {
+    if (!userLocation || stops.length === 0) return null
+    let best = Infinity
+    for (const s of stops) {
+      const d = haversineMeters(userLocation, s.coords)
+      if (d < best) best = d
     }
-    return trimPolylineFromUser(userLocation, routePolyline)
+    return best
+  }, [userLocation, stops])
+  const isFarFromRoute =
+    nearestStopMeters != null && nearestStopMeters > FAR_FROM_ROUTE_METERS
+
+  // Detect when the user has wandered off the active route. GPS in dense
+  // urban areas jitters by 20-30m, so a one-tick spike isn't off-route —
+  // it has to persist. We compute the current perpendicular distance and
+  // mark the user as off-route only after it stays above the threshold for
+  // the dwell window. The dwell start ref tracks the first tick the user
+  // crossed the threshold; if a later tick brings them back inside, the
+  // ref resets.
+  const OFF_ROUTE_METERS = 50
+  const OFF_ROUTE_DWELL_MS = 5000
+  const [isOffRoute, setIsOffRoute] = useState(false)
+  const offRouteSinceRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (
+      phase !== 'navigating' ||
+      !userLocation ||
+      routePolyline.length < 2
+    ) {
+      offRouteSinceRef.current = null
+      setIsOffRoute(false)
+      return
+    }
+    const dist = distanceFromPolyline(userLocation, routePolyline)
+    if (dist <= OFF_ROUTE_METERS) {
+      offRouteSinceRef.current = null
+      if (isOffRoute) setIsOffRoute(false)
+      return
+    }
+    const now = Date.now()
+    if (offRouteSinceRef.current == null) {
+      offRouteSinceRef.current = now
+    }
+    if (now - offRouteSinceRef.current >= OFF_ROUTE_DWELL_MS && !isOffRoute) {
+      setIsOffRoute(true)
+    }
+  }, [phase, userLocation, routePolyline, isOffRoute])
+
+  // Manual route recalculation. Triggered by the user from the off-route
+  // pill. Refetches the walking route from current GPS to the same stop
+  // and resets the per-leg fit so the camera frames the new route.
+  const recalculateRoute = useCallback(() => {
+    if (!userLocation || !currentStop) return
+    setIsOffRoute(false)
+    offRouteSinceRef.current = null
+    hasFittedThisLegRef.current = false
+    fetchWalkingRoute(userLocation, currentStop.coords).then((route) => {
+      if (!route) return
+      setRoutePolyline(route.polyline)
+      setRouteMeta({
+        distanceMeters: route.distanceMeters,
+        durationSeconds: route.durationSeconds,
+      })
+    })
+  }, [userLocation, currentStop])
+
+  // Split the active leg's polyline at the user's projection so we can
+  // render the walked portion in grey and the remaining portion in accent.
+  // Outside navigation (or before GPS arrives) there's nothing walked yet —
+  // fall back to rendering the whole route as "remaining".
+  const legPolylineParts = useMemo(() => {
+    if (phase !== 'navigating' || !userLocation || routePolyline.length < 2) {
+      return { walked: [] as LatLng[], remaining: routePolyline }
+    }
+    return splitPolylineAtUser(userLocation, routePolyline)
   }, [phase, userLocation, routePolyline])
 
   // Live distance/ETA that updates with the user's GPS location.
@@ -430,12 +786,13 @@ function ExcursionBody({
 
   return (
     <YStack flex={1} bg="$background">
+      <Animated.View style={{ width: '100%', height: mapHeightAnim }}>
       <MapView
         ref={mapRef}
         // Google Maps on both platforms so customMapStyle applies consistently
         // and we get the same renderer + icons across iOS and Android.
         provider={PROVIDER_GOOGLE}
-        style={{ width: '100%', height: mapHeight }}
+        style={{ width: '100%', height: '100%' }}
         initialRegion={initialRegion}
         // Custom user pin (UserHeadingPin) replaces the system blue dot so
         // we can render the heading cone. The platform's own pin would
@@ -458,6 +815,12 @@ function ExcursionBody({
         // disable the user's manual rotation so the gestures don't fight
         // the auto-rotation. Pan + pinch stay enabled.
         rotateEnabled={phase !== 'navigating'}
+        // Pause auto-camera for 8s whenever the user actively pans/pinches.
+        // `details.isGesture` distinguishes user input from our own
+        // animateCamera calls so the camera doesn't lock itself out.
+        onRegionChange={(_region, details) => {
+          if (details?.isGesture) markUserInteraction()
+        }}
       >
         {/* Stops: hidden during navigation except the current target, so
             the user isn't distracted by behind-them or ahead-of-them pins. */}
@@ -481,11 +844,20 @@ function ExcursionBody({
           />
         )}
 
-        {phase === 'navigating' && displayPolyline.length > 1 && (
+        {phase === 'navigating' && legPolylineParts.walked.length > 1 && (
           <Polyline
-            coordinates={displayPolyline}
+            coordinates={legPolylineParts.walked}
+            strokeColor="rgba(110,110,110,0.85)"
+            strokeWidth={5}
+            zIndex={0}
+          />
+        )}
+        {phase === 'navigating' && legPolylineParts.remaining.length > 1 && (
+          <Polyline
+            coordinates={legPolylineParts.remaining}
             strokeColor={primary}
             strokeWidth={5}
+            zIndex={1}
           />
         )}
         {phase === 'preview' && stops.length > 1 && (
@@ -545,6 +917,33 @@ function ExcursionBody({
         )}
       </MapView>
 
+      {phase === 'navigating' && (
+        <Pressable
+          onPress={recenter}
+          style={{
+            position: 'absolute',
+            bottom: 16,
+            right: H_PADDING,
+            zIndex: 12,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: '#FFFFFF',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOpacity: 0.15,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 4,
+          }}
+          hitSlop={8}
+        >
+          <LocateFixed size={22} color={primary as any} />
+        </Pressable>
+      )}
+      </Animated.View>
+
       <BackButton topInset={topInset} onPress={goBack} />
       <HeaderTitle topInset={topInset} title={title} />
       <YStack
@@ -566,30 +965,106 @@ function ExcursionBody({
         onDismiss={factBanner.dismiss}
       />
 
-      <StopsList
-        stops={stops}
-        pois={pois}
-        currentIndex={currentIndex}
-        phase={phase}
-        onPoiPress={setSelectedPoi}
-        onStopPress={(stop) => setLightboxUri(stop.image)}
-      />
+      {waitingForGps && <WaitingForGpsToast topInset={topInset} />}
 
-      <BottomPanel
-        phase={phase}
-        currentStop={currentStop}
-        currentIndex={currentIndex}
-        totalStops={stops.length}
-        userLocation={userLocation}
-        permissionDenied={permissionDenied}
-        liveRouteInfo={liveRouteInfo}
-        bottomInset={bottomInset}
-        onStart={start}
-        onContinue={continueNext}
-        onSkip={continueNext}
-        onFinish={finish}
-        onMoreInfo={() => setDetailSheetOpen(true)}
-      />
+      <Animated.View
+        style={{ width: '100%', height: bottomHeightAnim, overflow: 'hidden' }}
+      >
+        <YStack flex={1}>
+          <YStack
+            items="center"
+            pt="$1.5"
+            pb="$1"
+            {...snapPanResponder.panHandlers}
+          >
+            <YStack width={44} height={4} rounded={2} bg="$borderColor" />
+          </YStack>
+          <YStack flex={1}>
+            <StopsList
+              stops={stops}
+              pois={pois}
+              currentIndex={currentIndex}
+              phase={phase}
+              onPoiPress={setSelectedPoi}
+              onStopPress={(stop) => setLightboxUri(stop.image)}
+            />
+          </YStack>
+          <YStack
+            onLayout={(e) =>
+              setBottomPanelHeight(e.nativeEvent.layout.height)
+            }
+          >
+            <BottomPanel
+              phase={phase}
+              currentStop={currentStop}
+              currentIndex={currentIndex}
+              totalStops={stops.length}
+              userLocation={userLocation}
+              permissionDenied={permissionDenied}
+              liveRouteInfo={liveRouteInfo}
+              isOffRoute={isOffRoute}
+              isFarFromRoute={isFarFromRoute}
+              nearestStopMeters={nearestStopMeters}
+              bottomInset={bottomInset}
+              onStart={start}
+              onContinue={continueNext}
+              onSkip={skip}
+              onRecalculate={recalculateRoute}
+              onFinish={finish}
+              onMoreInfo={() => setDetailSheetOpen(true)}
+            />
+          </YStack>
+        </YStack>
+      </Animated.View>
+
+      {undoSkips.length > 0 && (
+        <YStack
+          position="absolute"
+          // Anchor the deck to sit just above the BottomPanel. The container
+          // has a small fixed height; pills inside are absolutely positioned
+          // to overlap like a card deck — newest on top fully visible, older
+          // ones peeking out behind.
+          b={bottomPanelHeight + 8}
+          l={H_PADDING}
+          r={H_PADDING}
+          height={100}
+          z={12}
+          pointerEvents="box-none"
+        >
+          {undoSkips.map((entry, idx) => {
+            // depth = how far this pill is from the top of the stack.
+            // 0 = newest (fully visible, in front). Larger = older (smaller
+            // and offset up, peeking from behind). After 2 layers the
+            // depth values still tick up so further pills compound the
+            // offset slightly but lose visibility into the background.
+            const depth = undoSkips.length - 1 - idx
+            const offsetY = depth * 6
+            const scale = Math.max(0.88, 1 - depth * 0.04)
+            const opacity = Math.max(0.4, 1 - depth * 0.15)
+            return (
+              <YStack
+                key={entry.skipKey}
+                position="absolute"
+                b={offsetY}
+                l={0}
+                r={0}
+                z={100 - depth}
+                style={{
+                  transform: [{ scale }],
+                  opacity,
+                }}
+                pointerEvents="box-none"
+              >
+                <UndoSkipPill
+                  stopName={stops[entry.skippedIndex]?.name ?? ''}
+                  expiresAt={entry.expiresAt}
+                  onPress={() => undoSkipByKey(entry.skipKey)}
+                />
+              </YStack>
+            )
+          })}
+        </YStack>
+      )}
 
       <StopDetailSheet
         visible={detailSheetOpen}
@@ -610,7 +1085,253 @@ function ExcursionBody({
       />
 
       <ImageLightbox uri={lightboxUri} onClose={() => setLightboxUri(null)} />
+
+      {permissionDenied && <LocationDeniedOverlay onGoBack={goBack} />}
     </YStack>
+  )
+}
+
+function WaitingForGpsToast({ topInset }: { topInset: number }) {
+  const { t } = useTranslation()
+  return (
+    <YStack
+      position="absolute"
+      t={topInset + 60}
+      l={0}
+      r={0}
+      z={11}
+      items="center"
+      pointerEvents="none"
+    >
+      <XStack
+        bg="$color12"
+        rounded="$6"
+        px="$3.5"
+        py="$2"
+        gap="$2.5"
+        items="center"
+        style={{
+          shadowColor: '#000',
+          shadowOpacity: 0.18,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 5,
+        }}
+      >
+        <LocateFixed size={14} color="#FFFFFF" />
+        <SizableText
+          size="$2"
+          color="#FFFFFF"
+          fontFamily="$body"
+          fontWeight="600"
+        >
+          {t('excursion.waitingForGps', {
+            defaultValue: 'Waiting for location…',
+          })}
+        </SizableText>
+      </XStack>
+    </YStack>
+  )
+}
+
+function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <YStack
+      position="absolute"
+      t={0}
+      l={0}
+      r={0}
+      b={0}
+      bg="rgba(0,0,0,0.55)"
+      items="center"
+      justify="center"
+      px="$5"
+      z={50}
+    >
+      <YStack
+        bg="$surface"
+        rounded="$6"
+        p="$5"
+        gap="$3"
+        items="center"
+        style={{
+          maxWidth: 360,
+          shadowColor: '#000',
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 12,
+        }}
+      >
+        <YStack
+          width={56}
+          height={56}
+          rounded={28}
+          bg="$surfaceMuted"
+          items="center"
+          justify="center"
+        >
+          <MapPinOff size={28} color="$primary" />
+        </YStack>
+        <SizableText
+          size="$5"
+          fontWeight="700"
+          fontFamily="$body"
+          color="$color"
+          text="center"
+        >
+          {t('excursion.locationDenied.title', {
+            defaultValue: 'Location is required',
+          })}
+        </SizableText>
+        <SizableText
+          size="$2"
+          color="$colorPress"
+          fontFamily="$body"
+          text="center"
+          style={{ lineHeight: 18 }}
+        >
+          {t('excursion.locationDenied.body', {
+            defaultValue:
+              'This excursion needs your location to guide you between stops. Enable it in Settings to continue.',
+          })}
+        </SizableText>
+        <Pressable
+          onPress={() => Linking.openSettings()}
+          hitSlop={6}
+          style={{ marginTop: 4, width: '100%' }}
+        >
+          <YStack
+            bg="$primary"
+            rounded="$5"
+            py="$2.5"
+            px="$5"
+            items="center"
+            justify="center"
+          >
+            <SizableText
+              size="$3"
+              color="$colorOnBrand"
+              fontFamily="$body"
+              fontWeight="700"
+            >
+              {t('excursion.locationDenied.cta', {
+                defaultValue: 'Open Settings',
+              })}
+            </SizableText>
+          </YStack>
+        </Pressable>
+        <Pressable
+          onPress={onGoBack}
+          hitSlop={6}
+          style={{ width: '100%' }}
+        >
+          <YStack py="$2" items="center" justify="center">
+            <SizableText
+              size="$3"
+              color="$colorPress"
+              fontFamily="$body"
+              fontWeight="600"
+            >
+              {t('excursion.locationDenied.goBack', {
+                defaultValue: 'Go back',
+              })}
+            </SizableText>
+          </YStack>
+        </Pressable>
+      </YStack>
+    </YStack>
+  )
+}
+
+function UndoSkipPill({
+  stopName,
+  expiresAt,
+  onPress,
+}: {
+  stopName: string
+  expiresAt: number
+  onPress: () => void
+}) {
+  const { t } = useTranslation()
+  // Countdown bar: animate width from 1 → 0 over the remaining lifetime of
+  // this pill. The bar makes it obvious the pill is dismiss-on-timeout and
+  // shows how much time is left to tap. Driven by Animated so the timing is
+  // independent of React re-renders.
+  const progressAnim = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    const remaining = Math.max(0, expiresAt - Date.now())
+    progressAnim.setValue(1)
+    Animated.timing(progressAnim, {
+      toValue: 0,
+      duration: remaining,
+      useNativeDriver: false,
+    }).start()
+  }, [expiresAt, progressAnim])
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  })
+  return (
+    <Pressable onPress={onPress} hitSlop={8}>
+      <YStack
+        rounded="$6"
+        bg="$color12"
+        style={{
+          overflow: 'hidden',
+          shadowColor: '#000',
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 8,
+        }}
+      >
+        <XStack items="center" gap="$2.5" px="$3" py="$2.5">
+          <YStack
+            width={28}
+            height={28}
+            rounded={14}
+            items="center"
+            justify="center"
+            style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+          >
+            <Undo2 size={16} color="#FFFFFF" />
+          </YStack>
+          <YStack flex={1}>
+            <SizableText
+              size="$1"
+              fontFamily="$body"
+              fontWeight="700"
+              style={{
+                color: '#FFFFFF',
+                textTransform: 'uppercase',
+                letterSpacing: 0.6,
+                opacity: 0.75,
+              }}
+            >
+              {t('excursion.undoSkip.title', { defaultValue: 'Tap to undo skip' })}
+            </SizableText>
+            <SizableText
+              size="$3"
+              fontFamily="$body"
+              fontWeight="600"
+              numberOfLines={1}
+              style={{ color: '#FFFFFF' }}
+            >
+              {stopName}
+            </SizableText>
+          </YStack>
+        </XStack>
+        <Animated.View
+          style={{
+            height: 3,
+            width: progressWidth,
+            backgroundColor: 'rgba(255,255,255,0.65)',
+          }}
+        />
+      </YStack>
+    </Pressable>
   )
 }
 
@@ -620,12 +1341,15 @@ function BottomPanel({
   currentIndex,
   totalStops,
   userLocation,
-  permissionDenied,
   liveRouteInfo,
+  isOffRoute,
+  isFarFromRoute,
+  nearestStopMeters,
   bottomInset,
   onStart,
   onContinue,
   onSkip,
+  onRecalculate,
   onFinish,
   onMoreInfo,
 }: {
@@ -636,14 +1360,17 @@ function BottomPanel({
   userLocation: LatLng | null
   permissionDenied: boolean
   liveRouteInfo: { remainingMeters: number; remainingSeconds: number } | null
+  isOffRoute: boolean
+  isFarFromRoute: boolean
+  nearestStopMeters: number | null
   bottomInset: number
   onStart: () => void
   onContinue: () => void
   onSkip: () => void
+  onRecalculate: () => void
   onFinish: () => void
   onMoreInfo: () => void
 }) {
-  const { t } = useTranslation()
   return (
     <YStack
       bg="$surface"
@@ -660,13 +1387,13 @@ function BottomPanel({
         shadowOffset: { width: 0, height: -4 },
       }}
     >
-      {permissionDenied && (
-        <SizableText size="$3" color="$colorPress" fontFamily="$body">
-          {t('excursion.locationDenied')}
-        </SizableText>
+      {phase === 'preview' && isFarFromRoute && (
+        <FarFromRouteWarning
+          meters={nearestStopMeters ?? 0}
+          onStartAnyway={onStart}
+        />
       )}
-
-      {phase === 'preview' && (
+      {phase === 'preview' && !isFarFromRoute && (
         <PreviewPanel total={totalStops} onStart={onStart} />
       )}
 
@@ -677,7 +1404,9 @@ function BottomPanel({
           total={totalStops}
           userLocation={userLocation}
           liveRouteInfo={liveRouteInfo}
+          isOffRoute={isOffRoute}
           onSkip={onSkip}
+          onRecalculate={onRecalculate}
         />
       )}
 
@@ -694,6 +1423,73 @@ function BottomPanel({
       {phase === 'complete' && (
         <CompletePanel total={totalStops} onFinish={onFinish} />
       )}
+    </YStack>
+  )
+}
+
+function FarFromRouteWarning({
+  meters,
+  onStartAnyway,
+}: {
+  meters: number
+  onStartAnyway: () => void
+}) {
+  const { t } = useTranslation()
+  const km = (meters / 1000).toFixed(meters < 10000 ? 1 : 0)
+  return (
+    <YStack gap="$2">
+      <XStack items="center" gap="$2.5">
+        <YStack
+          width={36}
+          height={36}
+          rounded={18}
+          bg="$surfaceMuted"
+          items="center"
+          justify="center"
+        >
+          <MapPinOff size={18} color="$primary" />
+        </YStack>
+        <YStack flex={1} gap="$0.5">
+          <SizableText
+            size="$4"
+            color="$color"
+            fontFamily="$body"
+            fontWeight="700"
+          >
+            {t('excursion.farFromRoute.title', {
+              defaultValue: "You're far from this excursion",
+            })}
+          </SizableText>
+          <SizableText size="$2" color="$colorPress" fontFamily="$body">
+            {t('excursion.farFromRoute.body', {
+              km,
+              defaultValue: `Nearest stop is about ${km} km away.`,
+            })}
+          </SizableText>
+        </YStack>
+      </XStack>
+      <Pressable onPress={onStartAnyway} hitSlop={6}>
+        <YStack
+          py="$2.5"
+          rounded="$5"
+          bg="$surfaceMuted"
+          borderWidth={1}
+          borderColor="$borderColor"
+          items="center"
+          justify="center"
+        >
+          <SizableText
+            size="$3"
+            color="$colorPress"
+            fontFamily="$body"
+            fontWeight="600"
+          >
+            {t('excursion.farFromRoute.startAnyway', {
+              defaultValue: 'Start anyway',
+            })}
+          </SizableText>
+        </YStack>
+      </Pressable>
     </YStack>
   )
 }
@@ -723,22 +1519,88 @@ function NavigatingPanel({
   total,
   userLocation,
   liveRouteInfo,
+  isOffRoute,
   onSkip,
+  onRecalculate,
 }: {
   stop: ExcursionStop
   index: number
   total: number
   userLocation: LatLng | null
   liveRouteInfo: { remainingMeters: number; remainingSeconds: number } | null
+  isOffRoute: boolean
   onSkip: () => void
+  onRecalculate: () => void
 }) {
   const { t } = useTranslation()
   const straightLineMeters = userLocation
     ? haversineMeters(userLocation, stop.coords)
     : null
   const displayMeters = liveRouteInfo?.remainingMeters ?? straightLineMeters
+  // When the user is wildly far from the current stop the route distance
+  // would read like "127 km · 14h 12m" — useless and confusing. Above this
+  // threshold we hide the numbers entirely and just say "Far from stop".
+  // Uses straight-line haversine so it works even if the route metadata
+  // hasn't arrived yet.
+  const FAR_FROM_STOP_METERS = 3000
+  const isFarFromStop =
+    straightLineMeters != null && straightLineMeters > FAR_FROM_STOP_METERS
   return (
-    <XStack items="center" gap="$3">
+    <YStack gap="$2">
+      {isOffRoute && (
+        <Pressable onPress={onRecalculate} hitSlop={6}>
+          <XStack
+            items="center"
+            gap="$2.5"
+            px="$3"
+            py="$2"
+            rounded="$4"
+            borderWidth={1}
+            borderColor="$primary"
+            bg="$surfaceMuted"
+            style={{
+              shadowColor: '#000',
+              shadowOpacity: 0.06,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }}
+          >
+            <YStack
+              width={24}
+              height={24}
+              rounded={12}
+              items="center"
+              justify="center"
+              bg="$primary"
+            >
+              <Navigation size={12} color="$colorOnBrand" />
+            </YStack>
+            <YStack flex={1}>
+              <SizableText
+                size="$3"
+                color="$color"
+                fontFamily="$body"
+                fontWeight="600"
+              >
+                {t('excursion.offRoute.title', {
+                  defaultValue: "You're off the route",
+                })}
+              </SizableText>
+              <SizableText
+                size="$2"
+                color="$colorPress"
+                fontFamily="$body"
+              >
+                {t('excursion.offRoute.cta', {
+                  defaultValue: 'Tap to recalculate',
+                })}
+              </SizableText>
+            </YStack>
+          </XStack>
+        </Pressable>
+      )}
+      <XStack items="center" gap="$3">
       <YStack
         width={40}
         height={40}
@@ -763,10 +1625,15 @@ function NavigatingPanel({
           {stop.name}
         </SizableText>
         <SizableText size="$2" color="$colorPress" fontFamily="$body">
-          {formatDistance(displayMeters)}
-          {liveRouteInfo
-            ? ` · ${formatDuration(liveRouteInfo.remainingSeconds)}`
-            : ''}
+          {isFarFromStop
+            ? t('excursion.farFromStop', {
+                defaultValue: 'Far from stop',
+              })
+            : `${formatDistance(displayMeters)}${
+                liveRouteInfo
+                  ? ` · ${formatDuration(liveRouteInfo.remainingSeconds)}`
+                  : ''
+              }`}
         </SizableText>
       </YStack>
       <Pressable onPress={onSkip} hitSlop={8}>
@@ -790,7 +1657,8 @@ function NavigatingPanel({
           </SizableText>
         </YStack>
       </Pressable>
-    </XStack>
+      </XStack>
+    </YStack>
   )
 }
 
@@ -989,6 +1857,23 @@ function BackButton({
       </YStack>
     </Pressable>
   )
+}
+
+// Edge padding for fitToCoordinates, scaled to the current map height so a
+// resized (snapped) bottom card doesn't cause the camera to over-zoom.
+// fitToCoordinates subtracts padding from the available rect; if padding
+// approaches the rect size, it ends up zooming WAY out to fit. Keeping
+// padding proportional with hard min/max caps prevents that.
+function makeEdgePadding(mapHeight: number): {
+  top: number
+  bottom: number
+  left: number
+  right: number
+} {
+  const top = Math.max(24, Math.min(80, mapHeight * 0.1))
+  const bottom = Math.max(40, Math.min(180, mapHeight * 0.18))
+  const side = 40
+  return { top, bottom, left: side, right: side }
 }
 
 function formatDistance(meters: number | null): string {

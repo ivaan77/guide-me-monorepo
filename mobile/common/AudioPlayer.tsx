@@ -1,12 +1,20 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Pressable } from 'react-native'
+import Slider from '@react-native-community/slider'
 import { useTranslation } from 'react-i18next'
 import {
   type AudioStatus,
   useAudioPlayer,
   useAudioPlayerStatus,
 } from 'expo-audio'
-import { Headphones, Pause, Play, Square } from '@tamagui/lucide-icons'
+import {
+  Headphones,
+  Pause,
+  Play,
+  Rewind,
+  FastForward,
+  Square,
+} from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack, useTheme } from 'tamagui'
 import Svg, { Circle as SvgCircle } from 'react-native-svg'
 import Animated, {
@@ -50,10 +58,14 @@ export function AudioPlayer({
   const player = useAudioPlayer(audioUrl ?? null)
   const status: AudioStatus | null = useAudioPlayerStatus(player)
   const isPlaying = status?.playing ?? false
+  // While the user is dragging the scrub slider we follow their finger
+  // optimistically (status updates would yank the thumb back to the actual
+  // playback position). null when no drag is in progress.
+  const [pendingSeek, setPendingSeek] = useState<number | null>(null)
+  const duration = status?.duration ?? 0
+  const displayCurrentTime = pendingSeek ?? status?.currentTime ?? 0
   const progress =
-    status && status.duration > 0
-      ? Math.min(1, Math.max(0, status.currentTime / status.duration))
-      : 0
+    duration > 0 ? Math.min(1, Math.max(0, displayCurrentTime / duration)) : 0
 
   // Auto-pause on unmount. expo-audio's own cleanup also handles this; this
   // is defensive against the rare case where the consumer detaches the
@@ -84,6 +96,21 @@ export function AudioPlayer({
   const handleStop = () => {
     player.pause()
     player.seekTo(0)
+  }
+  const SKIP_SECONDS = 15
+  const seekBy = (delta: number) => {
+    if (duration <= 0) return
+    const target = Math.max(
+      0,
+      Math.min(duration, (status?.currentTime ?? 0) + delta),
+    )
+    player.seekTo(target)
+  }
+  const handleSeekBack = () => seekBy(-SKIP_SECONDS)
+  const handleSeekForward = () => seekBy(SKIP_SECONDS)
+  const handleSlidingComplete = (value: number) => {
+    if (duration > 0) player.seekTo(value * duration)
+    setPendingSeek(null)
   }
 
   if (!audioUrl) {
@@ -120,9 +147,13 @@ export function AudioPlayer({
     )
   }
 
+  const theme = useTheme()
+  const sliderActive = theme.primary?.val ?? '#2A5BD7'
+  const sliderTrack = theme.colorPress?.val ?? '#9CA3AF'
+  const hasStarted = progress > 0 || pendingSeek != null
+
   return (
-    <XStack
-      items="center"
+    <YStack
       bg="$surfaceMuted"
       rounded="$5"
       px="$3"
@@ -131,36 +162,93 @@ export function AudioPlayer({
       borderWidth={1}
       borderColor="$borderColor"
     >
-      <YStack
-        width={36}
-        height={36}
-        rounded={18}
-        bg="$background"
-        items="center"
-        justify="center"
-      >
-        <Headphones size={16} color="$primary" />
-      </YStack>
-      <YStack flex={1} gap="$0.5">
-        <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
-          {title}
-        </SizableText>
-        <SizableText size="$2" color="$colorPress" fontFamily="$body">
-          {isPlaying
-            ? t((playingKey ?? 'excursion.stopSheet.audioPlaying') as never)
-            : t((promptKey ?? 'excursion.stopSheet.audioPrompt') as never)}
-        </SizableText>
-      </YStack>
-      <XStack gap="$2" items="center">
-        {isPlaying ? (
-          <PlayButtonWithRing progress={progress} onPress={handlePause} playing />
-        ) : (
-          <PlayButtonWithRing progress={progress} onPress={handlePlay} />
-        )}
-        <CircleButton icon={Square} onPress={handleStop} disabled={!isPlaying} />
+      <XStack items="center" gap="$3">
+        <YStack
+          width={36}
+          height={36}
+          rounded={18}
+          bg="$background"
+          items="center"
+          justify="center"
+        >
+          <Headphones size={16} color="$primary" />
+        </YStack>
+        <YStack flex={1} gap="$0.5">
+          <SizableText
+            size="$3"
+            color="$color"
+            fontFamily="$body"
+            fontWeight="600"
+          >
+            {title}
+          </SizableText>
+          <SizableText size="$2" color="$colorPress" fontFamily="$body">
+            {isPlaying
+              ? t((playingKey ?? 'excursion.stopSheet.audioPlaying') as never)
+              : t((promptKey ?? 'excursion.stopSheet.audioPrompt') as never)}
+          </SizableText>
+        </YStack>
+        <XStack gap="$1.5" items="center">
+          <CircleButton
+            icon={Rewind}
+            onPress={handleSeekBack}
+            disabled={!hasStarted}
+          />
+          {isPlaying ? (
+            <PlayButtonWithRing
+              progress={progress}
+              onPress={handlePause}
+              playing
+            />
+          ) : (
+            <PlayButtonWithRing progress={progress} onPress={handlePlay} />
+          )}
+          <CircleButton
+            icon={FastForward}
+            onPress={handleSeekForward}
+            disabled={!hasStarted}
+          />
+          <CircleButton
+            icon={Square}
+            onPress={handleStop}
+            disabled={!isPlaying}
+          />
+        </XStack>
       </XStack>
-    </XStack>
+      {hasStarted && (
+        <XStack items="center" gap="$2.5">
+          <Slider
+            style={{ flex: 1, height: 28 }}
+            minimumValue={0}
+            maximumValue={1}
+            value={progress}
+            minimumTrackTintColor={sliderActive}
+            maximumTrackTintColor={sliderTrack}
+            thumbTintColor={sliderActive}
+            onValueChange={(v) => {
+              if (duration > 0) setPendingSeek(v * duration)
+            }}
+            onSlidingComplete={handleSlidingComplete}
+          />
+          <SizableText
+            size="$1"
+            color="$colorPress"
+            fontFamily="$body"
+            style={{ fontVariant: ['tabular-nums'] }}
+          >
+            {formatTime(displayCurrentTime)} / {formatTime(duration)}
+          </SizableText>
+        </XStack>
+      )}
+    </YStack>
   )
+}
+
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 function CircleButton({
