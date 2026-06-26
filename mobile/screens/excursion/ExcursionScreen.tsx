@@ -64,7 +64,7 @@ import {
   FloatingFactBanner,
   useFactBannerSchedule,
 } from './FloatingFactBanner'
-import { InterestingFactSheet } from './InterestingFactSheet'
+import { FloatingFactPlayer } from './FloatingFactPlayer'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
@@ -239,7 +239,10 @@ function ExcursionBody({
   }, [permissionDenied, userLocation, permissionAttempt])
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
-  const [selectedFact, setSelectedFact] = useState<Fact | null>(null)
+  // Fact currently playing in the FloatingFactPlayer. Non-modal: the map and
+  // bottom card stay fully interactive while audio plays. Dismiss = clear =
+  // unmount the player = audio stops cleanly.
+  const [activeFact, setActiveFact] = useState<Fact | null>(null)
   // Sub-stop currently displayed in the SubStopDetailSheet. Holds the
   // sub-stop itself plus its parent stop's id so the favorite button can
   // build the composite id (excursionId:stopId:subStopId).
@@ -1165,8 +1168,17 @@ function ExcursionBody({
         factsForThisLeg={factBanner.factsForThisLeg}
         visible={factBanner.visible}
         topOffset={topInset + 60}
-        onPressFact={setSelectedFact}
+        onPressFact={(f) => {
+          setActiveFact(f)
+          factBanner.dismiss()
+        }}
         onDismiss={factBanner.dismiss}
+      />
+
+      <FloatingFactPlayer
+        fact={activeFact}
+        bottomAnim={bottomHeightAnim}
+        onDismiss={() => setActiveFact(null)}
       />
 
       {waitingForGps && <WaitingForGpsToast topInset={topInset} />}
@@ -1307,12 +1319,6 @@ function ExcursionBody({
         onClose={() => setSelectedPoi(null)}
       />
 
-      <InterestingFactSheet
-        visible={!!selectedFact}
-        fact={selectedFact}
-        onClose={() => setSelectedFact(null)}
-      />
-
       <SubStopDetailSheet
         visible={!!selectedSubStop}
         sub={selectedSubStop?.sub ?? null}
@@ -1357,7 +1363,7 @@ function WaitingForGpsToast({ topInset }: { topInset: number }) {
           elevation: 5,
         }}
       >
-        <LocateFixed size={14} color={iconColor} />
+        <LocateFixed size={14} color={iconColor as any} />
         <SizableText
           size="$2"
           color="$color1"
@@ -1540,7 +1546,7 @@ function UndoSkipPill({
             justify="center"
             bg="$color11"
           >
-            <Undo2 size={16} color={fg} />
+            <Undo2 size={16} color={fg as any} />
           </YStack>
           <YStack flex={1}>
             <SizableText

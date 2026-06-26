@@ -146,8 +146,6 @@ export const hr: Translations = {
       bundleHeader: '{{count}} postaja na ovom mjestu',
     },
     facts: {
-      sheetPrompt: 'Dodirni za reprodukciju',
-      playing: 'Reproducira se…',
       bannerLabel: 'Jeste li znali?',
     },
     undoSkip: {

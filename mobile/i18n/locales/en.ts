@@ -139,8 +139,6 @@ export const en = {
       bundleHeader: '{{count}} stops at this place',
     },
     facts: {
-      sheetPrompt: 'Tap play to listen',
-      playing: 'Playing…',
       bannerLabel: 'Did you know?',
     },
     undoSkip: {
