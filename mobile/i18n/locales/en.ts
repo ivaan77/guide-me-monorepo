@@ -139,9 +139,12 @@ export const en = {
       bundleHeader: '{{count}} stops at this place',
     },
     facts: {
-      sheetPrompt: 'Tap play to listen',
-      playing: 'Playing…',
       bannerLabel: 'Did you know?',
+    },
+    startFrom: {
+      label: 'Starting from',
+      pickerTitle: 'Choose starting stop',
+      nearestBadge: 'Nearest',
     },
     undoSkip: {
       title: 'Tap to undo skip',

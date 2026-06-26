@@ -19,6 +19,7 @@ import MapView, {
   PROVIDER_GOOGLE,
 } from 'react-native-maps'
 import {
+  ChevronDown,
   ChevronLeft,
   Info,
   LocateFixed,
@@ -64,7 +65,8 @@ import {
   FloatingFactBanner,
   useFactBannerSchedule,
 } from './FloatingFactBanner'
-import { InterestingFactSheet } from './InterestingFactSheet'
+import { FloatingFactPlayer } from './FloatingFactPlayer'
+import { StartFromPicker } from './StartFromPicker'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
@@ -176,6 +178,12 @@ function ExcursionBody({
 }) {
   const [phase, setPhase] = useState<Phase>('preview')
   const [currentIndex, setCurrentIndex] = useState(0)
+  // The stop the user has chosen to begin from. Auto-tracks nearest while
+  // the user hasn't manually overridden via the StartFromPicker. Used only
+  // in the preview phase; once the excursion starts this value freezes
+  // (further nearest-stop drift doesn't matter — user is now on the route).
+  const [startFromIndex, setStartFromIndex] = useState(0)
+  const startFromManualRef = useRef(false)
   // Mirror of currentIndex so handlers like `skip` that fire faster than
   // React batches can read the up-to-date value. Without this, rapid skip
   // taps captured a stale `currentIndex` from their closure and the undo
@@ -239,7 +247,11 @@ function ExcursionBody({
   }, [permissionDenied, userLocation, permissionAttempt])
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
-  const [selectedFact, setSelectedFact] = useState<Fact | null>(null)
+  // Fact currently playing in the FloatingFactPlayer. Non-modal: the map and
+  // bottom card stay fully interactive while audio plays. Dismiss = clear =
+  // unmount the player = audio stops cleanly.
+  const [activeFact, setActiveFact] = useState<Fact | null>(null)
+  const [startFromPickerOpen, setStartFromPickerOpen] = useState(false)
   // Sub-stop currently displayed in the SubStopDetailSheet. Holds the
   // sub-stop itself plus its parent stop's id so the favorite button can
   // build the composite id (excursionId:stopId:subStopId).
@@ -632,9 +644,13 @@ function ExcursionBody({
   }, [userLocation, heading])
 
   const start = () => {
+    const startIdx = Math.max(
+      0,
+      Math.min(stops.length - 1, startFromIndex),
+    )
     setPhase('navigating')
-    currentIndexRef.current = 0
-    setCurrentIndex(0)
+    currentIndexRef.current = startIdx
+    setCurrentIndex(startIdx)
     currentSubStopIndexRef.current = -1
     setCurrentSubStopIndex(-1)
     setRoutePolyline([])
@@ -797,17 +813,40 @@ function ExcursionBody({
   // and ETAs. Returns null until GPS arrives so the preview falls back to a
   // normal Start button rather than flashing the warning.
   const FAR_FROM_ROUTE_METERS = 3000
-  const nearestStopMeters = useMemo(() => {
-    if (!userLocation || stops.length === 0) return null
+  const nearest = useMemo(() => {
+    if (!userLocation || stops.length === 0)
+      return { index: null as number | null, meters: null as number | null }
+    let bestIdx = 0
     let best = Infinity
-    for (const s of stops) {
-      const d = haversineMeters(userLocation, s.coords)
-      if (d < best) best = d
+    for (let i = 0; i < stops.length; i++) {
+      const d = haversineMeters(userLocation, stops[i].coords)
+      if (d < best) {
+        best = d
+        bestIdx = i
+      }
     }
-    return best
+    return { index: bestIdx, meters: best }
   }, [userLocation, stops])
+  const nearestStopMeters = nearest.meters
+  const nearestStopIndex = nearest.index
   const isFarFromRoute =
     nearestStopMeters != null && nearestStopMeters > FAR_FROM_ROUTE_METERS
+
+  // Bonus: while the user is in preview and hasn't manually chosen a start,
+  // keep startFromIndex synced to the nearest stop so the chip reads "where
+  // I actually am". Once they tap the picker we set startFromManualRef and
+  // stop overriding — their pick wins until they leave the screen.
+  useEffect(() => {
+    if (phase !== 'preview') return
+    if (startFromManualRef.current) return
+    if (nearestStopIndex == null) return
+    setStartFromIndex(nearestStopIndex)
+  }, [phase, nearestStopIndex])
+
+  const pickStartFrom = useCallback((idx: number) => {
+    startFromManualRef.current = true
+    setStartFromIndex(idx)
+  }, [])
 
   // Detect when the user has wandered off the active route. GPS in dense
   // urban areas jitters by 20-30m, so a one-tick spike isn't off-route —
@@ -1165,8 +1204,17 @@ function ExcursionBody({
         factsForThisLeg={factBanner.factsForThisLeg}
         visible={factBanner.visible}
         topOffset={topInset + 60}
-        onPressFact={setSelectedFact}
+        onPressFact={(f) => {
+          setActiveFact(f)
+          factBanner.dismiss()
+        }}
         onDismiss={factBanner.dismiss}
+      />
+
+      <FloatingFactPlayer
+        fact={activeFact}
+        bottomAnim={bottomHeightAnim}
+        onDismiss={() => setActiveFact(null)}
       />
 
       {waitingForGps && <WaitingForGpsToast topInset={topInset} />}
@@ -1177,11 +1225,11 @@ function ExcursionBody({
         <YStack flex={1}>
           <YStack
             items="center"
-            pt="$1.5"
-            pb="$1"
+            justify="center"
+            height={28}
             {...snapPanResponder.panHandlers}
           >
-            <YStack width={44} height={4} rounded={2} bg="$borderColor" />
+            <YStack width={56} height={5} rounded={3} bg="$borderColor" />
           </YStack>
           <YStack flex={1}>
             <StopsList
@@ -1213,6 +1261,13 @@ function ExcursionBody({
               isFarFromRoute={isFarFromRoute}
               nearestStopMeters={nearestStopMeters}
               bottomInset={bottomInset}
+              startFromStop={stops[startFromIndex]}
+              startFromIndex={startFromIndex}
+              isStartFromNearest={
+                nearestStopIndex != null &&
+                startFromIndex === nearestStopIndex
+              }
+              onOpenStartFromPicker={() => setStartFromPickerOpen(true)}
               onStart={start}
               onContinue={continueNext}
               onSkip={skip}
@@ -1307,18 +1362,21 @@ function ExcursionBody({
         onClose={() => setSelectedPoi(null)}
       />
 
-      <InterestingFactSheet
-        visible={!!selectedFact}
-        fact={selectedFact}
-        onClose={() => setSelectedFact(null)}
-      />
-
       <SubStopDetailSheet
         visible={!!selectedSubStop}
         sub={selectedSubStop?.sub ?? null}
         excursionId={id}
         stopId={selectedSubStop?.parentStopId ?? ''}
         onClose={() => setSelectedSubStop(null)}
+      />
+
+      <StartFromPicker
+        visible={startFromPickerOpen}
+        stops={stops}
+        selectedIndex={startFromIndex}
+        nearestIndex={nearestStopIndex}
+        onSelect={pickStartFrom}
+        onClose={() => setStartFromPickerOpen(false)}
       />
 
       <ImageLightbox uri={lightboxUri} onClose={() => setLightboxUri(null)} />
@@ -1330,6 +1388,8 @@ function ExcursionBody({
 
 function WaitingForGpsToast({ topInset }: { topInset: number }) {
   const { t } = useTranslation()
+  const theme = useTheme()
+  const iconColor = theme.color1?.val ?? '#FFFFFF'
   return (
     <YStack
       position="absolute"
@@ -1355,10 +1415,10 @@ function WaitingForGpsToast({ topInset }: { topInset: number }) {
           elevation: 5,
         }}
       >
-        <LocateFixed size={14} color="#FFFFFF" />
+        <LocateFixed size={14} color={iconColor as any} />
         <SizableText
           size="$2"
-          color="#FFFFFF"
+          color="$color1"
           fontFamily="$body"
           fontWeight="600"
         >
@@ -1492,6 +1552,11 @@ function UndoSkipPill({
   onPress: () => void
 }) {
   const { t } = useTranslation()
+  const theme = useTheme()
+  // $color1 is the inverse-contrast step — light in dark theme, dark in light
+  // theme — so it pairs with $color12 backgrounds for icons and translucent
+  // overlays that need to read as "the foreground tint."
+  const fg = theme.color1?.val ?? '#FFFFFF'
   // Countdown bar: animate width from 1 → 0 over the remaining lifetime of
   // this pill. The bar makes it obvious the pill is dismiss-on-timeout and
   // shows how much time is left to tap. Driven by Animated so the timing is
@@ -1513,8 +1578,8 @@ function UndoSkipPill({
   return (
     <Pressable onPress={onPress} hitSlop={8}>
       <YStack
-        rounded="$6"
         bg="$color12"
+        rounded="$6"
         style={{
           overflow: 'hidden',
           shadowColor: '#000',
@@ -1531,17 +1596,17 @@ function UndoSkipPill({
             rounded={14}
             items="center"
             justify="center"
-            style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+            bg="$color11"
           >
-            <Undo2 size={16} color="#FFFFFF" />
+            <Undo2 size={16} color={fg as any} />
           </YStack>
           <YStack flex={1}>
             <SizableText
               size="$1"
+              color="$color1"
               fontFamily="$body"
               fontWeight="700"
               style={{
-                color: '#FFFFFF',
                 textTransform: 'uppercase',
                 letterSpacing: 0.6,
                 opacity: 0.75,
@@ -1551,10 +1616,10 @@ function UndoSkipPill({
             </SizableText>
             <SizableText
               size="$3"
+              color="$color1"
               fontFamily="$body"
               fontWeight="600"
               numberOfLines={1}
-              style={{ color: '#FFFFFF' }}
             >
               {stopName}
             </SizableText>
@@ -1564,7 +1629,8 @@ function UndoSkipPill({
           style={{
             height: 3,
             width: progressWidth,
-            backgroundColor: 'rgba(255,255,255,0.65)',
+            backgroundColor: fg,
+            opacity: 0.65,
           }}
         />
       </YStack>
@@ -1585,6 +1651,10 @@ function BottomPanel({
   isFarFromRoute,
   nearestStopMeters,
   bottomInset,
+  startFromStop,
+  startFromIndex,
+  isStartFromNearest,
+  onOpenStartFromPicker,
   onStart,
   onContinue,
   onSkip,
@@ -1607,6 +1677,10 @@ function BottomPanel({
   isFarFromRoute: boolean
   nearestStopMeters: number | null
   bottomInset: number
+  startFromStop?: ExcursionStop
+  startFromIndex: number
+  isStartFromNearest: boolean
+  onOpenStartFromPicker: () => void
   onStart: () => void
   onContinue: () => void
   onSkip: () => void
@@ -1639,7 +1713,14 @@ function BottomPanel({
         />
       )}
       {phase === 'preview' && !isFarFromRoute && (
-        <PreviewPanel total={totalStops} onStart={onStart} />
+        <PreviewPanel
+          total={totalStops}
+          onStart={onStart}
+          startFromStop={startFromStop}
+          startFromIndex={startFromIndex}
+          isStartFromNearest={isStartFromNearest}
+          onOpenStartFromPicker={onOpenStartFromPicker}
+        />
       )}
 
       {phase === 'navigating' && currentStop && (
@@ -1747,7 +1828,24 @@ function FarFromRouteWarning({
   )
 }
 
-function PreviewPanel({ total, onStart }: { total: number; onStart: () => void }) {
+function PreviewPanel({
+  total,
+  onStart,
+  startFromStop,
+  startFromIndex,
+  isStartFromNearest,
+  onOpenStartFromPicker,
+}: {
+  total: number
+  onStart: () => void
+  // When provided, the "Starting from" chip is shown above the Start button.
+  // Omitted means the excursion has zero stops (which shouldn't happen in
+  // practice but keeps the prop optional for safety).
+  startFromStop?: ExcursionStop
+  startFromIndex: number
+  isStartFromNearest: boolean
+  onOpenStartFromPicker: () => void
+}) {
   const { t } = useTranslation()
   return (
     <YStack gap="$2">
@@ -1757,12 +1855,110 @@ function PreviewPanel({ total, onStart }: { total: number; onStart: () => void }
       <Paragraph color="$colorPress" fontFamily="$body" size="$3">
         {t('excursion.preview.subtitle', { count: total })}
       </Paragraph>
+      {startFromStop && (
+        <StartFromChip
+          stop={startFromStop}
+          index={startFromIndex}
+          isNearest={isStartFromNearest}
+          onPress={onOpenStartFromPicker}
+        />
+      )}
       <ActionButton
         label={t('excursion.preview.start')}
         icon={Play}
         onPress={onStart}
       />
     </YStack>
+  )
+}
+
+// "Starting from: 5. Octagon ▾" — tappable chip that opens the picker.
+// Renders a small "Nearest" badge when the current pick matches the GPS-
+// derived nearest stop, so users understand what the default reflects.
+function StartFromChip({
+  stop,
+  index,
+  isNearest,
+  onPress,
+}: {
+  stop: ExcursionStop
+  index: number
+  isNearest: boolean
+  onPress: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <Pressable onPress={onPress} hitSlop={6}>
+      <XStack
+        items="center"
+        gap="$2.5"
+        px="$3"
+        py="$2"
+        rounded="$5"
+        bg="$surfaceMuted"
+        borderWidth={1}
+        borderColor="$borderColor"
+      >
+        <YStack
+          width={28}
+          height={28}
+          rounded={14}
+          bg="$primary"
+          items="center"
+          justify="center"
+        >
+          <SizableText
+            size="$1"
+            color="$colorOnBrand"
+            fontFamily="$body"
+            fontWeight="800"
+          >
+            {index + 1}
+          </SizableText>
+        </YStack>
+        <YStack flex={1} gap="$0.5">
+          <SizableText
+            size="$1"
+            color="$colorPress"
+            fontFamily="$body"
+            fontWeight="700"
+            style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+          >
+            {t('excursion.startFrom.label', { defaultValue: 'Starting from' })}
+          </SizableText>
+          <SizableText
+            size="$3"
+            color="$color"
+            fontFamily="$body"
+            fontWeight="600"
+            numberOfLines={1}
+          >
+            {stop.name}
+          </SizableText>
+        </YStack>
+        {isNearest && (
+          <YStack
+            px="$2"
+            py="$0.5"
+            rounded="$2"
+            bg="$primary"
+          >
+            <SizableText
+              size="$1"
+              color="$colorOnBrand"
+              fontFamily="$body"
+              fontWeight="800"
+              style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
+            >
+              {t('excursion.startFrom.nearestBadge', {
+                defaultValue: 'Nearest',
+              })}
+            </SizableText>
+          </YStack>
+        )}
+        <ChevronDown size={18} color="$colorPress" />
+      </XStack>
+    </Pressable>
   )
 }
 

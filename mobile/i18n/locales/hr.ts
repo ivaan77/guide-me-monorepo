@@ -146,9 +146,12 @@ export const hr: Translations = {
       bundleHeader: '{{count}} postaja na ovom mjestu',
     },
     facts: {
-      sheetPrompt: 'Dodirni za reprodukciju',
-      playing: 'Reproducira se…',
       bannerLabel: 'Jeste li znali?',
+    },
+    startFrom: {
+      label: 'Polazna točka',
+      pickerTitle: 'Odaberi polaznu točku',
+      nearestBadge: 'Najbliža',
     },
     undoSkip: {
       title: 'Dodirni za poništavanje',

@@ -146,9 +146,12 @@ export const de: Translations = {
       bundleHeader: '{{count}} Stationen an diesem Ort',
     },
     facts: {
-      sheetPrompt: 'Zum Abspielen tippen',
-      playing: 'Wird abgespielt…',
       bannerLabel: 'Wusstest du schon?',
+    },
+    startFrom: {
+      label: 'Startpunkt',
+      pickerTitle: 'Startpunkt auswählen',
+      nearestBadge: 'Nächster',
     },
     undoSkip: {
       title: 'Tippen zum Rückgängig machen',
