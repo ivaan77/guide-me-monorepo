@@ -1177,11 +1177,11 @@ function ExcursionBody({
         <YStack flex={1}>
           <YStack
             items="center"
-            pt="$1.5"
-            pb="$1"
+            justify="center"
+            height={28}
             {...snapPanResponder.panHandlers}
           >
-            <YStack width={44} height={4} rounded={2} bg="$borderColor" />
+            <YStack width={56} height={5} rounded={3} bg="$borderColor" />
           </YStack>
           <YStack flex={1}>
             <StopsList
@@ -1330,6 +1330,8 @@ function ExcursionBody({
 
 function WaitingForGpsToast({ topInset }: { topInset: number }) {
   const { t } = useTranslation()
+  const theme = useTheme()
+  const iconColor = theme.color1?.val ?? '#FFFFFF'
   return (
     <YStack
       position="absolute"
@@ -1355,10 +1357,10 @@ function WaitingForGpsToast({ topInset }: { topInset: number }) {
           elevation: 5,
         }}
       >
-        <LocateFixed size={14} color="#FFFFFF" />
+        <LocateFixed size={14} color={iconColor} />
         <SizableText
           size="$2"
-          color="#FFFFFF"
+          color="$color1"
           fontFamily="$body"
           fontWeight="600"
         >
@@ -1492,6 +1494,11 @@ function UndoSkipPill({
   onPress: () => void
 }) {
   const { t } = useTranslation()
+  const theme = useTheme()
+  // $color1 is the inverse-contrast step — light in dark theme, dark in light
+  // theme — so it pairs with $color12 backgrounds for icons and translucent
+  // overlays that need to read as "the foreground tint."
+  const fg = theme.color1?.val ?? '#FFFFFF'
   // Countdown bar: animate width from 1 → 0 over the remaining lifetime of
   // this pill. The bar makes it obvious the pill is dismiss-on-timeout and
   // shows how much time is left to tap. Driven by Animated so the timing is
@@ -1513,8 +1520,8 @@ function UndoSkipPill({
   return (
     <Pressable onPress={onPress} hitSlop={8}>
       <YStack
-        rounded="$6"
         bg="$color12"
+        rounded="$6"
         style={{
           overflow: 'hidden',
           shadowColor: '#000',
@@ -1531,17 +1538,17 @@ function UndoSkipPill({
             rounded={14}
             items="center"
             justify="center"
-            style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+            bg="$color11"
           >
-            <Undo2 size={16} color="#FFFFFF" />
+            <Undo2 size={16} color={fg} />
           </YStack>
           <YStack flex={1}>
             <SizableText
               size="$1"
+              color="$color1"
               fontFamily="$body"
               fontWeight="700"
               style={{
-                color: '#FFFFFF',
                 textTransform: 'uppercase',
                 letterSpacing: 0.6,
                 opacity: 0.75,
@@ -1551,10 +1558,10 @@ function UndoSkipPill({
             </SizableText>
             <SizableText
               size="$3"
+              color="$color1"
               fontFamily="$body"
               fontWeight="600"
               numberOfLines={1}
-              style={{ color: '#FFFFFF' }}
             >
               {stopName}
             </SizableText>
@@ -1564,7 +1571,8 @@ function UndoSkipPill({
           style={{
             height: 3,
             width: progressWidth,
-            backgroundColor: 'rgba(255,255,255,0.65)',
+            backgroundColor: fg,
+            opacity: 0.65,
           }}
         />
       </YStack>
