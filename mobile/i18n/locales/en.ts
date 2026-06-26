@@ -141,6 +141,11 @@ export const en = {
     facts: {
       bannerLabel: 'Did you know?',
     },
+    startFrom: {
+      label: 'Starting from',
+      pickerTitle: 'Choose starting stop',
+      nearestBadge: 'Nearest',
+    },
     undoSkip: {
       title: 'Tap to undo skip',
     },

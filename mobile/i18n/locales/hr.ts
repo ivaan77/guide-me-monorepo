@@ -148,6 +148,11 @@ export const hr: Translations = {
     facts: {
       bannerLabel: 'Jeste li znali?',
     },
+    startFrom: {
+      label: 'Polazna točka',
+      pickerTitle: 'Odaberi polaznu točku',
+      nearestBadge: 'Najbliža',
+    },
     undoSkip: {
       title: 'Dodirni za poništavanje',
     },

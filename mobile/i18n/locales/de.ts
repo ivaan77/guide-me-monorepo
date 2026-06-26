@@ -148,6 +148,11 @@ export const de: Translations = {
     facts: {
       bannerLabel: 'Wusstest du schon?',
     },
+    startFrom: {
+      label: 'Startpunkt',
+      pickerTitle: 'Startpunkt auswählen',
+      nearestBadge: 'Nächster',
+    },
     undoSkip: {
       title: 'Tippen zum Rückgängig machen',
     },
