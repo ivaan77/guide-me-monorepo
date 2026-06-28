@@ -152,6 +152,8 @@ export const de: Translations = {
       label: 'Startpunkt',
       pickerTitle: 'Startpunkt auswählen',
       nearestBadge: 'Nächster',
+      nearestCaption: 'Am nächsten zu deinem Standort',
+      nearestToast: '{{stopName}} ist am nächsten',
     },
     undoSkip: {
       title: 'Tippen zum Rückgängig machen',

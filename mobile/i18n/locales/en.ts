@@ -145,6 +145,8 @@ export const en = {
       label: 'Starting from',
       pickerTitle: 'Choose starting stop',
       nearestBadge: 'Nearest',
+      nearestCaption: 'Closest to your location',
+      nearestToast: '{{stopName}} is closest to you',
     },
     undoSkip: {
       title: 'Tap to undo skip',

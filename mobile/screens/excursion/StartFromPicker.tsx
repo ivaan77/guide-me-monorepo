@@ -4,23 +4,31 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Check, MapPin } from '@tamagui/lucide-icons'
 import { H3, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
+import { palette } from '../../constants/Colors'
 import type { PublicExcursionStop } from '@guide-me-app/core'
 
 const H_PADDING = 20
+// Navy reads cleanly on the amber accent — same pairing used by the
+// fact banner/player and the NearestStopCallout marker. Keeping it
+// consistent so the "Nearest" affordance has the same visual signature
+// wherever it shows up.
+const ON_ACCENT = palette.navy
 
 type Props = {
   visible: boolean
   stops: PublicExcursionStop[]
   selectedIndex: number
   // Index of the stop closest to the user, or null if GPS not available.
-  // Renders a "Nearest" badge on this row.
+  // Renders an emphasized "Nearest" treatment on this row.
   nearestIndex: number | null
   onSelect: (index: number) => void
   onClose: () => void
 }
 
 // Bottom-sheet picker for the "Starting from" chip on the preview panel.
-// One row per stop: image + index + name + nearest-badge + selected-check.
+// The nearest row is styled to dominate the list: amber accent stripe down
+// the left edge, tinted background, prominent "Nearest" pill with caption,
+// so users immediately understand which row is the system's suggestion.
 export function StartFromPicker({
   visible,
   stops,
@@ -88,66 +96,116 @@ function StopRow({
   return (
     <Pressable onPress={onPress}>
       <XStack
-        items="center"
-        gap="$3"
-        px={H_PADDING}
-        py="$2.5"
-        bg={selected ? '$surfaceMuted' : 'transparent'}
+        items="stretch"
+        gap={0}
+        // Nearest row uses a soft amber tint (no Tamagui token for this —
+        // reads as a faint warm wash on both light and dark surfaces).
+        // Selected-but-not-nearest gets the standard surfaceMuted token.
+        bg={
+          nearest
+            ? ('transparent' as any)
+            : selected
+              ? '$surfaceMuted'
+              : 'transparent'
+        }
+        style={
+          nearest ? { backgroundColor: 'rgba(245, 158, 11, 0.12)' } : undefined
+        }
       >
-        <Image
-          source={{ uri: stop.image }}
-          style={{ width: 48, height: 48, borderRadius: 8 }}
-          resizeMode="cover"
+        {/* Left accent stripe — only on the nearest row. Anchors the
+            "this is the suggestion" affordance to the leading edge. */}
+        <YStack
+          width={4}
+          style={{
+            backgroundColor: nearest ? '#F59E0B' : 'transparent',
+          }}
         />
-        <YStack flex={1} gap="$1">
-          <XStack items="center" gap="$2">
-            <YStack
-              width={22}
-              height={22}
-              rounded={11}
-              bg="$primary"
-              items="center"
-              justify="center"
-            >
-              <SizableText
-                size="$1"
-                color="$colorOnBrand"
-                fontFamily="$body"
-                fontWeight="800"
+        <XStack
+          flex={1}
+          items="center"
+          gap="$3"
+          px={H_PADDING}
+          py={nearest ? '$3' : '$2.5'}
+        >
+          <Image
+            source={{ uri: stop.image }}
+            style={{ width: 48, height: 48, borderRadius: 8 }}
+            resizeMode="cover"
+          />
+          <YStack flex={1} gap="$1">
+            <XStack items="center" gap="$2">
+              <YStack
+                width={22}
+                height={22}
+                rounded={11}
+                bg="$primary"
+                items="center"
+                justify="center"
               >
-                {index + 1}
+                <SizableText
+                  size="$1"
+                  color="$colorOnBrand"
+                  fontFamily="$body"
+                  fontWeight="800"
+                >
+                  {index + 1}
+                </SizableText>
+              </YStack>
+              <SizableText
+                size="$3"
+                color="$color"
+                fontFamily="$body"
+                fontWeight={nearest ? '700' : '600'}
+                numberOfLines={1}
+                style={{ flex: 1 }}
+              >
+                {stop.name}
               </SizableText>
-            </YStack>
-            <SizableText
-              size="$3"
-              color="$color"
-              fontFamily="$body"
-              fontWeight="600"
-              numberOfLines={1}
-              style={{ flex: 1 }}
-            >
-              {stop.name}
-            </SizableText>
-          </XStack>
-          {nearest && (
-            <XStack items="center" gap="$1">
-              <MapPin size={12} color="$primary" />
+              {nearest && <NearestPill />}
+            </XStack>
+            {nearest && (
               <SizableText
-                size="$1"
-                color="$primary"
+                size="$2"
+                color="$colorPress"
                 fontFamily="$body"
-                fontWeight="700"
-                style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
               >
-                {t('excursion.startFrom.nearestBadge', {
-                  defaultValue: 'Nearest',
+                {t('excursion.startFrom.nearestCaption', {
+                  defaultValue: 'Closest to your location',
                 })}
               </SizableText>
-            </XStack>
-          )}
-        </YStack>
-        {selected && <Check size={20} color="$primary" />}
+            )}
+          </YStack>
+          {selected && <Check size={20} color="$primary" />}
+        </XStack>
       </XStack>
     </Pressable>
+  )
+}
+
+function NearestPill() {
+  const { t } = useTranslation()
+  return (
+    <XStack
+      items="center"
+      gap={4}
+      px="$2"
+      py="$0.5"
+      rounded="$10"
+      bg="$accent"
+    >
+      <MapPin size={11} color={ON_ACCENT as any} />
+      <SizableText
+        size="$1"
+        fontFamily="$body"
+        fontWeight="800"
+        style={{
+          color: ON_ACCENT,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        }}
+      >
+        {t('excursion.startFrom.nearestBadge', { defaultValue: 'Nearest' })}
+      </SizableText>
+    </XStack>
   )
 }

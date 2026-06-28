@@ -46,6 +46,7 @@ import {
   YStack,
   useTheme,
 } from 'tamagui'
+import { palette } from '../../constants/Colors'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { useExcursion } from '../../hooks/useExcursion'
@@ -66,6 +67,7 @@ import {
   useFactBannerSchedule,
 } from './FloatingFactBanner'
 import { FloatingFactPlayer } from './FloatingFactPlayer'
+import { NearestStopCallout } from './NearestStopCallout'
 import { StartFromPicker } from './StartFromPicker'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
@@ -178,12 +180,11 @@ function ExcursionBody({
 }) {
   const [phase, setPhase] = useState<Phase>('preview')
   const [currentIndex, setCurrentIndex] = useState(0)
-  // The stop the user has chosen to begin from. Auto-tracks nearest while
-  // the user hasn't manually overridden via the StartFromPicker. Used only
-  // in the preview phase; once the excursion starts this value freezes
-  // (further nearest-stop drift doesn't matter — user is now on the route).
+  // The stop the user has chosen to begin from. Defaults to 0 (first stop)
+  // and only changes when the user explicitly picks a different one via
+  // the StartFromPicker. The nearest-stop indicators (map callout, picker
+  // row emphasis) are informational — they don't auto-change this value.
   const [startFromIndex, setStartFromIndex] = useState(0)
-  const startFromManualRef = useRef(false)
   // Mirror of currentIndex so handlers like `skip` that fire faster than
   // React batches can read the up-to-date value. Without this, rapid skip
   // taps captured a stale `currentIndex` from their closure and the undo
@@ -832,21 +833,43 @@ function ExcursionBody({
   const isFarFromRoute =
     nearestStopMeters != null && nearestStopMeters > FAR_FROM_ROUTE_METERS
 
-  // Bonus: while the user is in preview and hasn't manually chosen a start,
-  // keep startFromIndex synced to the nearest stop so the chip reads "where
-  // I actually am". Once they tap the picker we set startFromManualRef and
-  // stop overriding — their pick wins until they leave the screen.
-  useEffect(() => {
-    if (phase !== 'preview') return
-    if (startFromManualRef.current) return
-    if (nearestStopIndex == null) return
-    setStartFromIndex(nearestStopIndex)
-  }, [phase, nearestStopIndex])
-
+  // startFromIndex defaults to 0 (the first stop). The nearest stop is
+  // *shown* via the map callout and the picker's emphasized row, but it is
+  // NOT auto-selected — picking a starting point is an explicit user choice.
+  // The user picks via the StartFromPicker; we just store their choice.
   const pickStartFrom = useCallback((idx: number) => {
-    startFromManualRef.current = true
     setStartFromIndex(idx)
   }, [])
+
+  // One-shot pill that surfaces the nearest stop's name once GPS resolves
+  // it during preview. Auto-dismisses on a timer with a visible progress
+  // bar drain (the pill renders the countdown itself off `expiresAt`).
+  // We track whether we've already shown it for this preview entry via a
+  // ref so it doesn't pop again when GPS jitter shifts nearestStopIndex.
+  const NEAREST_PILL_LIFETIME_MS = 6000
+  const [nearestPillExpiresAt, setNearestPillExpiresAt] = useState<number>(0)
+  const nearestPillShownRef = useRef(false)
+  useEffect(() => {
+    if (phase !== 'preview') {
+      nearestPillShownRef.current = false
+      setNearestPillExpiresAt(0)
+    }
+  }, [phase])
+  useEffect(() => {
+    if (phase !== 'preview') return
+    if (nearestStopIndex == null) return
+    if (nearestPillShownRef.current) return
+    nearestPillShownRef.current = true
+    const expires = Date.now() + NEAREST_PILL_LIFETIME_MS
+    setNearestPillExpiresAt(expires)
+    // Schedule the actual unmount slightly after expiry so the progress
+    // bar has a moment to finish its 0-width animation.
+    const timer = setTimeout(
+      () => setNearestPillExpiresAt(0),
+      NEAREST_PILL_LIFETIME_MS + 50,
+    )
+    return () => clearTimeout(timer)
+  }, [phase, nearestStopIndex])
 
   // Detect when the user has wandered off the active route. GPS in dense
   // urban areas jitters by 20-30m, so a one-tick spike isn't off-route —
@@ -1112,6 +1135,16 @@ function ExcursionBody({
           />
         )}
 
+        {/* Floating "Nearest" callout pinned above the closest stop. Only in
+            preview — once the user starts, the chip is no longer relevant
+            (currentStop becomes the focus). Rendered last in the preview
+            block so it visually sits above the regular stop pins. */}
+        {phase === 'preview' &&
+          nearestStopIndex != null &&
+          stops[nearestStopIndex] && (
+            <NearestStopCallout coords={stops[nearestStopIndex].coords} />
+          )}
+
         {/* POIs: hidden during navigation to declutter the map. They come
             back on arrival and preview so the user can still explore them. */}
         {phase !== 'navigating' &&
@@ -1267,6 +1300,13 @@ function ExcursionBody({
                 nearestStopIndex != null &&
                 startFromIndex === nearestStopIndex
               }
+              nearestStopName={
+                nearestStopIndex != null
+                  ? (stops[nearestStopIndex]?.name ?? null)
+                  : null
+              }
+              nearestPillExpiresAt={nearestPillExpiresAt}
+              onDismissNearestPill={() => setNearestPillExpiresAt(0)}
               onOpenStartFromPicker={() => setStartFromPickerOpen(true)}
               onStart={start}
               onContinue={continueNext}
@@ -1654,6 +1694,9 @@ function BottomPanel({
   startFromStop,
   startFromIndex,
   isStartFromNearest,
+  nearestStopName,
+  nearestPillExpiresAt,
+  onDismissNearestPill,
   onOpenStartFromPicker,
   onStart,
   onContinue,
@@ -1680,6 +1723,9 @@ function BottomPanel({
   startFromStop?: ExcursionStop
   startFromIndex: number
   isStartFromNearest: boolean
+  nearestStopName: string | null
+  nearestPillExpiresAt: number
+  onDismissNearestPill: () => void
   onOpenStartFromPicker: () => void
   onStart: () => void
   onContinue: () => void
@@ -1719,6 +1765,9 @@ function BottomPanel({
           startFromStop={startFromStop}
           startFromIndex={startFromIndex}
           isStartFromNearest={isStartFromNearest}
+          nearestStopName={nearestStopName}
+          nearestPillExpiresAt={nearestPillExpiresAt}
+          onDismissNearestPill={onDismissNearestPill}
           onOpenStartFromPicker={onOpenStartFromPicker}
         />
       )}
@@ -1834,6 +1883,9 @@ function PreviewPanel({
   startFromStop,
   startFromIndex,
   isStartFromNearest,
+  nearestStopName,
+  nearestPillExpiresAt,
+  onDismissNearestPill,
   onOpenStartFromPicker,
 }: {
   total: number
@@ -1844,9 +1896,17 @@ function PreviewPanel({
   startFromStop?: ExcursionStop
   startFromIndex: number
   isStartFromNearest: boolean
+  // Name of the GPS-derived nearest stop; null until GPS resolves.
+  nearestStopName: string | null
+  // Timestamp at which the one-shot nearest-stop pill should be gone.
+  // 0 means "not visible". The pill renders its own countdown bar off
+  // this value so the user sees how long until it auto-dismisses.
+  nearestPillExpiresAt: number
+  onDismissNearestPill: () => void
   onOpenStartFromPicker: () => void
 }) {
   const { t } = useTranslation()
+  const pillVisible = nearestPillExpiresAt > Date.now()
   return (
     <YStack gap="$2">
       <H3 fontFamily="$body" fontWeight="700" color="$color">
@@ -1855,6 +1915,13 @@ function PreviewPanel({
       <Paragraph color="$colorPress" fontFamily="$body" size="$3">
         {t('excursion.preview.subtitle', { count: total })}
       </Paragraph>
+      {pillVisible && nearestStopName && (
+        <NearestStopInlinePill
+          stopName={nearestStopName}
+          expiresAt={nearestPillExpiresAt}
+          onPress={onDismissNearestPill}
+        />
+      )}
       {startFromStop && (
         <StartFromChip
           stop={startFromStop}
@@ -1869,6 +1936,111 @@ function PreviewPanel({
         onPress={onStart}
       />
     </YStack>
+  )
+}
+
+// Inline informational pill rendered above the Start From chip during
+// preview. Mirrors the visual shape of the off-route warning in the
+// NavigatingPanel (small icon circle on the left, title + subtitle stacked
+// on the right) but styled with the amber brand pair so it reads as a
+// "nearest-stop suggestion" rather than a route-error warning. Includes a
+// thin amber progress bar at the bottom that drains from 100% → 0% over
+// the pill's lifetime so the user can see it's about to auto-dismiss.
+// Pattern reused from UndoSkipPill — same Animated.timing on a width
+// interpolation, driven by the parent-owned expiresAt timestamp.
+function NearestStopInlinePill({
+  stopName,
+  expiresAt,
+  onPress,
+}: {
+  stopName: string
+  expiresAt: number
+  onPress: () => void
+}) {
+  const { t } = useTranslation()
+  const progressAnim = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    const remaining = Math.max(0, expiresAt - Date.now())
+    progressAnim.setValue(1)
+    Animated.timing(progressAnim, {
+      toValue: 0,
+      duration: remaining,
+      useNativeDriver: false,
+    }).start()
+  }, [expiresAt, progressAnim])
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  })
+  return (
+    <Pressable onPress={onPress} hitSlop={6}>
+      <YStack
+        rounded="$4"
+        borderWidth={1}
+        // Amber border + soft amber wash mirrors the picker's nearest row,
+        // so the user reads "this is the same info, surfaced here too".
+        // RGBA fallback because there's no $accentSoft token; amber stays
+        // amber in both themes anyway.
+        style={{
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, 0.12)',
+          overflow: 'hidden',
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 2,
+        }}
+      >
+        <XStack items="center" gap="$2.5" px="$3" py="$2">
+          <YStack
+            width={24}
+            height={24}
+            rounded={12}
+            items="center"
+            justify="center"
+            bg="$accent"
+          >
+            <MapPin size={12} color={palette.navy as any} />
+          </YStack>
+          <YStack flex={1}>
+            <SizableText
+              size="$1"
+              color="$colorPress"
+              fontFamily="$body"
+              fontWeight="700"
+              style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+            >
+              {t('excursion.startFrom.nearestBadge', {
+                defaultValue: 'Nearest',
+              })}
+            </SizableText>
+            <SizableText
+              size="$3"
+              color="$color"
+              fontFamily="$body"
+              fontWeight="600"
+              numberOfLines={1}
+            >
+              {t('excursion.startFrom.nearestToast', {
+                stopName,
+                defaultValue: `${stopName} is closest to you`,
+              })}
+            </SizableText>
+          </YStack>
+        </XStack>
+        {/* Countdown bar — drains left-to-right as the auto-dismiss timer
+            elapses. Same pattern as UndoSkipPill so the visual language of
+            "ephemeral, will go away soon" is consistent across the app. */}
+        <Animated.View
+          style={{
+            height: 3,
+            width: progressWidth,
+            backgroundColor: '#F59E0B',
+          }}
+        />
+      </YStack>
+    </Pressable>
   )
 }
 

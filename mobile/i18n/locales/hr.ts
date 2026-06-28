@@ -152,6 +152,8 @@ export const hr: Translations = {
       label: 'Polazna točka',
       pickerTitle: 'Odaberi polaznu točku',
       nearestBadge: 'Najbliža',
+      nearestCaption: 'Najbliže tvojoj lokaciji',
+      nearestToast: '{{stopName}} je najbliže tebi',
     },
     undoSkip: {
       title: 'Dodirni za poništavanje',
