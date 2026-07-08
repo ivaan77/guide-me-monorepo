@@ -56,9 +56,7 @@ export class UsersRepository {
   }
 
   async deleteByClerkId(clerkUserId: string): Promise<number> {
-    const result = await this.userModel
-      .deleteOne({ clerkUserId })
-      .exec();
+    const result = await this.userModel.deleteOne({ clerkUserId }).exec();
     return result.deletedCount ?? 0;
   }
 
