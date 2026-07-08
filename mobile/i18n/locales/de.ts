@@ -45,6 +45,9 @@ export const de: Translations = {
     themeLight: 'Hell',
     themeDark: 'Dunkel',
     languageSystem: 'System',
+    legal: 'Rechtliches',
+    terms: 'Nutzungsbedingungen',
+    privacy: 'Datenschutzerklärung',
     account: 'Konto',
     deleteAccount: 'Konto löschen',
     deleteAccountConfirmTitle: 'Konto löschen?',
@@ -64,6 +67,8 @@ export const de: Translations = {
     continueWithApple: 'Mit Apple fortfahren',
     skip: 'Ohne Anmeldung fortfahren',
     signInFailedTitle: 'Anmeldung fehlgeschlagen',
+    legalNoticeBefore: 'Mit dem Fortfahren stimmst du unseren',
+    legalNoticeAnd: 'und der',
   },
   city: {
     notFound: 'Diese Stadt konnten wir nicht finden.',

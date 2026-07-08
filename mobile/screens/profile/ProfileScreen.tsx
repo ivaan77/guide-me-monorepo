@@ -4,8 +4,9 @@ import { Alert, ScrollView, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, type Href } from 'expo-router'
 import { useAuth, useUser } from '@clerk/clerk-expo'
+import * as WebBrowser from 'expo-web-browser'
 import { Button, H2, Paragraph, SizableText, YStack } from 'tamagui'
-import { LogOut, Trash2, User } from '@tamagui/lucide-icons'
+import { ExternalLink, LogOut, Trash2, User } from '@tamagui/lucide-icons'
 import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { clearAuthChoice, writeAuthChoice } from '../../providers/AuthChoice'
@@ -13,6 +14,7 @@ import { useAppTheme } from '../../providers/ThemeContext'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
 import { useDeleteAccount } from '../../hooks/useDeleteAccount'
 import { palette } from '../../constants/Colors'
+import { PRIVACY_URL, TERMS_URL } from '../../config/env'
 
 export function ProfileScreen() {
   const { t } = useTranslation()
@@ -39,6 +41,14 @@ export function ProfileScreen() {
     await writeAuthChoice('skipped')
     await signOut()
   }, [signOut])
+
+  const openTerms = useCallback(() => {
+    WebBrowser.openBrowserAsync(TERMS_URL).catch(() => {})
+  }, [])
+
+  const openPrivacy = useCallback(() => {
+    WebBrowser.openBrowserAsync(PRIVACY_URL).catch(() => {})
+  }, [])
 
   const onDeleteAccount = useCallback(() => {
     Alert.alert(
@@ -132,6 +142,35 @@ export function ProfileScreen() {
 
         <Section title={t('profile.language')}>
           <LanguageToggle />
+        </Section>
+
+        <Section title={t('profile.legal')}>
+          <YStack gap="$2">
+            <Button
+              size="$4"
+              chromeless
+              justify="flex-start"
+              icon={<ExternalLink size={16} />}
+              color="$color"
+              fontFamily="$body"
+              fontWeight="500"
+              onPress={openTerms}
+            >
+              {t('profile.terms')}
+            </Button>
+            <Button
+              size="$4"
+              chromeless
+              justify="flex-start"
+              icon={<ExternalLink size={16} />}
+              color="$color"
+              fontFamily="$body"
+              fontWeight="500"
+              onPress={openPrivacy}
+            >
+              {t('profile.privacy')}
+            </Button>
+          </YStack>
         </Section>
 
         {isSignedIn && (

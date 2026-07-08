@@ -1,10 +1,12 @@
 import { useCallback } from 'react'
 import { Stack, useRouter, type Href } from 'expo-router'
-import { Paragraph, SizableText, YStack } from 'tamagui'
+import * as WebBrowser from 'expo-web-browser'
+import { Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '../providers/ThemeContext'
 import { SocialAuthButtons } from '../common/SocialAuthButtons'
+import { PRIVACY_URL, TERMS_URL } from '../config/env'
 
 const TABS_HREF = '/(tabs)' as Href
 
@@ -45,7 +47,36 @@ export default function LoginScreen() {
           </Paragraph>
         </YStack>
 
-        <SocialAuthButtons onSignedIn={goToApp} onSkip={goToApp} />
+        <YStack gap="$4">
+          <SocialAuthButtons onSignedIn={goToApp} onSkip={goToApp} />
+          <XStack justify="center" flexWrap="wrap" gap="$1">
+            <SizableText color="$colorPress" size="$2" fontFamily="$body">
+              {t('auth.legalNoticeBefore')}{' '}
+            </SizableText>
+            <SizableText
+              color="$primary"
+              size="$2"
+              fontFamily="$body"
+              fontWeight="600"
+              onPress={() => WebBrowser.openBrowserAsync(TERMS_URL).catch(() => {})}
+            >
+              {t('profile.terms')}
+            </SizableText>
+            <SizableText color="$colorPress" size="$2" fontFamily="$body">
+              {' '}{t('auth.legalNoticeAnd')}{' '}
+            </SizableText>
+            <SizableText
+              color="$primary"
+              size="$2"
+              fontFamily="$body"
+              fontWeight="600"
+              onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL).catch(() => {})}
+            >
+              {t('profile.privacy')}
+            </SizableText>
+            <SizableText color="$colorPress" size="$2" fontFamily="$body">.</SizableText>
+          </XStack>
+        </YStack>
       </YStack>
     </>
   )

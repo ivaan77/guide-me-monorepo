@@ -39,6 +39,9 @@ export const en = {
     themeLight: 'Light',
     themeDark: 'Dark',
     languageSystem: 'System',
+    legal: 'Legal',
+    terms: 'Terms of Service',
+    privacy: 'Privacy Policy',
     account: 'Account',
     deleteAccount: 'Delete account',
     deleteAccountConfirmTitle: 'Delete your account?',
@@ -57,6 +60,8 @@ export const en = {
     continueWithApple: 'Continue with Apple',
     skip: 'Continue without signing in',
     signInFailedTitle: 'Sign in failed',
+    legalNoticeBefore: 'By continuing you agree to our',
+    legalNoticeAnd: 'and',
   },
   city: {
     notFound: 'We couldn’t find that city.',

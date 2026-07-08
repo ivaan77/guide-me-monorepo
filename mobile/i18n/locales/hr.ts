@@ -45,6 +45,9 @@ export const hr: Translations = {
     themeLight: 'Svijetlo',
     themeDark: 'Tamno',
     languageSystem: 'Sustav',
+    legal: 'Pravno',
+    terms: 'Uvjeti korištenja',
+    privacy: 'Pravila privatnosti',
     account: 'Račun',
     deleteAccount: 'Obriši račun',
     deleteAccountConfirmTitle: 'Obrisati račun?',
@@ -64,6 +67,8 @@ export const hr: Translations = {
     continueWithApple: 'Nastavi s Appleom',
     skip: 'Nastavi bez prijave',
     signInFailedTitle: 'Prijava nije uspjela',
+    legalNoticeBefore: 'Nastavkom prihvaćaš naše',
+    legalNoticeAnd: 'i',
   },
   city: {
     notFound: 'Taj grad nismo uspjeli pronaći.',
