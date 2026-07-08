@@ -52,6 +52,25 @@ export const en = {
     deleteAccountErrorTitle: 'Could not delete account',
     deleteAccountErrorMessage: 'Something went wrong. Please try again.',
   },
+  ratings: {
+    rateCity: 'Rate this city',
+    rateExcursion: 'Rate this tour',
+    ratePlace: 'Rate this place',
+    yourRating: 'Your rating',
+    tapToRate: 'Tap a star to rate',
+    // {{count}} is interpolated by i18next. Pluralization deferred; single
+    // form used for now (see MEMORY.md → feedback_i18n_pluralization).
+    countLabel: '{{count}} ratings',
+    signInToRate: 'Sign in to rate',
+    prompt: {
+      titleCity: 'How was {{name}}?',
+      titleExcursion: 'How was this tour?',
+      titlePlace: 'How was {{name}}?',
+      subtitle: 'Tap a star. Your rating helps other travelers.',
+      skip: 'Not now',
+      thanks: 'Thanks!',
+    },
+  },
   auth: {
     titleA: 'From here',
     titleB: 'to there.',

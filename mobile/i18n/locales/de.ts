@@ -58,6 +58,23 @@ export const de: Translations = {
     deleteAccountErrorTitle: 'Konto konnte nicht gelöscht werden',
     deleteAccountErrorMessage: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
   },
+  ratings: {
+    rateCity: 'Diese Stadt bewerten',
+    rateExcursion: 'Diese Tour bewerten',
+    ratePlace: 'Diesen Ort bewerten',
+    yourRating: 'Deine Bewertung',
+    tapToRate: 'Zum Bewerten auf einen Stern tippen',
+    countLabel: '{{count}} Bewertungen',
+    signInToRate: 'Zum Bewerten anmelden',
+    prompt: {
+      titleCity: 'Wie war {{name}}?',
+      titleExcursion: 'Wie war diese Tour?',
+      titlePlace: 'Wie war {{name}}?',
+      subtitle: 'Tippe auf einen Stern. Deine Bewertung hilft anderen Reisenden.',
+      skip: 'Nicht jetzt',
+      thanks: 'Danke!',
+    },
+  },
   auth: {
     titleA: 'Von hier',
     titleB: 'nach dort.',

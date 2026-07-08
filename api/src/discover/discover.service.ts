@@ -16,6 +16,7 @@ import {
   PublicPlaceDetail,
   PublicPlaceResponse,
   PublicPoi,
+  PublicRatingAggregate,
   PublicSubStop,
 } from '@guide-me-app/core';
 import type { LocalizedAudioSub } from './schemas/locale.subdocuments';
@@ -33,6 +34,19 @@ function resolveAudio(
 ): string | undefined {
   if (!audio) return undefined;
   return audio[locale] ?? audio.en ?? audio.de ?? audio.hr ?? undefined;
+}
+
+// Derive the public aggregate from denormalized ratingSum/ratingCount.
+// Returns undefined when there are no ratings — the response leaves the
+// `rating` field off entirely so mobile can hide the badge.
+function toRatingAggregate(doc: {
+  ratingSum?: number;
+  ratingCount?: number;
+}): PublicRatingAggregate | undefined {
+  const count = doc.ratingCount ?? 0;
+  if (count === 0) return undefined;
+  const sum = doc.ratingSum ?? 0;
+  return { avg: Math.round((sum / count) * 10) / 10, count };
 }
 
 @Injectable()
@@ -87,6 +101,7 @@ export class DiscoverService {
         name: pickLocalized(e.name, locale),
         meta: pickLocalized(e.meta, locale),
         image: e.image,
+        rating: toRatingAggregate(e),
       })),
       restaurants: bucket('restaurant'),
       cafes: bucket('cafe'),
@@ -165,6 +180,7 @@ export class DiscoverService {
       pois: resolvedPois.length > 0 ? resolvedPois : undefined,
       interestingFacts: resolvedFacts.length > 0 ? resolvedFacts : undefined,
       outro,
+      rating: toRatingAggregate(excursion),
     };
 
     return { excursion: publicExcursion, locale };
@@ -187,6 +203,7 @@ export class DiscoverService {
       editorPick: doc.editorPick
         ? this.resolveEditorPick(doc.editorPick, locale)
         : undefined,
+      rating: toRatingAggregate(doc),
     };
   }
 
@@ -216,6 +233,7 @@ export class DiscoverService {
       subCategory: doc.subCategory
         ? pickLocalized(doc.subCategory, locale)
         : undefined,
+      rating: toRatingAggregate(doc),
     };
   }
 
@@ -293,6 +311,7 @@ export class DiscoverService {
       subCategory: doc.subCategory
         ? pickLocalized(doc.subCategory, locale)
         : undefined,
+      rating: toRatingAggregate(doc),
     };
   }
 }

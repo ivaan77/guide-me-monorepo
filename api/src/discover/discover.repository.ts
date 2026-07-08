@@ -17,10 +17,11 @@ import {
 
 // Lightweight projection of an excursion for the city detail screen: we
 // don't ship stops/POIs in the city detail response — they come on demand
-// via the excursion detail endpoint.
+// via the excursion detail endpoint. Rating aggregate is included so the
+// list card can show "★ 4.3 · 27" alongside the excursion.
 export type ExcursionSummary = Pick<
   DiscoverExcursionDocument,
-  'slug' | 'name' | 'meta' | 'image'
+  'slug' | 'name' | 'meta' | 'image' | 'ratingSum' | 'ratingCount'
 >;
 
 const ENABLED_FILTER = { isEnabled: true };
@@ -57,7 +58,14 @@ export class DiscoverRepository {
   ): Promise<ExcursionSummary[]> {
     return this.excursionModel
       .find({ citySlug, ...ENABLED_FILTER })
-      .select({ slug: 1, name: 1, meta: 1, image: 1 })
+      .select({
+        slug: 1,
+        name: 1,
+        meta: 1,
+        image: 1,
+        ratingSum: 1,
+        ratingCount: 1,
+      })
       .lean<ExcursionSummary[]>()
       .exec();
   }

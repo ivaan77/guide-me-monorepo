@@ -1,7 +1,8 @@
 import { Image, Pressable } from 'react-native'
 import { Link } from 'expo-router'
 import type { PublicCity } from '@guide-me-app/core'
-import { SizableText, YStack } from 'tamagui'
+import { SizableText, XStack, YStack } from 'tamagui'
+import { RatingStars } from '../../common/RatingStars'
 
 type Props = {
   city: PublicCity
@@ -45,6 +46,11 @@ export function CityCard({ city, width }: Props) {
             >
               {city.country}
             </SizableText>
+            {city.rating && city.rating.count > 0 && (
+              <XStack mt="$1.5" justify="center">
+                <RatingStars mode="display" aggregate={city.rating} compact />
+              </XStack>
+            )}
           </YStack>
         </YStack>
       </Pressable>

@@ -46,6 +46,15 @@ export class DiscoverCity {
 
   @Prop({ required: true, default: true, index: true })
   isEnabled: boolean;
+
+  // Denormalized rating aggregate — sum of every rating value ever cast for
+  // this city and the count of those ratings. Updated atomically with the
+  // rating write. Averages are computed on serialization (sum/count).
+  @Prop({ type: Number, default: 0 })
+  ratingSum: number;
+
+  @Prop({ type: Number, default: 0 })
+  ratingCount: number;
 }
 
 export type DiscoverCityDocument = HydratedDocument<DiscoverCity>;

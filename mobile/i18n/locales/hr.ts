@@ -58,6 +58,23 @@ export const hr: Translations = {
     deleteAccountErrorTitle: 'Brisanje računa nije uspjelo',
     deleteAccountErrorMessage: 'Nešto je pošlo po zlu. Pokušaj ponovno.',
   },
+  ratings: {
+    rateCity: 'Ocijeni ovaj grad',
+    rateExcursion: 'Ocijeni ovu turu',
+    ratePlace: 'Ocijeni ovo mjesto',
+    yourRating: 'Tvoja ocjena',
+    tapToRate: 'Dodirni zvjezdicu za ocjenu',
+    countLabel: '{{count}} ocjena',
+    signInToRate: 'Prijavi se za ocjenjivanje',
+    prompt: {
+      titleCity: 'Kako ti se svidio {{name}}?',
+      titleExcursion: 'Kako ti se svidjela ova tura?',
+      titlePlace: 'Kako ti se svidjelo {{name}}?',
+      subtitle: 'Dodirni zvjezdicu. Tvoja ocjena pomaže drugim putnicima.',
+      skip: 'Ne sad',
+      thanks: 'Hvala!',
+    },
+  },
   auth: {
     titleA: 'Odavde',
     titleB: 'donde.',

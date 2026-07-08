@@ -27,10 +27,13 @@ import {
 } from '@tamagui/lucide-icons'
 import type { IconProps } from '@tamagui/helpers-icon'
 import type { PublicCategoryItem } from '@guide-me-app/core'
-import { H1, SizableText, YStack } from 'tamagui'
+import { H1, SizableText, XStack, YStack } from 'tamagui'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
+import { RatingPromptSheet } from '../../common/RatingPromptSheet'
+import { RatingStars } from '../../common/RatingStars'
 import { useCity } from '../../hooks/useCity'
+import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
 import { EmptyState } from '../discover/EmptyState'
 import { Accordion } from './Accordion'
 import { CategoryListItem } from './CategoryListItem'
@@ -51,6 +54,7 @@ export function CityDetailScreen({ id }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { data: city, isPending, isError, refetch } = useCity(id)
+  const ratingPrompt = useDwellRatingPrompt('city', id, { enabled: !!city })
 
   const goBack = () => {
     if (router.canGoBack()) router.back()
@@ -126,15 +130,20 @@ export function CityDetailScreen({ id }: Props) {
             >
               {city.name}
             </H1>
-            <SizableText
-              size="$3"
-              fontFamily="$body"
-              color="$onMediaMuted"
-              style={{ textTransform: 'uppercase', letterSpacing: 1 }}
-              numberOfLines={1}
-            >
-              {city.country}
-            </SizableText>
+            <XStack items="center" gap="$3">
+              <SizableText
+                size="$3"
+                fontFamily="$body"
+                color="$onMediaMuted"
+                style={{ textTransform: 'uppercase', letterSpacing: 1 }}
+                numberOfLines={1}
+              >
+                {city.country}
+              </SizableText>
+              {city.rating && city.rating.count > 0 && (
+                <RatingStars mode="display" aggregate={city.rating} compact />
+              )}
+            </XStack>
           </YStack>
         </YStack>
         {city.editorPick && (
@@ -252,6 +261,14 @@ export function CityDetailScreen({ id }: Props) {
       >
         <FavoriteButton refToFavorite={{ type: 'city', id: city.id }} />
       </YStack>
+
+      <RatingPromptSheet
+        visible={ratingPrompt.visible}
+        onClose={ratingPrompt.close}
+        targetType="city"
+        targetId={city.id}
+        entityName={city.name}
+      />
     </YStack>
   )
 }

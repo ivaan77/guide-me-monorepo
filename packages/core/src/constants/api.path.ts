@@ -22,6 +22,10 @@ export const MePath = {
     favoriteByRef: '/me/favorites/:type/:id',
     deleteFavorite: (type: string, id: string): string =>
         `/me/favorites/${type}/${id}`,
+    ratings: '/me/ratings',
+    ratingByRef: '/me/ratings/:type/:id',
+    deleteRating: (type: string, id: string): string =>
+        `/me/ratings/${type}/${id}`,
 }
 
 export const PublicPath = {

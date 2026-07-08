@@ -49,7 +49,9 @@ import {
 import { palette } from '../../constants/Colors'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
+import { RatingPromptSheet } from '../../common/RatingPromptSheet'
 import { useExcursion } from '../../hooks/useExcursion'
+import { useRatingPrompt } from '../../hooks/useRatingPrompt'
 import {
   distanceFromPolyline,
   fetchWalkingRoute,
@@ -179,6 +181,19 @@ function ExcursionBody({
   primary: string
 }) {
   const [phase, setPhase] = useState<Phase>('preview')
+  const ratingPrompt = useRatingPrompt('excursion', id)
+
+  // Fire the rating prompt shortly after the user hits 'complete' so the
+  // CompletePanel renders first and the sheet feels like a follow-up, not
+  // an interruption. Cooldowns + "already rated" checks live inside the
+  // hook — we just declare the moment.
+  useEffect(() => {
+    if (phase !== 'complete') return
+    const timeout = setTimeout(() => {
+      ratingPrompt.request()
+    }, 1200)
+    return () => clearTimeout(timeout)
+  }, [phase, ratingPrompt])
   const [currentIndex, setCurrentIndex] = useState(0)
   // The stop the user has chosen to begin from. Defaults to 0 (first stop)
   // and only changes when the user explicitly picks a different one via
@@ -1422,6 +1437,14 @@ function ExcursionBody({
       <ImageLightbox uri={lightboxUri} onClose={() => setLightboxUri(null)} />
 
       {permissionDenied && <LocationDeniedOverlay onGoBack={goBack} />}
+
+      <RatingPromptSheet
+        visible={ratingPrompt.visible}
+        onClose={ratingPrompt.close}
+        targetType="excursion"
+        targetId={id}
+        entityName={title}
+      />
     </YStack>
   )
 }
@@ -2592,7 +2615,13 @@ function OutroPanel({
   )
 }
 
-function CompletePanel({ total, onFinish }: { total: number; onFinish: () => void }) {
+function CompletePanel({
+  total,
+  onFinish,
+}: {
+  total: number
+  onFinish: () => void
+}) {
   const { t } = useTranslation()
   return (
     <YStack gap="$3">

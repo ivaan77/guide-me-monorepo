@@ -17,7 +17,10 @@ import type { PoiCategory, PublicPlaceDetail } from '@guide-me-app/core'
 import { H1, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
+import { RatingPromptSheet } from '../../common/RatingPromptSheet'
+import { RatingStars } from '../../common/RatingStars'
 import { usePlace } from '../../hooks/usePlace'
+import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
 import { EmptyState } from '../discover/EmptyState'
 import { CLEAN_MAP_STYLE } from '../excursion/cleanMapStyle'
 import { PlaceDetailSkeleton } from './PlaceDetailSkeleton'
@@ -36,6 +39,7 @@ export function PlaceDetailScreen({ id }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { data: place, isPending, isError, refetch } = usePlace(id)
+  const ratingPrompt = useDwellRatingPrompt('place', id, { enabled: !!place })
 
   const categoryLabel = (category: PoiCategory): string =>
     t(`place.category.${category}` as const)
@@ -85,15 +89,18 @@ export function PlaceDetailScreen({ id }: Props) {
         />
 
         <YStack px={H_PADDING} pt="$5" gap="$3">
-          <SizableText
-            size="$2"
-            color="$colorPress"
-            fontFamily="$body"
-            fontWeight="600"
-            style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
-          >
-            {place.meta}
-          </SizableText>
+          <XStack justify="space-between" items="center">
+            <SizableText
+              size="$2"
+              color="$colorPress"
+              fontFamily="$body"
+              fontWeight="600"
+              style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+            >
+              {place.meta}
+            </SizableText>
+            <RatingStars mode="display" aggregate={place.rating} />
+          </XStack>
           {place.audioUrl && (
             <AudioPlayer
               audioUrl={place.audioUrl}
@@ -161,6 +168,14 @@ export function PlaceDetailScreen({ id }: Props) {
       >
         <FavoriteButton refToFavorite={{ type: 'place', id: place.id }} />
       </YStack>
+
+      <RatingPromptSheet
+        visible={ratingPrompt.visible}
+        onClose={ratingPrompt.close}
+        targetType="place"
+        targetId={place.id}
+        entityName={place.name}
+      />
     </YStack>
   )
 }

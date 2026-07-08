@@ -41,6 +41,15 @@ export type PublicCity = {
     country: string
     image: string
     editorPick?: PublicEditorPick
+    rating?: PublicRatingAggregate
+}
+
+// Aggregate rating info surfaced on public list + detail responses. Omitted
+// (undefined) when no ratings exist yet — mobile hides the badge in that case.
+// avg is rounded to 1 decimal by the server so clients don't have to.
+export type PublicRatingAggregate = {
+    avg: number
+    count: number
 }
 
 export type AllPublicCitiesResponse = {
@@ -62,6 +71,7 @@ export type PublicCategoryItem = {
     description?: string
     images?: string[]
     subCategory?: string
+    rating?: PublicRatingAggregate
 }
 
 // City detail exposes each POI category as its own optional list so the
@@ -190,6 +200,7 @@ export type PublicExcursion = {
     pois?: PublicPoi[]
     interestingFacts?: PublicInterestingFact[]
     outro?: PublicExcursionOutro
+    rating?: PublicRatingAggregate
 }
 
 export type PublicExcursionResponse = {
@@ -213,6 +224,7 @@ export type PublicPlaceDetail = {
     coords?: PublicLatLng
     audioUrl?: string
     subCategory?: string
+    rating?: PublicRatingAggregate
 }
 
 export type PublicPlaceResponse = {

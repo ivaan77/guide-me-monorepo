@@ -166,6 +166,13 @@ export class DiscoverExcursion {
 
   @Prop({ required: true, default: true, index: true })
   isEnabled: boolean;
+
+  // Denormalized rating aggregate. See DiscoverCity for the pattern.
+  @Prop({ type: Number, default: 0 })
+  ratingSum: number;
+
+  @Prop({ type: Number, default: 0 })
+  ratingCount: number;
 }
 
 export type DiscoverExcursionDocument = HydratedDocument<DiscoverExcursion>;

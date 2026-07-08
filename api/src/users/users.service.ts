@@ -10,8 +10,13 @@ import {
   MeResponse,
   AddFavoriteResponse,
   RemoveFavoriteResponse,
+  UserRatingRef,
+  RatingTargetType,
+  RatingValue,
 } from '@guide-me-app/core';
 import { DiscoverRepository } from '../discover/discover.repository';
+import { RatingsRepository } from '../ratings/ratings.repository';
+import { RatingsService } from '../ratings/ratings.service';
 import { UsersRepository } from './users.repository';
 import { UserDocument } from './schemas/user.schema';
 
@@ -22,6 +27,8 @@ export class UsersService {
   constructor(
     private readonly repo: UsersRepository,
     private readonly discoverRepo: DiscoverRepository,
+    private readonly ratingsRepo: RatingsRepository,
+    private readonly ratingsService: RatingsService,
   ) {}
 
   async getOrCreate(clerkUserId: string): Promise<MeResponse> {
@@ -50,10 +57,14 @@ export class UsersService {
     return { favorites };
   }
 
-  // Delete the user's account. Wipes the local user record first, then the
-  // Clerk identity — DB failure aborts and surfaces the error; Clerk failure
-  // is logged but not surfaced (the app-side account is already gone, and a
-  // dangling Clerk user is recoverable via the dashboard).
+  // Delete the user's account:
+  //   1. Anonymize ratings — sever the clerkUserId link on every rating
+  //      this user cast; the votes stay counted in the public aggregates.
+  //   2. Delete the local user doc (favorites are embedded so they go too).
+  //   3. Delete the Clerk identity.
+  // DB failures on step 1 or 2 abort and surface; Clerk failure is logged
+  // but not surfaced (the app-side account is already gone, and a dangling
+  // Clerk user is recoverable via the dashboard).
   async deleteAccount(clerkUserId: string): Promise<void> {
     const secretKey = process.env.CLERK_SECRET_KEY;
     if (!secretKey) {
@@ -63,6 +74,7 @@ export class UsersService {
       throw new ServiceUnavailableException('Auth is not configured.');
     }
 
+    await this.ratingsService.anonymizeUserRatings(clerkUserId);
     await this.repo.deleteByClerkId(clerkUserId);
 
     try {
@@ -147,10 +159,14 @@ export class UsersService {
   }
 
   private async toMeResponse(user: UserDocument): Promise<MeResponse> {
-    const favorites = await this.resolveFavorites(user.favorites);
+    const [favorites, ratings] = await Promise.all([
+      this.resolveFavorites(user.favorites),
+      this.loadUserRatings(user.clerkUserId),
+    ]);
     return {
       clerkUserId: user.clerkUserId,
       favorites,
+      ratings,
       createdAt: (
         (user as unknown as { createdAt: Date }).createdAt ?? new Date()
       ).toISOString(),
@@ -158,5 +174,14 @@ export class UsersService {
         (user as unknown as { updatedAt: Date }).updatedAt ?? new Date()
       ).toISOString(),
     };
+  }
+
+  private async loadUserRatings(clerkUserId: string): Promise<UserRatingRef[]> {
+    const docs = await this.ratingsRepo.findByClerkId(clerkUserId);
+    return docs.map((d) => ({
+      targetType: d.targetType as RatingTargetType,
+      targetId: d.targetId,
+      value: d.value as RatingValue,
+    }));
   }
 }

@@ -2,6 +2,7 @@ import { Image, Pressable } from 'react-native'
 import { Link, type Href } from 'expo-router'
 import { SizableText, XStack, YStack } from 'tamagui'
 import type { PublicCategoryItem } from '@guide-me-app/core'
+import { RatingStars } from '../../common/RatingStars'
 
 type Props = {
   item: PublicCategoryItem
@@ -34,14 +35,20 @@ export function CategoryListItem({ item, isLast, href }: Props) {
         >
           {item.name}
         </SizableText>
-        <SizableText
-          size="$2"
-          fontFamily="$body"
-          color="$colorPress"
-          numberOfLines={1}
-        >
-          {item.meta}
-        </SizableText>
+        <XStack items="center" gap="$2">
+          <SizableText
+            size="$2"
+            fontFamily="$body"
+            color="$colorPress"
+            numberOfLines={1}
+            flex={1}
+          >
+            {item.meta}
+          </SizableText>
+          {item.rating && item.rating.count > 0 && (
+            <RatingStars mode="display" aggregate={item.rating} compact />
+          )}
+        </XStack>
       </YStack>
     </XStack>
   )
