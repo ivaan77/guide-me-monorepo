@@ -55,6 +55,13 @@ export class UsersRepository {
       .exec();
   }
 
+  async deleteByClerkId(clerkUserId: string): Promise<number> {
+    const result = await this.userModel
+      .deleteOne({ clerkUserId })
+      .exec();
+    return result.deletedCount ?? 0;
+  }
+
   // Strips a favorite ref from every user. Called when admin deletes the
   // underlying entity so the favorite doesn't linger as an orphan.
   async pullFavoriteFromAll(fav: FavoriteRef): Promise<number> {

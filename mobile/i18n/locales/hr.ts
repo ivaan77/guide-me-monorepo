@@ -45,6 +45,15 @@ export const hr: Translations = {
     themeLight: 'Svijetlo',
     themeDark: 'Tamno',
     languageSystem: 'Sustav',
+    account: 'Račun',
+    deleteAccount: 'Obriši račun',
+    deleteAccountConfirmTitle: 'Obrisati račun?',
+    deleteAccountConfirmMessage:
+      'Ovo trajno briše tvoj profil, favorite i identitet za prijavu. Ne može se poništiti.',
+    deleteAccountConfirmAction: 'Obriši',
+    deleteAccountCancel: 'Odustani',
+    deleteAccountErrorTitle: 'Brisanje računa nije uspjelo',
+    deleteAccountErrorMessage: 'Nešto je pošlo po zlu. Pokušaj ponovno.',
   },
   auth: {
     titleA: 'Odavde',

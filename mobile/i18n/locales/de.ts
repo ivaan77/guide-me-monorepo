@@ -45,6 +45,15 @@ export const de: Translations = {
     themeLight: 'Hell',
     themeDark: 'Dunkel',
     languageSystem: 'System',
+    account: 'Konto',
+    deleteAccount: 'Konto löschen',
+    deleteAccountConfirmTitle: 'Konto löschen?',
+    deleteAccountConfirmMessage:
+      'Dein Profil, deine Favoriten und deine Anmeldedaten werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.',
+    deleteAccountConfirmAction: 'Löschen',
+    deleteAccountCancel: 'Abbrechen',
+    deleteAccountErrorTitle: 'Konto konnte nicht gelöscht werden',
+    deleteAccountErrorMessage: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
   },
   auth: {
     titleA: 'Von hier',

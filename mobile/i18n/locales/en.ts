@@ -39,6 +39,15 @@ export const en = {
     themeLight: 'Light',
     themeDark: 'Dark',
     languageSystem: 'System',
+    account: 'Account',
+    deleteAccount: 'Delete account',
+    deleteAccountConfirmTitle: 'Delete your account?',
+    deleteAccountConfirmMessage:
+      'This permanently deletes your profile, favorites, and sign-in identity. This cannot be undone.',
+    deleteAccountConfirmAction: 'Delete',
+    deleteAccountCancel: 'Cancel',
+    deleteAccountErrorTitle: 'Could not delete account',
+    deleteAccountErrorMessage: 'Something went wrong. Please try again.',
   },
   auth: {
     titleA: 'From here',

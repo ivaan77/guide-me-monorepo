@@ -100,3 +100,10 @@ export async function apiDeleteAuthed<TRes>(
   const res = await authedFetch(path, { method: 'DELETE' }, opts)
   return (await res.json()) as TRes
 }
+
+export async function apiDeleteAuthedNoContent(
+  path: string,
+  opts: AuthedOptions,
+): Promise<void> {
+  await authedFetch(path, { method: 'DELETE' }, opts)
+}

@@ -1,16 +1,18 @@
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ScrollView, Image } from 'react-native'
+import { Alert, ScrollView, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, type Href } from 'expo-router'
 import { useAuth, useUser } from '@clerk/clerk-expo'
 import { Button, H2, Paragraph, SizableText, YStack } from 'tamagui'
-import { LogOut, User } from '@tamagui/lucide-icons'
+import { LogOut, Trash2, User } from '@tamagui/lucide-icons'
 import { LanguageToggle } from './LanguageToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { clearAuthChoice, writeAuthChoice } from '../../providers/AuthChoice'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { useDeleteAccount } from '../../hooks/useDeleteAccount'
+import { palette } from '../../constants/Colors'
 
 export function ProfileScreen() {
   const { t } = useTranslation()
@@ -20,6 +22,7 @@ export function ProfileScreen() {
   const { c } = useAppTheme()
   const insets = useSafeAreaInsets()
   const bottomPadding = useTabBarPadding()
+  const deleteAccount = useDeleteAccount()
 
   const displayName =
     user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
@@ -36,6 +39,30 @@ export function ProfileScreen() {
     await writeAuthChoice('skipped')
     await signOut()
   }, [signOut])
+
+  const onDeleteAccount = useCallback(() => {
+    Alert.alert(
+      t('profile.deleteAccountConfirmTitle'),
+      t('profile.deleteAccountConfirmMessage'),
+      [
+        { text: t('profile.deleteAccountCancel'), style: 'cancel' },
+        {
+          text: t('profile.deleteAccountConfirmAction'),
+          style: 'destructive',
+          onPress: () => {
+            deleteAccount.mutate(undefined, {
+              onError: () => {
+                Alert.alert(
+                  t('profile.deleteAccountErrorTitle'),
+                  t('profile.deleteAccountErrorMessage'),
+                )
+              },
+            })
+          },
+        },
+      ],
+    )
+  }, [deleteAccount, t])
 
   return (
     <ScrollView
@@ -106,6 +133,23 @@ export function ProfileScreen() {
         <Section title={t('profile.language')}>
           <LanguageToggle />
         </Section>
+
+        {isSignedIn && (
+          <Section title={t('profile.account')}>
+            <Button
+              size="$4"
+              chromeless
+              icon={<Trash2 size={16} color={palette.danger as any} />}
+              fontFamily="$body"
+              fontWeight="600"
+              disabled={deleteAccount.isPending}
+              onPress={onDeleteAccount}
+              style={{ color: palette.danger }}
+            >
+              {t('profile.deleteAccount')}
+            </Button>
+          </Section>
+        )}
       </YStack>
     </ScrollView>
   )

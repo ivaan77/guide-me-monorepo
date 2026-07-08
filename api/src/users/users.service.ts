@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { createClerkClient } from '@clerk/backend';
 import {
   FavoriteRef,
   MeResponse,
@@ -11,6 +17,8 @@ import { UserDocument } from './schemas/user.schema';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly repo: UsersRepository,
     private readonly discoverRepo: DiscoverRepository,
@@ -40,6 +48,33 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found.');
     const favorites = await this.resolveFavorites(user.favorites);
     return { favorites };
+  }
+
+  // Delete the user's account. Wipes the local user record first, then the
+  // Clerk identity — DB failure aborts and surfaces the error; Clerk failure
+  // is logged but not surfaced (the app-side account is already gone, and a
+  // dangling Clerk user is recoverable via the dashboard).
+  async deleteAccount(clerkUserId: string): Promise<void> {
+    const secretKey = process.env.CLERK_SECRET_KEY;
+    if (!secretKey) {
+      this.logger.error(
+        'CLERK_SECRET_KEY missing — cannot delete Clerk identity.',
+      );
+      throw new ServiceUnavailableException('Auth is not configured.');
+    }
+
+    await this.repo.deleteByClerkId(clerkUserId);
+
+    try {
+      const clerk = createClerkClient({ secretKey });
+      await clerk.users.deleteUser(clerkUserId);
+    } catch (err) {
+      this.logger.error(
+        `Clerk deleteUser failed for ${clerkUserId}: ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+    }
   }
 
   // Drops favorites whose target entity is disabled (`isEnabled: false`) or
