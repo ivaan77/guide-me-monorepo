@@ -68,36 +68,69 @@ export const ICON_SIZE = {
 
 // Shadow presets for elevation. Each preset packages the four iOS shadow
 // props + the Android elevation into a single spread. Usage:
-//   <View style={SHADOW.medium}>...</View>
+//   <View style={SHADOW.card}>...</View>
 // or with Tamagui:
-//   <YStack style={SHADOW.medium}>...</YStack>
+//   <YStack style={SHADOW.card}>...</YStack>
 //
-// low    — subtle lift (chips, small cards)
-// medium — resting cards, banners
-// high   — modals, popovers, floating action buttons
+// Presets are named by intent (what surface they belong on), not by size:
+//   subtle       — decorative lift for inline cards that shouldn't compete
+//                  with dominant UI (off-route banner, start-from chip).
+//   pin          — map markers that need to pop off the map tiles.
+//   card         — resting FABs / recenter button on the map.
+//   pillFloating — dark chips floating over the map (nearest-stop pill,
+//                  undo-skip pill). Higher opacity to survive the map's
+//                  visual noise.
+//   modal        — modal overlays (LocationDeniedOverlay, prompt sheets).
+//   liftUp       — inverted shadow for bottom-panel top edge (the chrome
+//                  that separates the map from the scrollable panel).
+//                  Uses a negative Y offset.
 //
 // shadowColor stays black across the app; if a theme-tinted shadow is
 // needed later, add a per-mode variant rather than parameterizing here.
 export const SHADOW = {
-  low: {
+  subtle: {
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  medium: {
+  pin: {
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
   },
-  high: {
+  card: {
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  pillFloating: {
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  modal: {
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 12,
+  },
+  liftUp: {
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
+    // No `elevation` — Android draws shadows only downward (from the
+    // library), so an upward shadow would look wrong. iOS handles the
+    // negative offset naturally; on Android the border-top on the
+    // container carries the visual separation.
   },
 } as const

@@ -47,6 +47,7 @@ import {
   useTheme,
 } from 'tamagui'
 import { palette } from '../../constants/Colors'
+import { SHADOW } from '../../constants/Sizes'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { RatingPromptSheet } from '../../common/RatingPromptSheet'
@@ -1185,13 +1186,7 @@ function ExcursionBody({
                   borderColor={meta.color as any}
                   items="center"
                   justify="center"
-                  style={{
-                    shadowColor: '#000',
-                    shadowOpacity: 0.2,
-                    shadowRadius: 3,
-                    shadowOffset: { width: 0, height: 1 },
-                    elevation: 3,
-                  }}
+                  style={SHADOW.pin}
                 >
                   <Icon size={16} color={meta.color as any} />
                 </YStack>
@@ -1223,11 +1218,7 @@ function ExcursionBody({
             backgroundColor: '#FFFFFF',
             alignItems: 'center',
             justifyContent: 'center',
-            shadowColor: '#000',
-            shadowOpacity: 0.15,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 4,
+            ...SHADOW.card,
           }}
           hitSlop={8}
         >
@@ -1471,13 +1462,7 @@ function WaitingForGpsToast({ topInset }: { topInset: number }) {
         py="$2"
         gap="$2.5"
         items="center"
-        style={{
-          shadowColor: '#000',
-          shadowOpacity: 0.18,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 5,
-        }}
+        style={SHADOW.pillFloating}
       >
         <LocateFixed size={14} color={iconColor as any} />
         <SizableText
@@ -1523,11 +1508,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
           // viewport-minus-padding on SE-class devices.
           width: '100%',
           maxWidth: 360,
-          shadowColor: '#000',
-          shadowOpacity: 0.2,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 8 },
-          elevation: 12,
+          ...SHADOW.modal,
         }}
       >
         <YStack
@@ -1651,11 +1632,7 @@ function UndoSkipPill({
         rounded="$6"
         style={{
           overflow: 'hidden',
-          shadowColor: '#000',
-          shadowOpacity: 0.25,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 8,
+          ...SHADOW.pillFloating,
         }}
       >
         <XStack items="center" gap="$2.5" px="$3" py="$2.5">
@@ -1774,12 +1751,7 @@ function BottomPanel({
       pt="$4"
       pb={Math.max(bottomInset, 16)}
       gap="$3"
-      style={{
-        shadowColor: '#000',
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: -4 },
-      }}
+      style={SHADOW.liftUp}
     >
       {phase === 'preview' && isFarFromRoute && (
         <FarFromRouteWarning
@@ -2014,11 +1986,7 @@ function NearestStopInlinePill({
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.12)',
           overflow: 'hidden',
-          shadowColor: '#000',
-          shadowOpacity: 0.06,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 2 },
-          elevation: 2,
+          ...SHADOW.subtle,
         }}
       >
         <XStack items="center" gap="$2.5" px="$3" py="$2">
@@ -2211,13 +2179,7 @@ function NavigatingPanel({
             borderWidth={1}
             borderColor="$primary"
             bg="$surfaceMuted"
-            style={{
-              shadowColor: '#000',
-              shadowOpacity: 0.06,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-            }}
+            style={SHADOW.subtle}
           >
             <YStack
               width={24}
