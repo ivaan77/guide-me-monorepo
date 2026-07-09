@@ -123,6 +123,7 @@ export const hr = {
   },
   place: {
     notFound: 'To mjesto nismo uspjeli pronaći.',
+    openInMaps: 'Otvori u Kartama',
     fallbackDescription:
       'Pažljivo odabrano mjesto vrijedno obilaska. Detalji i radno vrijeme uskoro stižu — za sada su dovoljni adresa i kategorija.',
     audioTitle: 'Audio vodič',

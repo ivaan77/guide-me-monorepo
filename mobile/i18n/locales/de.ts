@@ -120,6 +120,7 @@ export const de = {
   },
   place: {
     notFound: 'Diesen Ort konnten wir nicht finden.',
+    openInMaps: 'In Karten öffnen',
     fallbackDescription:
       'Ein handverlesener Ort, der einen Umweg wert ist. Details und Öffnungszeiten folgen bald — vorerst genügen Adresse und Kategorie für den Anfang.',
     audioTitle: 'Audioguide',

@@ -114,6 +114,7 @@ export const en = {
   },
   place: {
     notFound: 'We couldn’t find that place.',
+    openInMaps: 'Open in Maps',
     fallbackDescription:
       'A handpicked spot worth a detour. Detailed notes and opening hours are coming soon — for now, the address and category are all you need to start.',
     audioTitle: 'Audio guide',
