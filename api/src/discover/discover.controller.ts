@@ -9,8 +9,10 @@ import {
   AllPublicCitiesResponse,
   PublicCityDetailResponse,
   PublicExcursionResponse,
+  PublicGalleryResponse,
   PublicPath,
   PublicPlaceResponse,
+  PublicStatsResponse,
 } from '@guide-me-app/core';
 import { DiscoverCacheInterceptor } from './discover.interceptor';
 import { DiscoverService } from './discover.service';
@@ -54,5 +56,21 @@ export class DiscoverController {
   ): Promise<PublicPlaceResponse> {
     const locale = parseAcceptLanguage(acceptLanguage);
     return this.discoverService.getPlaceById(id, locale);
+  }
+
+  // Both web endpoints below produce locale-agnostic payloads (English-only
+  // strings for the marketing site). The DiscoverCacheInterceptor keys by
+  // request.path + accept-language, so identical responses may be stored
+  // once per requested locale — accepted for a couple hundred bytes of
+  // extra RAM; keeps the interceptor generic.
+
+  @Get(PublicPath.Web.stats)
+  async getWebStats(): Promise<PublicStatsResponse> {
+    return this.discoverService.getWebStats();
+  }
+
+  @Get(PublicPath.Web.gallery)
+  async getWebGallery(): Promise<PublicGalleryResponse> {
+    return this.discoverService.getWebGallery();
   }
 }

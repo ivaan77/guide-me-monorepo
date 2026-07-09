@@ -3,10 +3,12 @@ import type { PoiCategory } from '@guide-me-app/core'
 import { getStatsAction } from '@/actions/stats'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/forms/page-header'
+import { AssetsLineChart } from '@/components/stats/assets-line-chart'
 import { CumulativeLineChart } from '@/components/stats/cumulative-line-chart'
 import {
   Building2,
   Compass,
+  Headphones,
   Map as MapIcon,
   PinOff,
   Sparkles,
@@ -118,6 +120,23 @@ export default async function StatsPage() {
               equispaced rather than calendar-spaced.
             </p>
             <CumulativeLineChart data={stats.timeseries} />
+          </CardContent>
+        </Card>
+
+        {/* Assets chart — images + audio hours on separate y-axes */}
+        <Card>
+          <CardContent className="pt-6 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Headphones className="h-4 w-4" />
+              <p className="text-sm font-medium">Assets over time</p>
+            </div>
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Cumulative image count and total narration hours. Both attributed
+              to the day each parent doc was created — image adds via later
+              edits are not re-dated. Two y-axes so the lines stay readable at
+              any relative magnitude.
+            </p>
+            <AssetsLineChart data={stats.timeseries} />
           </CardContent>
         </Card>
 

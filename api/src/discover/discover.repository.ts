@@ -129,6 +129,44 @@ export class DiscoverRepository {
       .exec();
   }
 
+  // Aggregate reads used by public stats + gallery — full enabled scans.
+  // The dataset is small (see admin getStats comment) so full scans are fine.
+
+  findAllEnabledExcursions(): Promise<DiscoverExcursionDocument[]> {
+    return this.excursionModel
+      .find(ENABLED_FILTER)
+      .lean<DiscoverExcursionDocument[]>()
+      .exec();
+  }
+
+  findAllEnabledPlaces(): Promise<DiscoverPlaceDocument[]> {
+    return this.placeModel
+      .find(ENABLED_FILTER)
+      .lean<DiscoverPlaceDocument[]>()
+      .exec();
+  }
+
+  // --- Web gallery (admin curated, public consumer) ---
+
+  // All enabled cities admin has marked webFeatured, sorted by their editor-
+  // set order. Enabled filter is intentional — hidden cities never leak to
+  // the public gallery even if the flag is still set.
+  findWebFeaturedCities(): Promise<DiscoverCityDocument[]> {
+    return this.cityModel
+      .find({ ...ENABLED_FILTER, webFeatured: true })
+      .sort({ webFeaturedOrder: 1, slug: 1 })
+      .lean<DiscoverCityDocument[]>()
+      .exec();
+  }
+
+  findWebFeaturedPlaces(): Promise<DiscoverPlaceDocument[]> {
+    return this.placeModel
+      .find({ ...ENABLED_FILTER, webFeatured: true })
+      .sort({ webFeaturedOrder: 1, slug: 1 })
+      .lean<DiscoverPlaceDocument[]>()
+      .exec();
+  }
+
   // --- Admin reads (no isEnabled filter) ---
 
   findAllCitiesAdmin(): Promise<DiscoverCityDocument[]> {
@@ -191,6 +229,33 @@ export class DiscoverRepository {
     return this.excursionModel
       .countDocuments({ 'pois.placeSlug': placeSlug })
       .exec();
+  }
+
+  // --- Admin web-content writes (bulk gallery update) ---
+
+  // Sets webFeatured + webFeaturedOrder on a single doc by slug. Returns true
+  // if the doc existed. Callers should collect these across a batch and
+  // report which slugs weren't found.
+  async setCityWebFeatured(
+    slug: string,
+    webFeatured: boolean,
+    webFeaturedOrder: number,
+  ): Promise<boolean> {
+    const r = await this.cityModel
+      .updateOne({ slug }, { $set: { webFeatured, webFeaturedOrder } })
+      .exec();
+    return (r.matchedCount ?? 0) > 0;
+  }
+
+  async setPlaceWebFeatured(
+    slug: string,
+    webFeatured: boolean,
+    webFeaturedOrder: number,
+  ): Promise<boolean> {
+    const r = await this.placeModel
+      .updateOne({ slug }, { $set: { webFeatured, webFeaturedOrder } })
+      .exec();
+    return (r.matchedCount ?? 0) > 0;
   }
 
   // --- Writes ---

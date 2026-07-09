@@ -24,6 +24,9 @@ export type AdminCity = {
     // Slugs of Places this city shows in its detail screen. Order is preserved.
     cityPlaceSlugs?: string[]
     isEnabled: boolean
+    // Public web gallery inclusion + ordering.
+    webFeatured: boolean
+    webFeaturedOrder: number
     createdAt?: string
     updatedAt?: string
 }
@@ -37,6 +40,8 @@ export type AdminCreateCityRequest = {
     audioUrl?: LocalizedAudio
     cityPlaceSlugs?: string[]
     isEnabled?: boolean
+    webFeatured?: boolean
+    webFeaturedOrder?: number
 }
 
 export type AdminUpdateCityRequest = Partial<Omit<AdminCreateCityRequest, 'slug'>>
@@ -152,6 +157,9 @@ export type AdminPlace = {
     // Optional audio narration, per locale.
     audioUrl?: LocalizedAudio
     isEnabled: boolean
+    // Public web gallery inclusion + ordering.
+    webFeatured: boolean
+    webFeaturedOrder: number
     createdAt?: string
     updatedAt?: string
 }
@@ -169,6 +177,8 @@ export type AdminCreatePlaceRequest = {
     subCategory?: LocalizedString
     audioUrl?: LocalizedAudio
     isEnabled?: boolean
+    webFeatured?: boolean
+    webFeaturedOrder?: number
 }
 
 export type AdminUpdatePlaceRequest = Partial<
@@ -196,11 +206,23 @@ export type AdminInactiveRef = {
 // One cumulative-by-date sample point. `date` is an ISO yyyy-mm-dd string
 // (UTC). The api emits one point per day on which any new doc was created,
 // containing running cumulative totals.
+//
+// `images` and `audioDurationMs` are attached to the day a doc was created,
+// even though images can be added later via update — a fully accurate
+// "produced per day" view would require per-image createdAt on every asset
+// URL, which we don't store. Good enough for a marketing chart.
 export type AdminStatsTimeseriesPoint = {
     date: string
     cities: number
     excursions: number
     places: number
+    // Cumulative image count across all cities + excursions + places up to
+    // this date. Counts every URL in every images[] array plus the top-level
+    // `image` on each doc + stop + sub-stop + outro.
+    images: number
+    // Cumulative sum of every populated per-locale audio duration in ms,
+    // across every audio-bearing surface, up to this date.
+    audioDurationMs: number
 }
 
 export type AdminStats = {
@@ -235,4 +257,39 @@ export type AdminStatsResponse = { stats: AdminStats }
 export type AdminPlaceReferencesResponse = {
     cities: number
     excursions: number
+}
+
+// --- Admin web content (public web gallery + stats surfaces) ---
+
+// One row in the admin gallery curator UI. Sourced from either the cities or
+// places collection. Order + featured flag are editable; other fields are
+// read-only projections from the source doc so admins can eyeball what the
+// public site will render.
+export type AdminGalleryItem = {
+    slug: string
+    sourceType: 'city' | 'place'
+    title: string
+    subtitle?: string
+    image: string
+    webFeatured: boolean
+    webFeaturedOrder: number
+}
+
+export type AdminGalleryResponse = {
+    items: AdminGalleryItem[]
+}
+
+// Bulk-update payload. Every entry sets the doc's `webFeatured` + `webFeaturedOrder`
+// in one atomic pass. Sending an empty array is a no-op. Items whose slug isn't
+// found are ignored (silently) — admin UI should keep local state in sync
+// with what the server just returned.
+export type AdminGalleryUpdateEntry = {
+    slug: string
+    sourceType: 'city' | 'place'
+    webFeatured: boolean
+    webFeaturedOrder: number
+}
+
+export type AdminGalleryUpdateRequest = {
+    items: AdminGalleryUpdateEntry[]
 }

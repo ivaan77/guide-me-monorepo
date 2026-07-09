@@ -41,4 +41,12 @@ export const PublicPath = {
         getExcursionById: (id: string): string => `/public/discover/excursions/${id}`,
         getPlaceById: (id: string): string => `/public/discover/places/${id}`,
     },
+    Web: {
+        stats: '/public/web/stats',
+        gallery: '/public/web/gallery',
+    },
+}
+
+export const AdminWebPath = {
+    gallery: '/admin/web-content/gallery',
 }

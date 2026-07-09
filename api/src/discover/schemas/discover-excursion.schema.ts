@@ -3,6 +3,8 @@ import { HydratedDocument } from 'mongoose';
 import {
   LatLngSub,
   LatLngSubSchema,
+  LocalizedAudioDurationSub,
+  LocalizedAudioDurationSubSchema,
   LocalizedAudioSub,
   LocalizedAudioSubSchema,
   LocalizedStringSub,
@@ -35,6 +37,10 @@ class SubStopSub {
 
   @Prop({ type: LocalizedAudioSubSchema })
   audioUrl?: LocalizedAudioSub;
+
+  // Server-populated. See LocalizedAudioDurationSub.
+  @Prop({ type: LocalizedAudioDurationSubSchema, default: {} })
+  audioDurationMs?: LocalizedAudioDurationSub;
 }
 
 const SubStopSubSchema = SchemaFactory.createForClass(SubStopSub);
@@ -58,6 +64,10 @@ class ExcursionStopSub {
 
   @Prop({ type: LocalizedAudioSubSchema })
   audioUrl?: LocalizedAudioSub;
+
+  // Server-populated. See LocalizedAudioDurationSub.
+  @Prop({ type: LocalizedAudioDurationSubSchema, default: {} })
+  audioDurationMs?: LocalizedAudioDurationSub;
 
   // Per-stop arrival radius in meters. Falls back to the mobile default
   // when unset; lets editors widen geofencing for stops in dense areas
@@ -108,6 +118,10 @@ class InterestingFactSub {
 
   @Prop()
   triggerRadius?: number;
+
+  // Server-populated per-locale audio duration. See LocalizedAudioDurationSub.
+  @Prop({ type: LocalizedAudioDurationSubSchema, default: {} })
+  audioDurationMs?: LocalizedAudioDurationSub;
 }
 
 const InterestingFactSubSchema =
@@ -130,6 +144,10 @@ class OutroSub {
 
   @Prop({ type: LocalizedAudioSubSchema })
   audioUrl?: LocalizedAudioSub;
+
+  // Server-populated. See LocalizedAudioDurationSub.
+  @Prop({ type: LocalizedAudioDurationSubSchema, default: {} })
+  audioDurationMs?: LocalizedAudioDurationSub;
 }
 
 const OutroSubSchema = SchemaFactory.createForClass(OutroSub);

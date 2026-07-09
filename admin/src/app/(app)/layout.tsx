@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import {
   BarChart3,
   Compass,
+  Globe,
   HelpCircle,
   LogOut,
   MapPin,
@@ -52,6 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           label="Places & Events"
         />
         <NavLink href="/stats" icon={<BarChart3 className="h-4 w-4" />} label="Stats" />
+        <NavLink href="/web-content" icon={<Globe className="h-4 w-4" />} label="Web content" />
         <NavLink href="/help" icon={<HelpCircle className="h-4 w-4" />} label="Help" />
         <div className="mt-auto pt-4 border-t border-[var(--color-border)] flex items-center justify-between">
           <span className="text-xs text-[var(--color-muted-foreground)] truncate pl-2">

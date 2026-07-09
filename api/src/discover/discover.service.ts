@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   AllPublicCitiesResponse,
+  DEFAULT_LOCALE,
   Locale,
   PoiCategory,
   PublicCategoryItem,
@@ -12,17 +13,28 @@ import {
   PublicExcursionOutro,
   PublicExcursionResponse,
   PublicExcursionStop,
+  PublicGalleryItem,
+  PublicGalleryResponse,
   PublicInterestingFact,
   PublicPlaceDetail,
   PublicPlaceResponse,
   PublicPoi,
   PublicRatingAggregate,
+  PublicStats,
+  PublicStatsResponse,
   PublicSubStop,
+  SUPPORTED_LOCALES,
 } from '@guide-me-app/core';
-import type { LocalizedAudioSub } from './schemas/locale.subdocuments';
+import type {
+  LocalizedAudioDurationSub,
+  LocalizedAudioSub,
+} from './schemas/locale.subdocuments';
 import { DiscoverCityDocument } from './schemas/discover-city.schema';
 import { DiscoverExcursionDocument } from './schemas/discover-excursion.schema';
-import { DiscoverPlaceDocument } from './schemas/discover-place.schema';
+import {
+  DiscoverPlaceDocument,
+  PLACE_CATEGORIES,
+} from './schemas/discover-place.schema';
 import { DiscoverRepository } from './discover.repository';
 import { pickLocalized } from './locale.util';
 
@@ -192,6 +204,73 @@ export class DiscoverService {
     return { place: this.toPublicPlace(place, locale), locale };
   }
 
+  // ----- Public web (stats + gallery) -----
+
+  async getWebStats(): Promise<PublicStatsResponse> {
+    const [cities, excursions, places] = await Promise.all([
+      this.repo.findAllEnabledCities(),
+      this.repo.findAllEnabledExcursions(),
+      this.repo.findAllEnabledPlaces(),
+    ]);
+
+    const placesByCategory = countPlacesByCategory(places);
+    const excursionStops = excursions.reduce(
+      (sum, e) => sum + (e.stops?.length ?? 0),
+      0,
+    );
+    const audioDurationMs =
+      sumAudioDuration({ cities, excursions, places }) ?? 0;
+
+    const stats: PublicStats = {
+      cities: cities.length,
+      excursions: excursions.length,
+      excursionStops,
+      places: places.length,
+      placesByCategory,
+      audioDurationMs,
+    };
+    return { stats };
+  }
+
+  async getWebGallery(): Promise<PublicGalleryResponse> {
+    const [cities, places] = await Promise.all([
+      this.repo.findWebFeaturedCities(),
+      this.repo.findWebFeaturedPlaces(),
+    ]);
+    // Merge cities and places into one list sorted by webFeaturedOrder (asc)
+    // then slug. English is used for title/subtitle — the web landing is not
+    // localized.
+    type Row = { item: PublicGalleryItem; order: number };
+    const rows: Row[] = [
+      ...cities.map(
+        (c): Row => ({
+          item: {
+            id: c.slug,
+            sourceType: 'city',
+            title: pickLocalized(c.name, DEFAULT_LOCALE),
+            subtitle: pickLocalized(c.country, DEFAULT_LOCALE),
+            image: c.image,
+          },
+          order: c.webFeaturedOrder ?? 0,
+        }),
+      ),
+      ...places.map(
+        (p): Row => ({
+          item: {
+            id: p.slug,
+            sourceType: 'place',
+            title: pickLocalized(p.name, DEFAULT_LOCALE),
+            subtitle: pickLocalized(p.meta, DEFAULT_LOCALE),
+            image: p.image,
+          },
+          order: p.webFeaturedOrder ?? 0,
+        }),
+      ),
+    ].sort((a, b) => a.order - b.order || a.item.id.localeCompare(b.item.id));
+
+    return { items: rows.map((r) => r.item) };
+  }
+
   // ----- Mappers -----
 
   private toPublicCity(doc: DiscoverCityDocument, locale: Locale): PublicCity {
@@ -314,4 +393,61 @@ export class DiscoverService {
       rating: toRatingAggregate(doc),
     };
   }
+}
+
+// ----- Aggregation helpers (used by public stats) -----
+
+function countPlacesByCategory(
+  places: DiscoverPlaceDocument[],
+): Record<PoiCategory, number> {
+  const out: Record<PoiCategory, number> = Object.fromEntries(
+    PLACE_CATEGORIES.map((c) => [c, 0]),
+  ) as Record<PoiCategory, number>;
+  for (const p of places) {
+    out[p.category as PoiCategory] = (out[p.category as PoiCategory] ?? 0) + 1;
+  }
+  return out;
+}
+
+// Sums the populated per-locale audio durations across every audio-bearing
+// surface in every excursion, city, and place. Only counts a locale value if
+// its paired URL is set on the same slot — protects against durations that
+// linger after a URL is cleared. Every locale is counted independently, so
+// a stop with en+de+hr audio contributes 3x the base duration.
+function sumAudioDuration({
+  cities,
+  excursions,
+  places,
+}: {
+  cities: DiscoverCityDocument[];
+  excursions: DiscoverExcursionDocument[];
+  places: DiscoverPlaceDocument[];
+}): number {
+  let total = 0;
+  const add = (
+    urls: LocalizedAudioSub | undefined,
+    durations: LocalizedAudioDurationSub | undefined,
+  ) => {
+    if (!urls || !durations) return;
+    for (const locale of SUPPORTED_LOCALES) {
+      const url = urls[locale];
+      const ms = durations[locale];
+      if (url && typeof ms === 'number' && ms > 0) total += ms;
+    }
+  };
+  for (const c of cities) add(c.audioUrl, c.audioDurationMs);
+  for (const p of places) add(p.audioUrl, p.audioDurationMs);
+  for (const e of excursions) {
+    for (const s of e.stops ?? []) {
+      add(s.audioUrl, s.audioDurationMs);
+      for (const sub of s.subStops ?? []) {
+        add(sub.audioUrl, sub.audioDurationMs);
+      }
+    }
+    for (const f of e.interestingFacts ?? []) {
+      add(f.audioUrl, f.audioDurationMs);
+    }
+    if (e.outro) add(e.outro.audioUrl, e.outro.audioDurationMs);
+  }
+  return total;
 }

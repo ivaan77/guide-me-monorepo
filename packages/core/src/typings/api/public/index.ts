@@ -231,3 +231,44 @@ export type PublicPlaceResponse = {
     place: PublicPlaceDetail
     locale: Locale
 }
+
+// --- Public web (marketing site) ---
+
+// Aggregate counts + audio duration for the public web landing/stats band.
+// Server caches this response (1h TTL) so numbers can lag slightly; every
+// count is over enabled records only. `placesByCategory` covers every value
+// in PoiCategory (missing categories emit 0) so the UI can render a stable
+// shape without runtime guards.
+export type PublicStats = {
+    cities: number
+    excursions: number
+    excursionStops: number
+    places: number
+    placesByCategory: Record<PoiCategory, number>
+    // Total narration duration across all interesting facts, in milliseconds.
+    // Facts without a populated `audioDurationMs` contribute 0 — the number
+    // is a lower bound until every fact is backfilled.
+    audioDurationMs: number
+}
+
+export type PublicStatsResponse = {
+    stats: PublicStats
+}
+
+// One item in the admin-curated web gallery. Sourced from either a City or a
+// Place (`sourceType` disambiguates). `id` is the source doc's slug; taken
+// together with `sourceType` it forms a stable, unique key. `link` is an
+// optional deep-link back into the mobile app (or a public web route) — the
+// web renders a click affordance only when present.
+export type PublicGalleryItem = {
+    id: string
+    sourceType: 'city' | 'place'
+    title: string
+    subtitle?: string
+    image: string
+    link?: string
+}
+
+export type PublicGalleryResponse = {
+    items: PublicGalleryItem[]
+}
