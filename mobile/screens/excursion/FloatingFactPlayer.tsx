@@ -11,6 +11,7 @@ import {
 } from 'expo-audio'
 import type { PublicInterestingFact } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
+import { SHADOW } from '../../constants/Sizes'
 
 const ON_AMBER = palette.navy
 
@@ -119,11 +120,7 @@ function PlayerCard({
       rounded="$6"
       style={{
         overflow: 'hidden',
-        shadowColor: '#B26B00',
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 8,
+        ...SHADOW.amberFloating,
       }}
     >
       <XStack items="center" gap="$2.5" px="$3" py="$2.5">

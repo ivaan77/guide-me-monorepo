@@ -133,4 +133,39 @@ export const SHADOW = {
     // negative offset naturally; on Android the border-top on the
     // container carries the visual separation.
   },
+  // Extra-tight shadow for very small map badges (bundle count pin).
+  // Radius 2 keeps the shadow from smearing at the pin's small size.
+  pinTight: {
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
+  },
+  // ---- Amber-tinted variants ----
+  // Used on branded chrome (editor's pick banner, "did you know" fact
+  // banner/player, nearest-stop callout). The amber shadow color reinforces
+  // the amber accent theme — do NOT swap for the black variants above,
+  // it flattens the branded look.
+  amberCard: {
+    shadowColor: '#B26B00',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  amberPill: {
+    shadowColor: '#B26B00',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  amberFloating: {
+    shadowColor: '#B26B00',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
 } as const

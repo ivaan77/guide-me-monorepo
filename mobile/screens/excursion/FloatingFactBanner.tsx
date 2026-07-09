@@ -13,6 +13,7 @@ import type {
   PublicLatLng,
 } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
+import { SHADOW } from '../../constants/Sizes'
 import { haversineMeters } from '../../lib/directions'
 import { playFactFeedback } from '../../lib/feedback'
 
@@ -95,13 +96,7 @@ export function FloatingFactBanner({
           py="$2.5"
           rounded="$6"
           bg="$accent"
-          style={{
-            shadowColor: '#B26B00',
-            shadowOpacity: 0.3,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 5,
-          }}
+          style={SHADOW.amberFloating}
         >
           <YStack
             width={32}
