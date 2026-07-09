@@ -66,13 +66,18 @@ export const hr: Translations = {
     tapToRate: 'Dodirni zvjezdicu za ocjenu',
     countLabel: '{{count}} ocjena',
     signInToRate: 'Prijavi se za ocjenjivanje',
+    noRatingsYet: 'Još nema ocjena',
+    beFirstToRate: 'Budi prvi koji ocjenjuje',
     prompt: {
       titleCity: 'Kako ti se svidio {{name}}?',
       titleExcursion: 'Kako ti se svidjela ova tura?',
       titlePlace: 'Kako ti se svidjelo {{name}}?',
       subtitle: 'Dodirni zvjezdicu. Tvoja ocjena pomaže drugim putnicima.',
+      subtitleUpdate: 'Dodirni drugu zvjezdicu za promjenu ocjene.',
       skip: 'Ne sad',
+      cancel: 'Odustani',
       thanks: 'Hvala!',
+      updated: 'Ocjena ažurirana',
     },
   },
   auth: {

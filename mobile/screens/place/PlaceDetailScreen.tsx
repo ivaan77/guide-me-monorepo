@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Image,
@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
@@ -21,7 +21,10 @@ import { RatingPromptSheet } from '../../common/RatingPromptSheet'
 import { RatingStars } from '../../common/RatingStars'
 import { usePlace } from '../../hooks/usePlace'
 import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
+import { clearAuthChoice } from '../../providers/AuthChoice'
 import { EmptyState } from '../discover/EmptyState'
+
+const LOGIN_HREF = '/login' as Href
 import { CLEAN_MAP_STYLE } from '../excursion/cleanMapStyle'
 import { PlaceDetailSkeleton } from './PlaceDetailSkeleton'
 
@@ -40,6 +43,15 @@ export function PlaceDetailScreen({ id }: Props) {
   const { t } = useTranslation()
   const { data: place, isPending, isError, refetch } = usePlace(id)
   const ratingPrompt = useDwellRatingPrompt('place', id, { enabled: !!place })
+
+  const onTapRating = useCallback(async () => {
+    if (ratingPrompt.isGuest) {
+      await clearAuthChoice()
+      router.push(LOGIN_HREF)
+      return
+    }
+    ratingPrompt.openManual()
+  }, [ratingPrompt, router])
 
   const categoryLabel = (category: PoiCategory): string =>
     t(`place.category.${category}` as const)
@@ -99,7 +111,12 @@ export function PlaceDetailScreen({ id }: Props) {
             >
               {place.meta}
             </SizableText>
-            <RatingStars mode="display" aggregate={place.rating} />
+            <RatingStars
+              mode="display"
+              aggregate={place.rating}
+              showEmptyState
+              onPress={onTapRating}
+            />
           </XStack>
           {place.audioUrl && (
             <AudioPlayer

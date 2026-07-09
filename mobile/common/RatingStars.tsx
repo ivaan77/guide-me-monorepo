@@ -38,6 +38,15 @@ type DisplayProps = {
   // When true, hides the "(N)" count and shows only the average. Used in
   // tight list-card layouts.
   compact?: boolean
+  // Optional tap handler. When set, the badge (populated OR empty) becomes
+  // Pressable — used to open the rating sheet manually from the detail
+  // screens. When omitted, the badge is inert and an empty aggregate
+  // renders nothing (keeps list-card layouts clean).
+  onPress?: () => void
+  // Only meaningful when onPress is set. When true and aggregate is empty,
+  // renders "No ratings yet" instead of returning null — so the detail
+  // screen gets a visible call-to-action even before anyone has rated.
+  showEmptyState?: boolean
 }
 
 export function RatingStars(props: InteractiveProps | DisplayProps) {
@@ -112,10 +121,28 @@ function DisplayStars({
   aggregate,
   size = 14,
   compact = false,
+  onPress,
+  showEmptyState = false,
 }: Omit<DisplayProps, 'mode'>) {
-  if (!aggregate || aggregate.count === 0) return null
+  const { t } = useTranslation()
+  const isEmpty = !aggregate || aggregate.count === 0
 
-  return (
+  // Empty aggregate: render "No ratings yet" only when the caller opted in
+  // via `showEmptyState`. Otherwise skip the whole badge (list cards).
+  if (isEmpty && !showEmptyState) return null
+
+  const content = isEmpty ? (
+    <XStack gap="$1.5" items="center">
+      <Star
+        size={size}
+        color={STAR_OUTLINE as any}
+        fill="transparent"
+      />
+      <SizableText color="$colorPress" fontFamily="$body" size="$2">
+        {t('ratings.noRatingsYet')}
+      </SizableText>
+    </XStack>
+  ) : (
     <XStack gap="$1.5" items="center">
       <Star size={size} color={STAR_FILLED as any} fill={STAR_FILLED as any} />
       <SizableText
@@ -124,13 +151,22 @@ function DisplayStars({
         fontWeight="600"
         size="$2"
       >
-        {aggregate.avg.toFixed(1)}
+        {aggregate!.avg.toFixed(1)}
       </SizableText>
       {!compact && (
         <SizableText color="$colorPress" fontFamily="$body" size="$2">
-          · {aggregate.count}
+          · {aggregate!.count}
         </SizableText>
       )}
     </XStack>
   )
+
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} hitSlop={6}>
+        {content}
+      </Pressable>
+    )
+  }
+  return content
 }

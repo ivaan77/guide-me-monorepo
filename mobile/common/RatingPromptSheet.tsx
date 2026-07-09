@@ -8,6 +8,7 @@ import { Star } from '@tamagui/lucide-icons'
 import { H2, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import type { RatingTargetType, RatingValue } from '@guide-me-app/core'
 import { BottomSheet } from './BottomSheet'
+import { useMyRating } from '../hooks/useMyRating'
 import { useRateTarget } from '../hooks/useRateTarget'
 import { UnauthorizedError } from '../lib/authedApi'
 import { clearAuthChoice } from '../providers/AuthChoice'
@@ -50,11 +51,16 @@ export function RatingPromptSheet({
   const toast = useToastController()
   const { isSignedIn } = useAuth()
   const { submit } = useRateTarget()
+  const getMyRating = useMyRating()
+  const existingRating = getMyRating(targetType, targetId)
+  const isUpdating = existingRating !== null
 
   // Fingers-off state — the value the user tapped stays lit after release.
   // `hovered` is the transient press-in feedback that overrides `selected`
-  // while the user is dragging across the row.
-  const [selected, setSelected] = useState<RatingValue | null>(null)
+  // while the user is dragging across the row. When the user has already
+  // rated this entity, `selected` initializes to their existing value so
+  // the sheet opens with the current rating pre-lit.
+  const [selected, setSelected] = useState<RatingValue | null>(existingRating)
   const [hovered, setHovered] = useState<RatingValue | null>(null)
   const [phase, setPhase] = useState<'idle' | 'submitted'>('idle')
   const thanksOpacity = useRef(new Animated.Value(0)).current
@@ -62,6 +68,7 @@ export function RatingPromptSheet({
 
   // Reset all state when the sheet is dismissed / re-opened, so a repeat
   // trigger later in the session doesn't show a stale "Thanks!" flash.
+  // On open, prime `selected` with the user's existing rating (if any).
   useEffect(() => {
     if (!visible) {
       setSelected(null)
@@ -72,7 +79,13 @@ export function RatingPromptSheet({
         clearTimeout(closeTimeoutRef.current)
         closeTimeoutRef.current = null
       }
+    } else {
+      // Sheet just became visible — read latest existing rating from /me.
+      setSelected(existingRating)
     }
+    // existingRating intentionally excluded from deps: we only want to seed
+    // on open, not resync mid-interaction as the /me cache updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, thanksOpacity])
 
   const title =
@@ -91,6 +104,14 @@ export function RatingPromptSheet({
         onClose()
         await clearAuthChoice()
         router.push(LOGIN_HREF)
+        return
+      }
+
+      // Tapping the same value they already have → just close, no network.
+      // (If they wanted to clear the rating, we'd need a dedicated affordance;
+      // treating same-star as clear here felt too easy to trigger by mistake.)
+      if (existingRating === value) {
+        onClose()
         return
       }
 
@@ -128,6 +149,7 @@ export function RatingPromptSheet({
     [
       phase,
       isSignedIn,
+      existingRating,
       submit,
       targetType,
       targetId,
@@ -157,7 +179,9 @@ export function RatingPromptSheet({
             size="$3"
             lineHeight="$5"
           >
-            {t('ratings.prompt.subtitle')}
+            {isUpdating
+              ? t('ratings.prompt.subtitleUpdate')
+              : t('ratings.prompt.subtitle')}
           </Paragraph>
         </YStack>
 
@@ -190,7 +214,9 @@ export function RatingPromptSheet({
             fontWeight="600"
             size="$4"
           >
-            {t('ratings.prompt.thanks')}
+            {isUpdating
+              ? t('ratings.prompt.updated')
+              : t('ratings.prompt.thanks')}
           </SizableText>
         </Animated.View>
 
@@ -198,7 +224,9 @@ export function RatingPromptSheet({
           <Pressable onPress={onClose}>
             <YStack items="center" py="$2">
               <SizableText color="$colorPress" fontFamily="$body" fontWeight="500">
-                {t('ratings.prompt.skip')}
+                {isUpdating
+                  ? t('ratings.prompt.cancel')
+                  : t('ratings.prompt.skip')}
               </SizableText>
             </YStack>
           </Pressable>

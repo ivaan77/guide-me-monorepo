@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import {
   Image,
   Pressable,
@@ -5,7 +6,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -34,6 +35,9 @@ import { RatingPromptSheet } from '../../common/RatingPromptSheet'
 import { RatingStars } from '../../common/RatingStars'
 import { useCity } from '../../hooks/useCity'
 import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
+import { clearAuthChoice } from '../../providers/AuthChoice'
+
+const LOGIN_HREF = '/login' as Href
 import { EmptyState } from '../discover/EmptyState'
 import { Accordion } from './Accordion'
 import { CategoryListItem } from './CategoryListItem'
@@ -55,6 +59,15 @@ export function CityDetailScreen({ id }: Props) {
   const { t } = useTranslation()
   const { data: city, isPending, isError, refetch } = useCity(id)
   const ratingPrompt = useDwellRatingPrompt('city', id, { enabled: !!city })
+
+  const onTapRating = useCallback(async () => {
+    if (ratingPrompt.isGuest) {
+      await clearAuthChoice()
+      router.push(LOGIN_HREF)
+      return
+    }
+    ratingPrompt.openManual()
+  }, [ratingPrompt, router])
 
   const goBack = () => {
     if (router.canGoBack()) router.back()
@@ -140,9 +153,13 @@ export function CityDetailScreen({ id }: Props) {
               >
                 {city.country}
               </SizableText>
-              {city.rating && city.rating.count > 0 && (
-                <RatingStars mode="display" aggregate={city.rating} compact />
-              )}
+              <RatingStars
+                mode="display"
+                aggregate={city.rating}
+                compact
+                showEmptyState
+                onPress={onTapRating}
+              />
             </XStack>
           </YStack>
         </YStack>

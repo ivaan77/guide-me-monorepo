@@ -14,9 +14,12 @@ import { useMe } from './useMe'
 //     sheet itself, but we don't ambush them with the sheet in the first
 //     place — feels bait-and-switch)
 //
-// Returns { visible, close }. The caller triggers `request()` when the
-// contextual moment arrives (e.g. tour complete, on exit after 30s).
-// Idempotent — repeated request() calls in the same session are ignored.
+// Returns { visible, request, openManual, close }.
+//   - request(): fires the auto-trigger checks (cooldowns + already-rated).
+//     Idempotent — repeated calls in the same session are ignored.
+//   - openManual(): user-initiated open (tap the rating badge). Bypasses
+//     cooldowns and the already-rated guard so the user can update their
+//     rating. Still no-op for guests (they need to sign in first).
 export function useRatingPrompt(
   targetType: RatingTargetType,
   targetId: string,
@@ -40,6 +43,17 @@ export function useRatingPrompt(
     setVisible(true)
   }, [alreadyRated, me, targetType, targetId])
 
+  const openManual = useCallback(async () => {
+    // Manual open still gates guests (they should sign in first) but skips
+    // cooldowns + already-rated so the user can edit an existing rating.
+    // Mark the log anyway so an auto-trigger doesn't stack on top of the
+    // manual sheet in the same session.
+    if (!me) return
+    requestedRef.current = true
+    await markPrompted(targetType, targetId)
+    setVisible(true)
+  }, [me, targetType, targetId])
+
   const close = useCallback(() => setVisible(false), [])
 
   // Reset the request lock if the target changes (e.g. user navigates to a
@@ -49,7 +63,7 @@ export function useRatingPrompt(
     setVisible(false)
   }, [targetType, targetId])
 
-  return { visible, request, close }
+  return { visible, request, openManual, close, isGuest: !me }
 }
 
 // Convenience wrapper for city + place detail screens: fires the prompt

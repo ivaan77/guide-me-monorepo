@@ -66,13 +66,18 @@ export const de: Translations = {
     tapToRate: 'Zum Bewerten auf einen Stern tippen',
     countLabel: '{{count}} Bewertungen',
     signInToRate: 'Zum Bewerten anmelden',
+    noRatingsYet: 'Noch keine Bewertungen',
+    beFirstToRate: 'Sei der Erste, der bewertet',
     prompt: {
       titleCity: 'Wie war {{name}}?',
       titleExcursion: 'Wie war diese Tour?',
       titlePlace: 'Wie war {{name}}?',
       subtitle: 'Tippe auf einen Stern. Deine Bewertung hilft anderen Reisenden.',
+      subtitleUpdate: 'Tippe auf einen anderen Stern, um deine Bewertung zu ändern.',
       skip: 'Nicht jetzt',
+      cancel: 'Abbrechen',
       thanks: 'Danke!',
+      updated: 'Bewertung aktualisiert',
     },
   },
   auth: {

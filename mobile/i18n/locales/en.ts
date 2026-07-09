@@ -62,13 +62,18 @@ export const en = {
     // form used for now (see MEMORY.md → feedback_i18n_pluralization).
     countLabel: '{{count}} ratings',
     signInToRate: 'Sign in to rate',
+    noRatingsYet: 'No ratings yet',
+    beFirstToRate: 'Be the first to rate',
     prompt: {
       titleCity: 'How was {{name}}?',
       titleExcursion: 'How was this tour?',
       titlePlace: 'How was {{name}}?',
       subtitle: 'Tap a star. Your rating helps other travelers.',
+      subtitleUpdate: 'Tap a different star to update your rating.',
       skip: 'Not now',
+      cancel: 'Cancel',
       thanks: 'Thanks!',
+      updated: 'Rating updated',
     },
   },
   auth: {
