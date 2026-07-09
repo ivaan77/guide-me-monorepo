@@ -44,7 +44,7 @@ export function SearchBar({ value, onChange, hPadding, disabled }: Props) {
           editable={!disabled}
           style={{
             flex: 1,
-            fontFamily: 'Inter',
+            fontFamily: 'Geist',
             fontSize: 15,
             color: theme.color.val,
             paddingVertical: 0,

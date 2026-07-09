@@ -51,6 +51,7 @@ import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { RatingPromptSheet } from '../../common/RatingPromptSheet'
 import { useExcursion } from '../../hooks/useExcursion'
+import { useLayout } from '../../hooks/useLayout'
 import { useRatingPrompt } from '../../hooks/useRatingPrompt'
 import {
   distanceFromPolyline,
@@ -1516,6 +1517,11 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
         gap="$3"
         items="center"
         style={{
+          // Cap width so it doesn't stretch on tablets, but let the parent
+          // padding (px="$5" on outer overlay) determine the width on
+          // narrow phones — otherwise the card can end up wider than the
+          // viewport-minus-padding on SE-class devices.
+          width: '100%',
           maxWidth: 360,
           shadowColor: '#000',
           shadowOpacity: 0.2,
@@ -2111,7 +2117,10 @@ function StartFromChip({
             {index + 1}
           </SizableText>
         </YStack>
-        <YStack flex={1} gap="$0.5">
+        {/* minWidth: 0 lets numberOfLines={1} on the name actually clip long
+            stop names — without it, flex:1 alone lets the child overflow the
+            parent and pushes the "Nearest" badge + chevron off-screen. */}
+        <YStack flex={1} gap="$0.5" style={{ minWidth: 0 }}>
           <SizableText
             size="$1"
             color="$colorPress"
@@ -2328,9 +2337,17 @@ function ArrivedPanel({
   onMoreInfo: () => void
 }) {
   const { t } = useTranslation()
+  const { isSmall } = useLayout()
   const isLast = index + 1 === total
   const subStops = stop.subStops ?? []
   const isBundle = subStops.length > 0
+  // On SE-class widths (<380pt), the two-column button rows overflow: text
+  // wraps mid-word or gets clipped. Stack them vertically on small screens.
+  // The row children use flex:1 which fills width in either axis, so no
+  // per-child changes are needed — only the container axis flips.
+  const buttonRowProps = isSmall
+    ? { flexDirection: 'column' as const, gap: '$2' as const }
+    : { flexDirection: 'row' as const, gap: '$2' as const }
 
   if (isBundle) {
     // -1 = parent intro panel; 0..N-1 = sub-stops.
@@ -2392,7 +2409,7 @@ function ArrivedPanel({
         >
           {displayDescription}
         </Paragraph>
-        <XStack gap="$2">
+        <XStack {...buttonRowProps}>
           <Pressable onPress={onMoreInfo} style={{ flex: 1 }}>
             <XStack
               flex={1}
@@ -2445,7 +2462,7 @@ function ArrivedPanel({
             />
           </YStack>
         </XStack>
-        <XStack gap="$2">
+        <XStack {...buttonRowProps}>
           {!onParent && (
             <Pressable onPress={onSkipSubStop} style={{ flex: 1 }} hitSlop={6}>
               <YStack
@@ -2529,7 +2546,7 @@ function ArrivedPanel({
       <Paragraph color="$color" fontFamily="$body" size="$3" lineHeight="$3" numberOfLines={3}>
         {stop.description}
       </Paragraph>
-      <XStack gap="$2">
+      <XStack {...buttonRowProps}>
         <Pressable onPress={onMoreInfo} style={{ flex: 1 }}>
           <XStack
             flex={1}

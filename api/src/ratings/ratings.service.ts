@@ -116,8 +116,6 @@ export class RatingsService {
     return this.repo.anonymizeByClerkId(clerkUserId);
   }
 
-  // --- internal ---
-
   private async assertTargetExists(
     targetType: RatingTargetType,
     targetId: string,
