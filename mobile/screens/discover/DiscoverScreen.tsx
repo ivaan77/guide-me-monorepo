@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { FlatList, ScrollView, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XStack, YStack, useTheme } from 'tamagui'
+import type { PublicCity } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useFuzzySearch } from '../../hooks/useFuzzySearch'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
 import { CityCard } from './CityCard'
 import { CityCardSkeleton } from './CityCardSkeleton'
@@ -12,8 +14,12 @@ import { SearchBar } from './SearchBar'
 
 const GUTTER = 16
 const H_PADDING = 20
-const SEARCH_DEBOUNCE_MS = 250
+const SEARCH_DEBOUNCE_MS = 350
 const SKELETON_COUNT = 8
+
+// Fields on PublicCity we want the fuzzy matcher to consider. Explicit
+// tuple (not derived) so TypeScript catches drift if PublicCity changes.
+const SEARCH_KEYS: (keyof PublicCity & string)[] = ['name', 'country']
 
 export function DiscoverScreen() {
   const { width } = useWindowDimensions()
@@ -28,16 +34,10 @@ export function DiscoverScreen() {
 
   const { data, isPending, isError, error, refetch } = useCities()
 
-  const filtered = useMemo(() => {
-    if (!data) return []
-    const q = debouncedQuery.trim().toLowerCase()
-    if (!q) return data
-    return data.filter(
-      (city) =>
-        city.name.toLowerCase().includes(q) ||
-        city.country.toLowerCase().includes(q),
-    )
-  }, [data, debouncedQuery])
+  // Fuzzy match on name + country, diacritic-insensitive. Handles typos
+  // ("zabreb" → Zagreb) and diacritic-free input ("sibenik" → Šibenik).
+  // Debounced query keeps the Fuse index off the render hot path.
+  const filtered = useFuzzySearch(data, SEARCH_KEYS, debouncedQuery)
 
   const bg = theme.background.val
 
