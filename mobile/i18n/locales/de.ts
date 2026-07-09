@@ -1,6 +1,8 @@
-import type { Translations } from './en'
-
-export const de: Translations = {
+// Note: not typed as `Translations` (typeof en) so plural-suffixed keys
+// can be spelled out per-locale without forcing shape-parity across all
+// locales (Croatian in particular needs _few in addition to _one/_other).
+// Missing keys still fall back to `en` at runtime via fallbackLng.
+export const de = {
   common: {
     tryAgain: 'Erneut versuchen',
     skip: 'Überspringen',
@@ -64,7 +66,8 @@ export const de: Translations = {
     ratePlace: 'Diesen Ort bewerten',
     yourRating: 'Deine Bewertung',
     tapToRate: 'Zum Bewerten auf einen Stern tippen',
-    countLabel: '{{count}} Bewertungen',
+    countLabel_one: '{{count}} Bewertung',
+    countLabel_other: '{{count}} Bewertungen',
     signInToRate: 'Zum Bewerten anmelden',
     noRatingsYet: 'Noch keine Bewertungen',
     beFirstToRate: 'Sei der Erste, der bewertet',
@@ -144,7 +147,8 @@ export const de: Translations = {
     farFromStop: 'Weit von der Station',
     preview: {
       title: 'Bereit zur Entdeckung?',
-      subtitle: '{{count}} Stationen · wir führen dich zwischen ihnen.',
+      subtitle_one: '{{count}} Station · wir bringen dich direkt hin.',
+      subtitle_other: '{{count}} Stationen · wir führen dich zwischen ihnen.',
       start: 'Starten',
     },
     navigating: {
@@ -156,9 +160,11 @@ export const de: Translations = {
       continue: 'Weiter',
       finish: 'Beenden',
       next: 'Weiter',
-      bundleIntro: '{{count}} Stationen bei {{bundle}}',
+      bundleIntro_one: '{{count}} Station bei {{bundle}}',
+      bundleIntro_other: '{{count}} Stationen bei {{bundle}}',
       bundlePosition: '{{index}} von {{total}} · {{bundle}}',
-      startStops: '{{count}} Stationen starten',
+      startStops_one: '{{count}} Station starten',
+      startStops_other: '{{count}} Stationen starten',
       skipSubStop: '{{name}} überspringen',
       skipBundle: 'Alle Stationen bei {{bundle}} überspringen',
     },
@@ -167,19 +173,22 @@ export const de: Translations = {
     },
     complete: {
       title: 'Tour abgeschlossen',
-      body: 'Du hast alle {{total}} Stationen besucht. Hoffentlich hat sich der Weg gelohnt.',
+      body_one: 'Du hast {{count}} Station besucht. Hoffentlich hat sich der Weg gelohnt.',
+      body_other: 'Du hast alle {{count}} Stationen besucht. Hoffentlich hat sich der Weg gelohnt.',
       done: 'Fertig',
     },
     list: {
       current: 'Aktuell',
-      bundleCount: '{{count}} Stationen',
+      bundleCount_one: '{{count}} Station',
+      bundleCount_other: '{{count}} Stationen',
     },
     stopSheet: {
       audioTitle: 'Audioguide',
       audioPrompt: 'Zum Abspielen tippen',
       audioPlaying: 'Wird abgespielt…',
       audioMissing: 'Für diese Station gibt es noch kein Audio.',
-      bundleHeader: '{{count}} Stationen an diesem Ort',
+      bundleHeader_one: '{{count}} Station an diesem Ort',
+      bundleHeader_other: '{{count}} Stationen an diesem Ort',
     },
     facts: {
       bannerLabel: 'Wusstest du schon?',

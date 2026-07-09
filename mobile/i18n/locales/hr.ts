@@ -1,6 +1,8 @@
-import type { Translations } from './en'
-
-export const hr: Translations = {
+// Note: not typed as `Translations` (typeof en) because Croatian's plural
+// resolution requires _few in addition to _one/_other, so its object shape
+// necessarily diverges from English. Missing keys still fall back to `en`
+// at runtime via i18next's fallbackLng.
+export const hr = {
   common: {
     tryAgain: 'Pokušaj ponovno',
     skip: 'Preskoči',
@@ -64,7 +66,11 @@ export const hr: Translations = {
     ratePlace: 'Ocijeni ovo mjesto',
     yourRating: 'Tvoja ocjena',
     tapToRate: 'Dodirni zvjezdicu za ocjenu',
-    countLabel: '{{count}} ocjena',
+    // Croatian plural forms via CLDR: one (1, 21, 31…), few (2–4, 22–24…),
+    // other (0, 5–20, 25–30…). i18next picks the right suffix per {{count}}.
+    countLabel_one: '{{count}} ocjena',
+    countLabel_few: '{{count}} ocjene',
+    countLabel_other: '{{count}} ocjena',
     signInToRate: 'Prijavi se za ocjenjivanje',
     noRatingsYet: 'Još nema ocjena',
     beFirstToRate: 'Budi prvi koji ocjenjuje',
@@ -144,7 +150,9 @@ export const hr: Translations = {
     farFromStop: 'Daleko od postaje',
     preview: {
       title: 'Spreman za istraživanje?',
-      subtitle: '{{count}} postaja · vodimo te između njih.',
+      subtitle_one: '{{count}} postaja · odvest ćemo te ravno tamo.',
+      subtitle_few: '{{count}} postaje · vodimo te između njih.',
+      subtitle_other: '{{count}} postaja · vodimo te između njih.',
       start: 'Započni',
     },
     navigating: {
@@ -156,9 +164,13 @@ export const hr: Translations = {
       continue: 'Nastavi',
       finish: 'Završi',
       next: 'Sljedeće',
-      bundleIntro: '{{count}} postaja na {{bundle}}',
+      bundleIntro_one: '{{count}} postaja na {{bundle}}',
+      bundleIntro_few: '{{count}} postaje na {{bundle}}',
+      bundleIntro_other: '{{count}} postaja na {{bundle}}',
       bundlePosition: '{{index}} od {{total}} · {{bundle}}',
-      startStops: 'Započni {{count}} postaja',
+      startStops_one: 'Započni {{count}} postaju',
+      startStops_few: 'Započni {{count}} postaje',
+      startStops_other: 'Započni {{count}} postaja',
       skipSubStop: 'Preskoči {{name}}',
       skipBundle: 'Preskoči sve postaje na {{bundle}}',
     },
@@ -167,19 +179,25 @@ export const hr: Translations = {
     },
     complete: {
       title: 'Tura završena',
-      body: 'Posjetio si svih {{total}} postaja. Nadamo se da je vrijedilo.',
+      body_one: 'Posjetio si {{count}} postaju. Nadamo se da je vrijedilo.',
+      body_few: 'Posjetio si {{count}} postaje. Nadamo se da je vrijedilo.',
+      body_other: 'Posjetio si svih {{count}} postaja. Nadamo se da je vrijedilo.',
       done: 'Gotovo',
     },
     list: {
       current: 'Trenutno',
-      bundleCount: '{{count}} postaja',
+      bundleCount_one: '{{count}} postaja',
+      bundleCount_few: '{{count}} postaje',
+      bundleCount_other: '{{count}} postaja',
     },
     stopSheet: {
       audioTitle: 'Audio vodič',
       audioPrompt: 'Dodirni za reprodukciju',
       audioPlaying: 'Reproducira se…',
       audioMissing: 'Za ovu postaju još nema audio zapisa.',
-      bundleHeader: '{{count}} postaja na ovom mjestu',
+      bundleHeader_one: '{{count}} postaja na ovom mjestu',
+      bundleHeader_few: '{{count}} postaje na ovom mjestu',
+      bundleHeader_other: '{{count}} postaja na ovom mjestu',
     },
     facts: {
       bannerLabel: 'Jeste li znali?',

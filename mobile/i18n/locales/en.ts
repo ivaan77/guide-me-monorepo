@@ -58,9 +58,11 @@ export const en = {
     ratePlace: 'Rate this place',
     yourRating: 'Your rating',
     tapToRate: 'Tap a star to rate',
-    // {{count}} is interpolated by i18next. Pluralization deferred; single
-    // form used for now (see MEMORY.md → feedback_i18n_pluralization).
-    countLabel: '{{count}} ratings',
+    // Plural resolution: i18next picks _one or _other based on {{count}}
+    // per CLDR rules for the active locale. Callers use `t('ratings.countLabel',
+    // { count })` — the resolver picks the right suffix automatically.
+    countLabel_one: '{{count}} rating',
+    countLabel_other: '{{count}} ratings',
     signInToRate: 'Sign in to rate',
     noRatingsYet: 'No ratings yet',
     beFirstToRate: 'Be the first to rate',
@@ -139,7 +141,8 @@ export const en = {
     farFromStop: 'Far from stop',
     preview: {
       title: 'Ready to explore?',
-      subtitle: '{{count}} stops · we’ll guide you between each.',
+      subtitle_one: '{{count}} stop · we’ll take you straight there.',
+      subtitle_other: '{{count}} stops · we’ll guide you between each.',
       start: 'Start',
     },
     navigating: {
@@ -151,9 +154,11 @@ export const en = {
       continue: 'Continue',
       finish: 'Finish',
       next: 'Next',
-      bundleIntro: '{{count}} stops at {{bundle}}',
+      bundleIntro_one: '{{count}} stop at {{bundle}}',
+      bundleIntro_other: '{{count}} stops at {{bundle}}',
       bundlePosition: '{{index}} of {{total}} · {{bundle}}',
-      startStops: 'Start {{count}} stops',
+      startStops_one: 'Start {{count}} stop',
+      startStops_other: 'Start {{count}} stops',
       skipSubStop: 'Skip {{name}}',
       skipBundle: 'Skip all spots at {{bundle}}',
     },
@@ -162,19 +167,22 @@ export const en = {
     },
     complete: {
       title: 'Tour complete',
-      body: 'You visited all {{total}} stops. Hope it was worth the walk.',
+      body_one: 'You visited {{count}} stop. Hope it was worth the walk.',
+      body_other: 'You visited all {{count}} stops. Hope it was worth the walk.',
       done: 'Done',
     },
     list: {
       current: 'Current',
-      bundleCount: '{{count}} stops',
+      bundleCount_one: '{{count}} stop',
+      bundleCount_other: '{{count}} stops',
     },
     stopSheet: {
       audioTitle: 'Audio guide',
       audioPrompt: 'Tap play to listen',
       audioPlaying: 'Playing…',
       audioMissing: 'No audio uploaded for this stop yet.',
-      bundleHeader: '{{count}} stops at this place',
+      bundleHeader_one: '{{count}} stop at this place',
+      bundleHeader_other: '{{count}} stops at this place',
     },
     facts: {
       bannerLabel: 'Did you know?',

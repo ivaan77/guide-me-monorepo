@@ -9,14 +9,20 @@
 // this for display — only as input to search indexes / comparisons.
 
 const NON_NFD_MAP: Record<string, string> = {
-  đ: 'd',
-  Đ: 'd',
-  ð: 'd',
-  ø: 'o',
-  Ø: 'o',
-  ł: 'l',
-  Ł: 'l',
-  ß: 'ss',
+  Č: 'c',
+  č: "c",
+  Ć: "c",
+  ć: "c",
+  Ž: 'z',
+  ž: "z",
+  Đ: "d",
+  đ: "d",
+  ð: "d",
+  ø: "o",
+  Ø: "o",
+  ł: "l",
+  Ł: "l",
+  ß: "ss",
 }
 
 const NON_NFD_RE = new RegExp(

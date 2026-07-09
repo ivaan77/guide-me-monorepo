@@ -2646,7 +2646,7 @@ function CompletePanel({
         {t('excursion.complete.title')}
       </H2>
       <Paragraph color="$colorPress" fontFamily="$body" size="$3">
-        {t('excursion.complete.body', { total })}
+        {t('excursion.complete.body', { count: total })}
       </Paragraph>
       <ActionButton
         label={t('excursion.complete.done')}
