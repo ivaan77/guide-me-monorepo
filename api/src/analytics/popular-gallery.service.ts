@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { PublicPopularItem } from '@guide-me-app/core';
 import { DEFAULT_LOCALE } from '@guide-me-app/core';
 import { DiscoverRepository } from '../discover/discover.repository';
@@ -52,8 +52,6 @@ type PopularityRow = { slug: string; n: number };
 
 @Injectable()
 export class PopularGalleryService {
-  private readonly logger = new Logger(PopularGalleryService.name);
-
   constructor(
     private readonly ph: PostHogQueryService,
     private readonly discoverRepo: DiscoverRepository,

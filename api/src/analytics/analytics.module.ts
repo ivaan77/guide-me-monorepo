@@ -16,10 +16,7 @@ import { UsageStatsService } from './usage-stats.service';
 // hydrate popular-gallery items. Same pattern for RatingsModule (which we
 // need for the ratings aggregate in UsageStatsService).
 @Module({
-  imports: [
-    forwardRef(() => DiscoverModule),
-    forwardRef(() => RatingsModule),
-  ],
+  imports: [forwardRef(() => DiscoverModule), forwardRef(() => RatingsModule)],
   providers: [PostHogQueryService, UsageStatsService, PopularGalleryService],
   exports: [UsageStatsService, PopularGalleryService],
 })

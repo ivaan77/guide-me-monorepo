@@ -56,25 +56,20 @@ export class PostHogQueryService {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS);
     try {
-      const res = await fetch(
-        `${HOST}/api/projects/${PROJECT_ID}/query/`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${PERSONAL_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            query: { kind: 'HogQLQuery', query: hogql },
-          }),
-          signal: controller.signal,
+      const res = await fetch(`${HOST}/api/projects/${PROJECT_ID}/query/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${PERSONAL_API_KEY}`,
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify({
+          query: { kind: 'HogQLQuery', query: hogql },
+        }),
+        signal: controller.signal,
+      });
       if (!res.ok) {
         const text = await res.text().catch(() => '');
-        this.logger.warn(
-          `PostHog query ${res.status}: ${text.slice(0, 200)}`,
-        );
+        this.logger.warn(`PostHog query ${res.status}: ${text.slice(0, 200)}`);
         return null;
       }
       const json = (await res.json()) as unknown;
@@ -90,9 +85,7 @@ export class PostHogQueryService {
           `PostHog query timed out after ${QUERY_TIMEOUT_MS}ms.`,
         );
       } else {
-        this.logger.warn(
-          `PostHog query failed: ${(err as Error).message}`,
-        );
+        this.logger.warn(`PostHog query failed: ${(err as Error).message}`);
       }
       return null;
     } finally {

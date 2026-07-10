@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Animated as RNAnimated, Pressable } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Pause, Play, Sparkles, X } from '@tamagui/lucide-icons'
-import { SizableText, XStack, YStack, useTheme } from 'tamagui'
+import { SizableText, XStack, YStack } from 'tamagui'
 import Animated, { FadeIn, FadeOut, Easing } from 'react-native-reanimated'
 import {
   useAudioPlayer,
@@ -66,12 +66,6 @@ function PlayerCard({
   onDismiss: () => void
 }) {
   const { t } = useTranslation()
-  const theme = useTheme()
-  // Amber pill (matches the FloatingFactBanner aesthetic so the transition
-  // banner → player feels like the same object morphing rather than two
-  // unrelated widgets).
-  const accent = theme.accent?.val ?? '#F59E0B'
-
   const player = useAudioPlayer(fact.audioUrl ?? null)
   const status: AudioStatus | null = useAudioPlayerStatus(player)
   const isPlaying = status?.playing ?? false
