@@ -22,7 +22,6 @@ import MapView, {
 import {
   ChevronDown,
   ChevronLeft,
-  Info,
   LocateFixed,
   MapPin,
   MapPinOff,
@@ -39,8 +38,6 @@ import type {
   PublicSubStop,
 } from '@guide-me-app/core'
 import {
-  H2,
-  H3,
   Paragraph,
   SizableText,
   XStack,
@@ -53,7 +50,6 @@ import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { RatingPromptSheet } from '../../common/RatingPromptSheet'
 import { useExcursion } from '../../hooks/useExcursion'
-import { useLayout } from '../../hooks/useLayout'
 import { useRatingPrompt } from '../../hooks/useRatingPrompt'
 import {
   distanceFromPolyline,
@@ -73,7 +69,14 @@ import {
 } from './FloatingFactBanner'
 import { FloatingFactPlayer } from './FloatingFactPlayer'
 import { NearestStopCallout } from './NearestStopCallout'
+import {
+  PhaseCard,
+  PhaseCardActions,
+  PhaseCardBody,
+  PhaseCardHeader,
+} from './PhaseCard'
 import { StartFromPicker } from './StartFromPicker'
+import { SubStopPager } from './SubStopPager'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
@@ -803,6 +806,22 @@ function ExcursionBody({
     setCurrentSubStopIndex(nextSubIdx)
   }
 
+  // Jump to a specific position within a bundle — powers the inline
+  // SubStopPager taps in the ArrivedPanel. `target` is -1 for the bundle
+  // intro or 0..N-1 for individual sub-stops. Clamped defensively so a
+  // stale pager tap can't push state out of range.
+  const jumpToSubStop = useCallback(
+    (target: number) => {
+      const stop = stops[currentIndexRef.current]
+      const total = stop?.subStops?.length ?? 0
+      if (total === 0) return
+      const clamped = Math.max(-1, Math.min(total - 1, target))
+      currentSubStopIndexRef.current = clamped
+      setCurrentSubStopIndex(clamped)
+    },
+    [stops],
+  )
+
   // Skip a single sub-stop within a bundle. Pushes an undo pill labeled
   // with the sub-stop's name (not the bundle). If this was the last
   // sub-stop, advances to the next top-level stop.
@@ -1380,6 +1399,7 @@ function ExcursionBody({
               onContinue={continueNext}
               onSkip={skip}
               onAdvanceSubStop={advanceSubStop}
+              onJumpToSubStop={jumpToSubStop}
               onSkipSubStop={skipSubStop}
               onRecalculate={recalculateRoute}
               onFinish={finish}
@@ -1770,6 +1790,7 @@ function BottomPanel({
   onContinue,
   onSkip,
   onAdvanceSubStop,
+  onJumpToSubStop,
   onSkipSubStop,
   onRecalculate,
   onFinish,
@@ -1800,6 +1821,7 @@ function BottomPanel({
   onContinue: () => void
   onSkip: () => void
   onAdvanceSubStop: () => void
+  onJumpToSubStop: (target: number) => void
   onSkipSubStop: () => void
   onRecalculate: () => void
   onFinish: () => void
@@ -1857,6 +1879,7 @@ function BottomPanel({
           subStopIndex={currentSubStopIndex}
           onContinue={onContinue}
           onAdvanceSubStop={onAdvanceSubStop}
+          onJumpToSubStop={onJumpToSubStop}
           onSkipSubStop={onSkipSubStop}
           onSkipBundle={onSkip}
           onMoreInfo={onMoreInfo}
@@ -1971,35 +1994,47 @@ function PreviewPanel({
 }) {
   const { t } = useTranslation()
   const pillVisible = nearestPillExpiresAt > Date.now()
+  // Ported to PhaseCard shape (Session 1 of the ExcursionScreen redesign).
+  // Same content as before, just wrapped in the shared header / body /
+  // actions layout so every phase's card reads structurally the same.
   return (
-    <YStack gap="$2">
-      <H3 fontFamily="$body" fontWeight="700" color="$color">
-        {t('excursion.preview.title')}
-      </H3>
-      <Paragraph color="$colorPress" fontFamily="$body" size="$3">
-        {t('excursion.preview.subtitle', { count: total })}
-      </Paragraph>
-      {pillVisible && nearestStopName && (
-        <NearestStopInlinePill
-          stopName={nearestStopName}
-          expiresAt={nearestPillExpiresAt}
-          onPress={onDismissNearestPill}
-        />
-      )}
-      {startFromStop && (
-        <StartFromChip
-          stop={startFromStop}
-          index={startFromIndex}
-          isNearest={isStartFromNearest}
-          onPress={onOpenStartFromPicker}
-        />
-      )}
-      <ActionButton
-        label={t('excursion.preview.start')}
-        icon={Play}
-        onPress={onStart}
+    <PhaseCard accent="preview">
+      <PhaseCardHeader
+        accent="preview"
+        badge={t('excursion.preview.badge', {
+          count: total,
+          defaultValue: `Ready · ${total} stops`,
+        })}
+        title={t('excursion.preview.title')}
       />
-    </YStack>
+      <PhaseCardBody>
+        <Paragraph color="$colorPress" fontFamily="$body" size="$3">
+          {t('excursion.preview.subtitle', { count: total })}
+        </Paragraph>
+        {pillVisible && nearestStopName && (
+          <NearestStopInlinePill
+            stopName={nearestStopName}
+            expiresAt={nearestPillExpiresAt}
+            onPress={onDismissNearestPill}
+          />
+        )}
+        {startFromStop && (
+          <StartFromChip
+            stop={startFromStop}
+            index={startFromIndex}
+            isNearest={isStartFromNearest}
+            onPress={onOpenStartFromPicker}
+          />
+        )}
+      </PhaseCardBody>
+      <PhaseCardActions
+        primary={{
+          label: t('excursion.preview.start'),
+          onPress: onStart,
+          icon: <Play size={18} color="$colorOnBrand" />,
+        }}
+      />
+    </PhaseCard>
   )
 }
 
@@ -2229,114 +2264,99 @@ function NavigatingPanel({
   const FAR_FROM_STOP_METERS = 3000
   const isFarFromStop =
     straightLineMeters != null && straightLineMeters > FAR_FROM_STOP_METERS
+  const isLast = index + 1 === total
+  const distanceLine = isFarFromStop
+    ? t('excursion.farFromStop', { defaultValue: 'Far from stop' })
+    : `${formatDistance(displayMeters)}${
+        liveRouteInfo
+          ? ` · ${formatDuration(liveRouteInfo.remainingSeconds)}`
+          : ''
+      }`
+  // Nav-icon thumb rendered inline as the header accessory so it visually
+  // pairs with the badge + title. Same 40dp circle the old layout used.
+  const navThumb = (
+    <YStack
+      width={40}
+      height={40}
+      rounded={20}
+      bg="$primary"
+      items="center"
+      justify="center"
+    >
+      <Navigation size={20} color="$colorOnBrand" />
+    </YStack>
+  )
   return (
-    <YStack gap="$2">
-      {isOffRoute && (
-        <Pressable onPress={onRecalculate} hitSlop={6}>
-          <XStack
-            items="center"
-            gap="$2.5"
-            px="$3"
-            py="$2"
-            rounded="$4"
-            borderWidth={1}
-            borderColor="$primary"
-            bg="$surfaceMuted"
-            style={SHADOW.subtle}
-          >
-            <YStack
-              width={24}
-              height={24}
-              rounded={12}
+    <PhaseCard accent="navigating">
+      <PhaseCardHeader
+        accent="navigating"
+        badge={t('excursion.navigating.stopOf', { index: index + 1, total })}
+        title={stop.name}
+        accessory={navThumb}
+      />
+      <PhaseCardBody>
+        {isOffRoute && (
+          // Off-route warning — same visual as before but sits inside the
+          // body slot instead of above the header, matching the "body is
+          // where phase-specific state lives" pattern.
+          <Pressable onPress={onRecalculate} hitSlop={6}>
+            <XStack
               items="center"
-              justify="center"
-              bg="$primary"
+              gap="$2.5"
+              px="$3"
+              py="$2"
+              rounded="$4"
+              borderWidth={1}
+              borderColor="$primary"
+              bg="$surfaceMuted"
+              style={SHADOW.subtle}
             >
-              <Navigation size={12} color="$colorOnBrand" />
-            </YStack>
-            <YStack flex={1}>
-              <SizableText
-                size="$3"
-                color="$color"
-                fontFamily="$body"
-                fontWeight="600"
+              <YStack
+                width={24}
+                height={24}
+                rounded={12}
+                items="center"
+                justify="center"
+                bg="$primary"
               >
-                {t('excursion.offRoute.title', {
-                  defaultValue: "You're off the route",
-                })}
-              </SizableText>
-              <SizableText
-                size="$2"
-                color="$colorPress"
-                fontFamily="$body"
-              >
-                {t('excursion.offRoute.cta', {
-                  defaultValue: 'Tap to recalculate',
-                })}
-              </SizableText>
-            </YStack>
-          </XStack>
-        </Pressable>
-      )}
-      <XStack items="center" gap="$3">
-      <YStack
-        width={40}
-        height={40}
-        rounded={20}
-        bg="$primary"
-        items="center"
-        justify="center"
-      >
-        <Navigation size={20} color="$colorOnBrand" />
-      </YStack>
-      <YStack flex={1} gap="$0.5">
+                <Navigation size={12} color="$colorOnBrand" />
+              </YStack>
+              <YStack flex={1}>
+                <SizableText
+                  size="$3"
+                  color="$color"
+                  fontFamily="$body"
+                  fontWeight="600"
+                >
+                  {t('excursion.offRoute.title', {
+                    defaultValue: "You're off the route",
+                  })}
+                </SizableText>
+                <SizableText size="$2" color="$colorPress" fontFamily="$body">
+                  {t('excursion.offRoute.cta', {
+                    defaultValue: 'Tap to recalculate',
+                  })}
+                </SizableText>
+              </YStack>
+            </XStack>
+          </Pressable>
+        )}
         <SizableText
-          size="$2"
+          size="$3"
           color="$colorPress"
           fontFamily="$body"
-          fontWeight="600"
-          style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+          style={{ fontVariant: ['tabular-nums'] }}
         >
-          {t('excursion.navigating.stopOf', { index: index + 1, total })}
+          {distanceLine}
         </SizableText>
-        <SizableText size="$5" color="$color" fontFamily="$body" fontWeight="600">
-          {stop.name}
-        </SizableText>
-        <SizableText size="$2" color="$colorPress" fontFamily="$body">
-          {isFarFromStop
-            ? t('excursion.farFromStop', {
-                defaultValue: 'Far from stop',
-              })
-            : `${formatDistance(displayMeters)}${
-                liveRouteInfo
-                  ? ` · ${formatDuration(liveRouteInfo.remainingSeconds)}`
-                  : ''
-              }`}
-        </SizableText>
-      </YStack>
-      <Pressable onPress={onSkip} hitSlop={8}>
-        <YStack
-          px="$3"
-          py="$2"
-          rounded="$4"
-          bg="$surfaceMuted"
-          borderWidth={1}
-          borderColor="$borderColor"
-        >
-          <SizableText
-            size="$2"
-            color="$color"
-            fontFamily="$body"
-            fontWeight="600"
-          >
-            {index + 1 === total
-              ? t('excursion.arrived.finish')
-              : t('common.skip')}
-          </SizableText>
-        </YStack>
-      </Pressable>
-      </XStack>
-    </YStack>
+      </PhaseCardBody>
+      <PhaseCardActions
+        primary={{
+          label: isLast ? t('excursion.arrived.finish') : t('common.skip'),
+          onPress: onSkip,
+        }}
+      />
+    </PhaseCard>
   )
 }
 
@@ -2347,6 +2367,7 @@ function ArrivedPanel({
   subStopIndex,
   onContinue,
   onAdvanceSubStop,
+  onJumpToSubStop,
   onSkipSubStop,
   onSkipBundle,
   onMoreInfo,
@@ -2357,74 +2378,169 @@ function ArrivedPanel({
   subStopIndex: number
   onContinue: () => void
   onAdvanceSubStop: () => void
+  onJumpToSubStop: (target: number) => void
   onSkipSubStop: () => void
   onSkipBundle: () => void
   onMoreInfo: () => void
 }) {
   const { t } = useTranslation()
-  const { isSmall } = useLayout()
   const isLast = index + 1 === total
   const subStops = stop.subStops ?? []
   const isBundle = subStops.length > 0
-  // On SE-class widths (<380pt), the two-column button rows overflow: text
-  // wraps mid-word or gets clipped. Stack them vertically on small screens.
-  // The row children use flex:1 which fills width in either axis, so no
-  // per-child changes are needed — only the container axis flips.
-  const buttonRowProps = isSmall
-    ? { flexDirection: 'column' as const, gap: '$2' as const }
-    : { flexDirection: 'row' as const, gap: '$2' as const }
+
+  // Track which sub-stop slots the user has already visited so the pager
+  // can distinguish "you've been here" from "you haven't opened this yet".
+  // Session-scoped — resets whenever we leave this bundle (currentStop
+  // change unmounts ArrivedPanel). -1 (intro) is added on mount so the
+  // intro chip always reads as visited once you see the panel.
+  const [visited, setVisited] = useState<Set<number>>(
+    () => new Set<number>([-1]),
+  )
+  useEffect(() => {
+    if (!isBundle) return
+    setVisited((prev) => {
+      if (prev.has(subStopIndex)) return prev
+      const next = new Set(prev)
+      next.add(subStopIndex)
+      return next
+    })
+  }, [subStopIndex, isBundle])
 
   if (isBundle) {
-    // -1 = parent intro panel; 0..N-1 = sub-stops.
+    // -1 = parent intro slot; 0..N-1 = sub-stops.
     const onParent = subStopIndex < 0
     const sub = onParent ? null : (subStops[subStopIndex] ?? subStops[0])
     const isLastSubStop = !onParent && subStopIndex + 1 >= subStops.length
     const displayImage = onParent ? stop.image : sub!.image
     const displayName = onParent ? stop.name : sub!.name
     const displayDescription = onParent ? stop.description : sub!.description
-    const headerLabel = onParent
-      ? t('excursion.arrived.bundleIntro', {
+    // Badge summarises "where in the bundle am I?" — two variants so the
+    // parent intro reads as an overview and each sub-stop reads as a
+    // position. Copy is kept short so the header row breathes.
+    const badge = onParent
+      ? t('excursion.arrived.bundleIntroBadge', {
           count: subStops.length,
-          bundle: stop.name,
-          defaultValue: `${subStops.length} stops at ${stop.name}`,
+          defaultValue: `Bundle · ${subStops.length} stops`,
         })
-      : t('excursion.arrived.bundlePosition', {
+      : t('excursion.arrived.bundlePositionBadge', {
           index: subStopIndex + 1,
           total: subStops.length,
-          bundle: stop.name,
-          defaultValue: `${subStopIndex + 1} of ${subStops.length} · ${stop.name}`,
+          defaultValue: `Bundle · ${subStopIndex + 1} of ${subStops.length}`,
         })
+    // Bundle thumb — 56dp same as non-bundle, but the source image swaps
+    // to reflect the current sub-stop when one is selected.
+    const bundleThumb = (
+      <Image
+        source={{ uri: displayImage }}
+        style={{ width: 56, height: 56, borderRadius: 12 }}
+        resizeMode="cover"
+      />
+    )
+    // Primary action label + handler both depend on where in the bundle
+    // we are. Parent slot starts the walk-through; last sub-stop exits;
+    // any middle sub-stop advances to the next.
+    const primaryLabel = onParent
+      ? t('excursion.arrived.startStops', {
+          count: subStops.length,
+          defaultValue: `Start ${subStops.length} stops`,
+        })
+      : isLastSubStop
+        ? isLast
+          ? t('excursion.arrived.finish')
+          : t('excursion.arrived.continue')
+        : t('excursion.arrived.next', { defaultValue: 'Next' })
+    const primaryOnPress = onParent
+      ? onAdvanceSubStop
+      : isLastSubStop
+        ? onContinue
+        : onAdvanceSubStop
+    const primaryIcon =
+      isLastSubStop && isLast ? (
+        <MapPin size={18} color="$colorOnBrand" />
+      ) : (
+        <Navigation size={18} color="$colorOnBrand" />
+      )
     return (
-      <YStack gap="$3">
-        <XStack items="center" gap="$3">
-          <Image
-            source={{ uri: displayImage }}
-            style={{ width: 56, height: 56, borderRadius: 12 }}
-            resizeMode="cover"
+      <PhaseCard accent="bundle">
+        <PhaseCardHeader
+          accent="bundle"
+          badge={badge}
+          title={displayName}
+          accessory={bundleThumb}
+        />
+        <PhaseCardBody>
+          <SubStopPager
+            count={subStops.length}
+            current={subStopIndex}
+            visited={visited}
+            onJump={onJumpToSubStop}
           />
-          <YStack flex={1} gap="$0.5">
-            <SizableText
-              size="$2"
-              fontFamily="$body"
-              fontWeight="700"
-              style={{
-                color: BUNDLE_ACCENT,
-                textTransform: 'uppercase',
-                letterSpacing: 0.6,
-              }}
-            >
-              {headerLabel}
-            </SizableText>
-            <SizableText
-              size="$5"
-              color="$color"
-              fontFamily="$body"
-              fontWeight="600"
-            >
-              {displayName}
-            </SizableText>
-          </YStack>
-        </XStack>
+          <Paragraph
+            color="$color"
+            fontFamily="$body"
+            size="$3"
+            lineHeight="$3"
+            numberOfLines={3}
+          >
+            {displayDescription}
+          </Paragraph>
+        </PhaseCardBody>
+        <PhaseCardActions
+          secondary={{
+            label: t('excursion.arrived.moreInfo'),
+            onPress: onMoreInfo,
+          }}
+          primary={{
+            label: primaryLabel,
+            onPress: primaryOnPress,
+            icon: primaryIcon,
+          }}
+          tertiary={
+            !onParent
+              ? {
+                  label: t('excursion.arrived.skipSubStop', {
+                    name: sub!.name,
+                    defaultValue: `Skip ${sub!.name}`,
+                  }),
+                  onPress: onSkipSubStop,
+                }
+              : {
+                  label: t('excursion.arrived.skipBundle', {
+                    bundle: stop.name,
+                    defaultValue: `Skip all spots at ${stop.name}`,
+                  }),
+                  onPress: onSkipBundle,
+                }
+          }
+        />
+      </PhaseCard>
+    )
+  }
+
+  // Non-bundle arrival — ported to PhaseCard (Session 2 of the redesign).
+  // The 56dp square image thumbnail becomes the header accessory; the
+  // "ARRIVED · N OF M" label becomes the badge. Description sits in the
+  // body slot; the two-button row collapses to actions: More info as the
+  // secondary link, Continue/Finish as the primary CTA.
+  const stopThumb = (
+    <Image
+      source={{ uri: stop.image }}
+      style={{ width: 56, height: 56, borderRadius: 12 }}
+      resizeMode="cover"
+    />
+  )
+  return (
+    <PhaseCard accent="arrived">
+      <PhaseCardHeader
+        accent="arrived"
+        badge={t('excursion.arrived.arrivedLabel', {
+          index: index + 1,
+          total,
+        })}
+        title={stop.name}
+        accessory={stopThumb}
+      />
+      <PhaseCardBody>
         <Paragraph
           color="$color"
           fontFamily="$body"
@@ -2432,183 +2548,27 @@ function ArrivedPanel({
           lineHeight="$3"
           numberOfLines={3}
         >
-          {displayDescription}
+          {stop.description}
         </Paragraph>
-        <XStack {...buttonRowProps}>
-          <Pressable onPress={onMoreInfo} style={{ flex: 1 }}>
-            <XStack
-              flex={1}
-              items="center"
-              justify="center"
-              gap="$2"
-              bg="$surfaceMuted"
-              borderWidth={1}
-              borderColor="$borderColor"
-              rounded="$5"
-              py="$3.5"
-              px="$4"
-            >
-              <Info size={18} color={BUNDLE_ACCENT as any} />
-              <SizableText
-                size="$4"
-                color="$color"
-                fontFamily="$body"
-                fontWeight="600"
-              >
-                {t('excursion.arrived.moreInfo')}
-              </SizableText>
-            </XStack>
-          </Pressable>
-          <YStack flex={1}>
-            <ActionButton
-              label={
-                onParent
-                  ? t('excursion.arrived.startStops', {
-                      count: subStops.length,
-                      defaultValue: `Start ${subStops.length} stops`,
-                    })
-                  : isLastSubStop
-                    ? isLast
-                      ? t('excursion.arrived.finish')
-                      : t('excursion.arrived.continue')
-                    : t('excursion.arrived.next', {
-                        defaultValue: 'Next',
-                      })
-              }
-              icon={isLastSubStop && isLast ? MapPin : Navigation}
-              onPress={
-                onParent
-                  ? onAdvanceSubStop
-                  : isLastSubStop
-                    ? onContinue
-                    : onAdvanceSubStop
-              }
-              tint={BUNDLE_ACCENT}
-            />
-          </YStack>
-        </XStack>
-        <XStack {...buttonRowProps}>
-          {!onParent && (
-            <Pressable onPress={onSkipSubStop} style={{ flex: 1 }} hitSlop={6}>
-              <YStack
-                items="center"
-                justify="center"
-                bg="transparent"
-                borderWidth={1}
-                borderColor="$borderColor"
-                rounded="$5"
-                py="$2.5"
-                px="$3"
-              >
-                <SizableText
-                  size="$2"
-                  color="$colorPress"
-                  fontFamily="$body"
-                  fontWeight="600"
-                  numberOfLines={1}
-                >
-                  {t('excursion.arrived.skipSubStop', {
-                    name: sub!.name,
-                    defaultValue: `Skip ${sub!.name}`,
-                  })}
-                </SizableText>
-              </YStack>
-            </Pressable>
-          )}
-          <Pressable onPress={onSkipBundle} style={{ flex: 1 }} hitSlop={6}>
-            <YStack
-              items="center"
-              justify="center"
-              bg="transparent"
-              borderWidth={1}
-              borderColor="$borderColor"
-              rounded="$5"
-              py="$2.5"
-              px="$3"
-            >
-              <SizableText
-                size="$2"
-                color="$colorPress"
-                fontFamily="$body"
-                fontWeight="600"
-                numberOfLines={1}
-              >
-                {t('excursion.arrived.skipBundle', {
-                  bundle: stop.name,
-                  defaultValue: `Skip all spots at ${stop.name}`,
-                })}
-              </SizableText>
-            </YStack>
-          </Pressable>
-        </XStack>
-      </YStack>
-    )
-  }
-
-  return (
-    <YStack gap="$3">
-      <XStack items="center" gap="$3">
-        <Image
-          source={{ uri: stop.image }}
-          style={{ width: 56, height: 56, borderRadius: 12 }}
-          resizeMode="cover"
-        />
-        <YStack flex={1} gap="$0.5">
-          <SizableText
-            size="$2"
-            color="$primary"
-            fontFamily="$body"
-            fontWeight="700"
-            style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
-          >
-            {t('excursion.arrived.arrivedLabel', { index: index + 1, total })}
-          </SizableText>
-          <SizableText size="$5" color="$color" fontFamily="$body" fontWeight="600">
-            {stop.name}
-          </SizableText>
-        </YStack>
-      </XStack>
-      <Paragraph color="$color" fontFamily="$body" size="$3" lineHeight="$3" numberOfLines={3}>
-        {stop.description}
-      </Paragraph>
-      <XStack {...buttonRowProps}>
-        <Pressable onPress={onMoreInfo} style={{ flex: 1 }}>
-          <XStack
-            flex={1}
-            items="center"
-            justify="center"
-            gap="$2"
-            bg="$surfaceMuted"
-            borderWidth={1}
-            borderColor="$borderColor"
-            rounded="$5"
-            py="$3.5"
-            px="$4"
-          >
-            <Info size={18} color="$primary" />
-            <SizableText
-              size="$4"
-              color="$color"
-              fontFamily="$body"
-              fontWeight="600"
-            >
-              {t('excursion.arrived.moreInfo')}
-            </SizableText>
-          </XStack>
-        </Pressable>
-        <YStack flex={1}>
-          <ActionButton
-            label={
-              isLast
-                ? t('excursion.arrived.finish')
-                : t('excursion.arrived.continue')
-            }
-            icon={isLast ? MapPin : Navigation}
-            onPress={onContinue}
-          />
-        </YStack>
-      </XStack>
-    </YStack>
+      </PhaseCardBody>
+      <PhaseCardActions
+        secondary={{
+          label: t('excursion.arrived.moreInfo'),
+          onPress: onMoreInfo,
+        }}
+        primary={{
+          label: isLast
+            ? t('excursion.arrived.finish')
+            : t('excursion.arrived.continue'),
+          onPress: onContinue,
+          icon: isLast ? (
+            <MapPin size={18} color="$colorOnBrand" />
+          ) : (
+            <Navigation size={18} color="$colorOnBrand" />
+          ),
+        }}
+      />
+    </PhaseCard>
   )
 }
 
@@ -2626,38 +2586,47 @@ function OutroPanel({
   onFinish: () => void
 }) {
   const { t } = useTranslation()
+  // Outro card — coral phase tint. Hero image sits in the body as a full-
+  // width banner (this phase intentionally leans on the image as the
+  // emotional close); audio + description below it. Same PhaseCard shape
+  // as the other panels so the sign-off doesn't feel structurally
+  // orphaned. See ExcursionScreen redesign notes.
   return (
-    <YStack gap="$3">
-      <Image
-        source={{ uri: outro.image }}
-        style={{ width: '100%', height: 160, borderRadius: 12 }}
-        resizeMode="cover"
+    <PhaseCard accent="outro">
+      <PhaseCardHeader
+        accent="outro"
+        badge={t('excursion.outro.badge', { defaultValue: 'Wrap-up' })}
+        title={outro.title}
       />
-      <H2 color="$color" fontFamily="$body" fontWeight="700" fontSize="$7">
-        {outro.title}
-      </H2>
-      <AudioPlayer
-        audioUrl={outro.audioUrl}
-        title={t('excursion.stopSheet.audioTitle')}
-        analyticsSourceType="outro"
-        analyticsSourceId={excursionId}
+      <PhaseCardBody>
+        <Image
+          source={{ uri: outro.image }}
+          style={{ width: '100%', height: 160, borderRadius: 12 }}
+          resizeMode="cover"
+        />
+        <AudioPlayer
+          audioUrl={outro.audioUrl}
+          title={t('excursion.stopSheet.audioTitle')}
+          analyticsSourceType="outro"
+          analyticsSourceId={excursionId}
+        />
+        <Paragraph
+          color="$color"
+          fontFamily="$body"
+          size="$3"
+          lineHeight="$5"
+        >
+          {outro.description}
+        </Paragraph>
+      </PhaseCardBody>
+      <PhaseCardActions
+        primary={{
+          label: t('excursion.outro.finish', { defaultValue: 'Finish' }),
+          onPress: onFinish,
+          icon: <MapPin size={18} color="$colorOnBrand" />,
+        }}
       />
-      <Paragraph
-        color="$color"
-        fontFamily="$body"
-        size="$3"
-        lineHeight="$5"
-      >
-        {outro.description}
-      </Paragraph>
-      <ActionButton
-        label={t('excursion.outro.finish', {
-          defaultValue: 'Finish',
-        })}
-        icon={MapPin}
-        onPress={onFinish}
-      />
-    </YStack>
+    </PhaseCard>
   )
 }
 
@@ -2669,62 +2638,33 @@ function CompletePanel({
   onFinish: () => void
 }) {
   const { t } = useTranslation()
+  // Complete card — success-green phase tint. Deliberately spare: just a
+  // congratulatory badge, the title, the body copy, and Done. The rating
+  // prompt sheet fires 1.2s after this phase (see phase effect above) so
+  // we don't add a rating affordance here.
   return (
-    <YStack gap="$3">
-      <H2 color="$color" fontFamily="$body" fontWeight="700" fontSize="$8">
-        {t('excursion.complete.title')}
-      </H2>
-      <Paragraph color="$colorPress" fontFamily="$body" size="$3">
-        {t('excursion.complete.body', { count: total })}
-      </Paragraph>
-      <ActionButton
-        label={t('excursion.complete.done')}
-        icon={MapPin}
-        onPress={onFinish}
+    <PhaseCard accent="complete">
+      <PhaseCardHeader
+        accent="complete"
+        badge={t('excursion.complete.badge', { defaultValue: 'Completed' })}
+        title={t('excursion.complete.title')}
       />
-    </YStack>
+      <PhaseCardBody>
+        <Paragraph color="$colorPress" fontFamily="$body" size="$3">
+          {t('excursion.complete.body', { count: total })}
+        </Paragraph>
+      </PhaseCardBody>
+      <PhaseCardActions
+        primary={{
+          label: t('excursion.complete.done'),
+          onPress: onFinish,
+          icon: <MapPin size={18} color="$colorOnBrand" />,
+        }}
+      />
+    </PhaseCard>
   )
 }
 
-function ActionButton({
-  label,
-  icon: Icon,
-  onPress,
-  tint,
-}: {
-  label: string
-  icon: typeof Play
-  onPress: () => void
-  // Optional override for the button's accent (background + icon glow).
-  // Used by bundle ArrivedPanel to make Next/Continue read as violet.
-  // Falls back to the theme's $primary when unset.
-  tint?: string
-}) {
-  return (
-    <Pressable onPress={onPress}>
-      <XStack
-        items="center"
-        justify="center"
-        gap="$2"
-        bg={tint ? undefined : '$primary'}
-        rounded="$5"
-        py="$3.5"
-        px="$4"
-        style={tint ? { backgroundColor: tint } : undefined}
-      >
-        <Icon size={18} color="$colorOnBrand" />
-        <SizableText
-          size="$4"
-          color="$colorOnBrand"
-          fontFamily="$body"
-          fontWeight="700"
-        >
-          {label}
-        </SizableText>
-      </XStack>
-    </Pressable>
-  )
-}
 
 function HeaderTitle({ topInset, title }: { topInset: number; title: string }) {
   return (

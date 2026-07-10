@@ -154,6 +154,9 @@ export const hr = {
       subtitle_one: '{{count}} postaja · odvest ćemo te ravno tamo.',
       subtitle_few: '{{count}} postaje · vodimo te između njih.',
       subtitle_other: '{{count}} postaja · vodimo te između njih.',
+      badge_one: 'Spremno · {{count}} postaja',
+      badge_few: 'Spremno · {{count}} postaje',
+      badge_other: 'Spremno · {{count}} postaja',
       start: 'Započni',
     },
     navigating: {
@@ -169,6 +172,10 @@ export const hr = {
       bundleIntro_few: '{{count}} postaje na {{bundle}}',
       bundleIntro_other: '{{count}} postaja na {{bundle}}',
       bundlePosition: '{{index}} od {{total}} · {{bundle}}',
+      bundleIntroBadge_one: 'Grupa · {{count}} postaja',
+      bundleIntroBadge_few: 'Grupa · {{count}} postaje',
+      bundleIntroBadge_other: 'Grupa · {{count}} postaja',
+      bundlePositionBadge: 'Grupa · {{index}} od {{total}}',
       startStops_one: 'Započni {{count}} postaju',
       startStops_few: 'Započni {{count}} postaje',
       startStops_other: 'Započni {{count}} postaja',
@@ -176,9 +183,11 @@ export const hr = {
       skipBundle: 'Preskoči sve postaje na {{bundle}}',
     },
     outro: {
+      badge: 'Kraj',
       finish: 'Završi',
     },
     complete: {
+      badge: 'Završeno',
       title: 'Tura završena',
       body_one: 'Posjetio si {{count}} postaju. Nadamo se da je vrijedilo.',
       body_few: 'Posjetio si {{count}} postaje. Nadamo se da je vrijedilo.',
