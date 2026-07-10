@@ -44,12 +44,13 @@ const PHASE_ON_ACCENT: Record<PhaseAccentKind, string> = {
 }
 
 type CardProps = {
-  accent: PhaseAccentKind
   children: React.ReactNode
 }
 
 // Outer wrapper. Rounded card, subtle lift, phase-agnostic padding.
-export function PhaseCard({ accent, children }: CardProps) {
+// The phase tint lives on PhaseCardHeader (badge chip) and PhaseCardActions
+// (button color), not on the card itself — so the wrapper takes no accent.
+export function PhaseCard({ children }: CardProps) {
   return (
     <YStack
       bg="$surface"

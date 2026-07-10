@@ -1,5 +1,5 @@
 import { Pressable, ScrollView } from 'react-native'
-import { SizableText, XStack, YStack } from 'tamagui'
+import { SizableText, YStack } from 'tamagui'
 import { BUNDLE_ACCENT } from './StopBundlePin'
 
 // Inline numbered pager rendered in the body of the ArrivedPanel when the

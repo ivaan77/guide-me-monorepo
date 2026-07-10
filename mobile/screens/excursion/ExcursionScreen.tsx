@@ -1998,7 +1998,7 @@ function PreviewPanel({
   // Same content as before, just wrapped in the shared header / body /
   // actions layout so every phase's card reads structurally the same.
   return (
-    <PhaseCard accent="preview">
+    <PhaseCard>
       <PhaseCardHeader
         accent="preview"
         badge={t('excursion.preview.badge', {
@@ -2287,7 +2287,7 @@ function NavigatingPanel({
     </YStack>
   )
   return (
-    <PhaseCard accent="navigating">
+    <PhaseCard>
       <PhaseCardHeader
         accent="navigating"
         badge={t('excursion.navigating.stopOf', { index: index + 1, total })}
@@ -2461,7 +2461,7 @@ function ArrivedPanel({
         <Navigation size={18} color="$colorOnBrand" />
       )
     return (
-      <PhaseCard accent="bundle">
+      <PhaseCard>
         <PhaseCardHeader
           accent="bundle"
           badge={badge}
@@ -2530,7 +2530,7 @@ function ArrivedPanel({
     />
   )
   return (
-    <PhaseCard accent="arrived">
+    <PhaseCard>
       <PhaseCardHeader
         accent="arrived"
         badge={t('excursion.arrived.arrivedLabel', {
@@ -2592,7 +2592,7 @@ function OutroPanel({
   // as the other panels so the sign-off doesn't feel structurally
   // orphaned. See ExcursionScreen redesign notes.
   return (
-    <PhaseCard accent="outro">
+    <PhaseCard>
       <PhaseCardHeader
         accent="outro"
         badge={t('excursion.outro.badge', { defaultValue: 'Wrap-up' })}
@@ -2643,7 +2643,7 @@ function CompletePanel({
   // prompt sheet fires 1.2s after this phase (see phase effect above) so
   // we don't add a rating affordance here.
   return (
-    <PhaseCard accent="complete">
+    <PhaseCard>
       <PhaseCardHeader
         accent="complete"
         badge={t('excursion.complete.badge', { defaultValue: 'Completed' })}
