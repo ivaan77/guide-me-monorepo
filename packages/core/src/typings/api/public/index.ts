@@ -272,3 +272,62 @@ export type PublicGalleryItem = {
 export type PublicGalleryResponse = {
     items: PublicGalleryItem[]
 }
+
+// Usage counters derived from PostHog events. Distinct from PublicStats
+// (which counts *content produced* in Mongo): these describe *engagement*
+// — how many humans used the app and what they did. All values are
+// cumulative all-time. Returns zeros when PostHog is unreachable so the
+// landing degrades gracefully to hiding the band.
+//
+// `users` — count of distinct sign-ups. Anonymous device sessions that
+// never signed up are NOT counted here (see the `user_signup` event fired
+// on Clerk account creation).
+// `audioListenedHours` — sum of `duration_ms` across every `audio_played`
+// event, converted to hours, rounded to the nearest integer.
+// `routesCompleted` — count of `excursion_completed` events (once per
+// excursion arrival, guarded against double-fires in the mobile app).
+// `countriesReached` — count of distinct $geoip_country_code across every
+// event PostHog has ever ingested. Auto-attached by the SDK.
+// `averageRating` — mean rating across all cities/excursions/places, rounded
+// to 1 decimal. Sourced from Mongo (ratings collection, authoritative)
+// rather than PostHog so users who rated pre-analytics still count.
+// `ratingsCount` — total rating rows in Mongo. Included so the average
+// isn't shown alone (a "4.5 average" from 2 ratings is misleading).
+export type PublicUsageStats = {
+    users: number
+    audioListenedHours: number
+    routesCompleted: number
+    countriesReached: number
+    averageRating: number
+    ratingsCount: number
+}
+
+export type PublicUsageStatsResponse = {
+    stats: PublicUsageStats
+}
+
+// Popularity-ranked gallery items — a data-driven complement to the
+// admin-curated PublicGalleryItem. Same shape as the curated one for easy
+// rendering, plus a `popularity` field so the UI can label how "hot" each
+// item is (e.g. "1.2k walkers"). Sourced from PostHog event counts and
+// projected back onto the discover Mongo docs so titles/images still come
+// from the source of truth.
+//
+// Populated best-effort — when PostHog is unreachable or has no events,
+// the endpoint returns an empty items array (never throws). Cached 1h.
+export type PublicPopularItem = {
+    id: string
+    sourceType: 'city' | 'excursion' | 'place'
+    title: string
+    subtitle?: string
+    image: string
+    // How the popularity was measured — different for each sourceType so
+    // the label on the web reads sensibly ("walkers" for excursions,
+    // "explorers" for cities, "saves" for places).
+    popularity: number
+    popularityKind: 'walkers' | 'explorers' | 'saves'
+}
+
+export type PublicPopularGalleryResponse = {
+    items: PublicPopularItem[]
+}

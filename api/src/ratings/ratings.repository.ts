@@ -102,4 +102,23 @@ export class RatingsRepository {
       .exec();
     return result ?? { sum: 0, count: 0 };
   }
+
+  // Global aggregate across EVERY rating in the collection. Feeds the
+  // public web "average rating across all tours" counter. Includes
+  // anonymized rows (clerkUserId=null) — the average reflects reality,
+  // not just currently-active users.
+  async computeGlobalAggregate(): Promise<{ sum: number; count: number }> {
+    const [result] = await this.ratingModel
+      .aggregate<{ sum: number; count: number }>([
+        {
+          $group: {
+            _id: null,
+            sum: { $sum: '$value' },
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .exec();
+    return result ?? { sum: 0, count: 0 };
+  }
 }

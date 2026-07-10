@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
+import { usePostHog } from 'posthog-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import { ChevronLeft, Navigation } from '@tamagui/lucide-icons'
@@ -45,10 +46,15 @@ export function PlaceDetailScreen({ id }: Props) {
   const { t } = useTranslation()
   const { data: place, isPending, isError, refetch } = usePlace(id)
   const ratingPrompt = useDwellRatingPrompt('place', id, { enabled: !!place })
+  const posthog = usePostHog()
 
   const onOpenDirections = useCallback(async () => {
     if (!place?.coords) return
     const { latitude, longitude } = place.coords
+    posthog?.capture('external_map_opened', {
+      place_id: id,
+      platform: Platform.OS,
+    })
     // Walking directions since GuideMe is a walking-tour app. If the OS
     // maps app scheme isn't handled (rare — e.g., stripped Android build
     // without Google Maps installed), fall back to a web URL that any
@@ -69,7 +75,7 @@ export function PlaceDetailScreen({ id }: Props) {
         // Silent — user just sees nothing happen. Rare enough not to toast.
       }
     }
-  }, [place])
+  }, [place, id, posthog])
 
   const onTapRating = useCallback(async () => {
     if (ratingPrompt.isGuest) {
@@ -151,6 +157,8 @@ export function PlaceDetailScreen({ id }: Props) {
               title={t('place.audioTitle')}
               promptKey="place.audioPrompt"
               playingKey="place.audioPlaying"
+              analyticsSourceType="place"
+              analyticsSourceId={place.id}
             />
           )}
           <Paragraph

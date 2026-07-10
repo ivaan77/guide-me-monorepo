@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FlatList, ScrollView, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { usePostHog } from 'posthog-react-native'
 import { XStack, YStack, useTheme } from 'tamagui'
 import type { PublicCity } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
@@ -29,6 +30,7 @@ export function DiscoverScreen() {
 
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS)
+  const posthog = usePostHog()
 
   const bottomPadding = useTabBarPadding()
 
@@ -38,6 +40,19 @@ export function DiscoverScreen() {
   // ("zabreb" → Zagreb) and diacritic-free input ("sibenik" → Šibenik).
   // Debounced query keeps the Fuse index off the render hot path.
   const filtered = useFuzzySearch(data, SEARCH_KEYS, debouncedQuery)
+
+  // Fire `search_performed` once per debounced query (skip empty). PII
+  // guard: never send the raw text — length + result count only. Signal
+  // is "did the search yield anything?", not "what did they search for."
+  useEffect(() => {
+    if (!debouncedQuery.trim()) return
+    if (isPending || isError) return
+    posthog?.capture('search_performed', {
+      query_length: debouncedQuery.trim().length,
+      result_count: filtered.length,
+      had_results: filtered.length > 0,
+    })
+  }, [debouncedQuery, filtered.length, isPending, isError, posthog])
 
   const bg = theme.background.val
 

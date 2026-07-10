@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { CacheModule } from '../cache/cache.module';
 import { AudioDurationReconciler } from './audio-duration-reconciler';
 import { AudioProbeService } from './audio-probe.service';
@@ -23,6 +24,7 @@ import {
 @Module({
   imports: [
     CacheModule,
+    forwardRef(() => AnalyticsModule),
     MongooseModule.forFeature([
       { name: DiscoverCity.name, schema: DiscoverCitySchema },
       { name: DiscoverExcursion.name, schema: DiscoverExcursionSchema },

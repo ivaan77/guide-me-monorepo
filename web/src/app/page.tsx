@@ -2,6 +2,7 @@ import { Mark } from './_components/Mark'
 import { SiteHeader } from './_components/SiteHeader'
 import { SiteFooter } from './_components/SiteFooter'
 import { StatsBand } from './_components/StatsBand'
+import { UsageBand } from './_components/UsageBand'
 
 export default async function LandingPage() {
   return (
@@ -47,6 +48,7 @@ export default async function LandingPage() {
             </a>
           </div>
           <StatsBand />
+          <UsageBand />
         </div>
       </section>
 

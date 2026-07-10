@@ -12,8 +12,12 @@ import {
   PublicGalleryResponse,
   PublicPath,
   PublicPlaceResponse,
+  PublicPopularGalleryResponse,
   PublicStatsResponse,
+  PublicUsageStatsResponse,
 } from '@guide-me-app/core';
+import { PopularGalleryService } from '../analytics/popular-gallery.service';
+import { UsageStatsService } from '../analytics/usage-stats.service';
 import { DiscoverCacheInterceptor } from './discover.interceptor';
 import { DiscoverService } from './discover.service';
 import { parseAcceptLanguage } from './locale.util';
@@ -21,7 +25,11 @@ import { parseAcceptLanguage } from './locale.util';
 @Controller()
 @UseInterceptors(DiscoverCacheInterceptor)
 export class DiscoverController {
-  constructor(private readonly discoverService: DiscoverService) {}
+  constructor(
+    private readonly discoverService: DiscoverService,
+    private readonly usageStats: UsageStatsService,
+    private readonly popularGallery: PopularGalleryService,
+  ) {}
 
   @Get(PublicPath.Discover.cities)
   async getCities(
@@ -72,5 +80,15 @@ export class DiscoverController {
   @Get(PublicPath.Web.gallery)
   async getWebGallery(): Promise<PublicGalleryResponse> {
     return this.discoverService.getWebGallery();
+  }
+
+  @Get(PublicPath.Web.usageStats)
+  async getWebUsageStats(): Promise<PublicUsageStatsResponse> {
+    return { stats: await this.usageStats.getUsageStats() };
+  }
+
+  @Get(PublicPath.Web.popularGallery)
+  async getWebPopularGallery(): Promise<PublicPopularGalleryResponse> {
+    return { items: await this.popularGallery.getPopularItems() };
   }
 }

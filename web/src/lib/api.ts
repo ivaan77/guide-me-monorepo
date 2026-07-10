@@ -20,21 +20,27 @@ export class WebApiError extends Error {
   }
 }
 
-// Fetch a public endpoint with a 1h ISR window. Never throws on non-2xx —
-// returns null so pages can degrade gracefully (rendering the landing
-// without stats is still valid). Only throws for network-level failures
-// so build-time issues (misconfigured API_URL) are still loud.
+// Fetch a public endpoint with an ISR window. Returns null on ANY failure:
+// non-2xx status, network error (API down), timeout, unparseable body. The
+// landing page treats null as "hide this section" so a temporary API blip
+// or a build-time fetch (before the API is running) doesn't break the
+// static export. Silent by design — every consumer already handles null,
+// and the marketing site is read-only content, not an app.
 export async function publicFetch<T>(
   path: string,
   revalidateSeconds: number = 3600,
 ): Promise<T | null> {
   const url = `${API_URL}${path}`
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json' },
-    next: { revalidate: revalidateSeconds },
-  })
-  if (!res.ok) return null
-  const text = await res.text()
-  if (!text) return null
-  return JSON.parse(text) as T
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      next: { revalidate: revalidateSeconds },
+    })
+    if (!res.ok) return null
+    const text = await res.text()
+    if (!text) return null
+    return JSON.parse(text) as T
+  } catch {
+    return null
+  }
 }

@@ -44,6 +44,8 @@ export const PublicPath = {
     Web: {
         stats: '/public/web/stats',
         gallery: '/public/web/gallery',
+        usageStats: '/public/web/usage-stats',
+        popularGallery: '/public/web/popular-gallery',
     },
 }
 

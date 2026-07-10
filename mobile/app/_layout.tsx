@@ -22,9 +22,11 @@ import {
 } from '@expo-google-fonts/geist-mono'
 import { useAuth } from '@clerk/clerk-expo'
 import { AppProvider } from '../providers/AppProvider'
+import { PostHogProvider } from '../providers/PostHogProvider'
 import { useAppTheme } from '../providers/ThemeContext'
 import { readAuthChoice } from '../providers/AuthChoice'
 import { OfflineBanner } from '../common/OfflineBanner'
+import { PostHogIdentityGate } from '../providers/PostHogIdentityGate'
 
 export { ErrorBoundary } from 'expo-router'
 
@@ -75,11 +77,15 @@ export default function RootLayout() {
   }
 
   return (
-    <AppProvider>
-      <AuthGate>
-        <RootLayoutNav />
-      </AuthGate>
-    </AppProvider>
+    <PostHogProvider>
+      <AppProvider>
+        <PostHogIdentityGate>
+          <AuthGate>
+            <RootLayoutNav />
+          </AuthGate>
+        </PostHogIdentityGate>
+      </AppProvider>
+    </PostHogProvider>
   )
 }
 

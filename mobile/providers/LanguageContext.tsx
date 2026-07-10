@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Localization from 'expo-localization'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { usePostHog } from 'posthog-react-native'
 import {
   type SupportedLanguage,
   changeLanguage,
@@ -32,6 +33,7 @@ function resolve(mode: LanguageMode): SupportedLanguage {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<LanguageMode>('system')
   const [hydrated, setHydrated] = useState(false)
+  const posthog = usePostHog()
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -50,9 +52,21 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const setMode = (next: LanguageMode) => {
+    const previousResolved = resolve(mode)
+    const nextResolved = resolve(next)
     setModeState(next)
     AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {})
-    changeLanguage(resolve(next))
+    changeLanguage(nextResolved)
+    // Only emit when the resolved language actually changed. Switching
+    // 'system' → 'en' when the OS is already English shouldn't count as
+    // a language change from an analytics perspective.
+    if (previousResolved !== nextResolved) {
+      posthog?.capture('app_language_changed', {
+        from: previousResolved,
+        to: nextResolved,
+        mode: next,
+      })
+    }
   }
 
   const resolved = resolve(mode)

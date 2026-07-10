@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { Pressable } from 'react-native'
 import { useRouter, type Href } from 'expo-router'
 import { Heart } from '@tamagui/lucide-icons'
+import { usePostHog } from 'posthog-react-native'
 import { Spinner, YStack } from 'tamagui'
 import { useToastController } from '@tamagui/toast'
 import { useTranslation } from 'react-i18next'
@@ -32,10 +33,19 @@ export function FavoriteButton({
   const { t } = useTranslation()
   const router = useRouter()
   const toast = useToastController()
+  const posthog = usePostHog()
   const { isFavorite, toggle, isPending } = useToggleFavorite()
   const active = isFavorite(refToFavorite)
 
   const onPress = useCallback(async () => {
+    // Capture BEFORE toggle so the event reflects the user's intent — a
+    // failed network call still tells us they wanted to favorite. `added`
+    // reflects the state we're moving TO (the inverse of current `active`).
+    posthog?.capture('favorite_toggled', {
+      type: refToFavorite.type,
+      id: refToFavorite.id,
+      added: !active,
+    })
     try {
       await toggle(refToFavorite)
     } catch (err) {
@@ -48,7 +58,7 @@ export function FavoriteButton({
       }
       toast.show(t('common.somethingWentWrong'))
     }
-  }, [toggle, refToFavorite, router, t, toast])
+  }, [toggle, refToFavorite, router, t, toast, posthog, active])
 
   const iconActive = activeColor ?? '#FF7A59' // coral accent for filled state
   const iconInactive = inactiveColor ?? '#FFFFFF'

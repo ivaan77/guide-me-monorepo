@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <main className="min-h-screen flex flex-col">
       <SiteHeader />
-      <LegalPage title="Privacy Policy" effectiveDate="8 July 2026">
+      <LegalPage title="Privacy Policy" effectiveDate="10 July 2026">
         <p>
           This Privacy Policy explains what personal data we collect when you use
           the GuideMe mobile app and website (the “<strong>Service</strong>”),
@@ -68,12 +68,27 @@ export default function PrivacyPage() {
             request. We use this for security, rate-limiting, and error
             diagnostics; we do not link it to your account for profiling.
           </li>
+          <li>
+            <strong>Product analytics:</strong> the mobile app sends
+            usage events to our analytics processor, PostHog. These events
+            record actions like sign-in, starting or completing a walking
+            tour, tapping a favorite, playing audio (duration in
+            milliseconds), and switching language. Each event carries a
+            pseudonymous device identifier and, once you sign in, your
+            Clerk user ID so we can count unique users. The events also
+            include coarse device and app metadata attached automatically
+            by the analytics library — operating system name and version,
+            app version, device type, locale, and timezone. We use this
+            data only in aggregate to understand how the app is used and
+            to publish community numbers on our marketing site. We do not
+            sell it, share it with advertisers, or use it for profiling.
+          </li>
         </ul>
         <p>
-          We do <strong>not</strong> collect: analytics or behavioural tracking,
-          advertising identifiers, contact lists, photos, microphone data, health
-          data, financial data, or any special-category data (as defined by
-          Article 9 GDPR).
+          We do <strong>not</strong> collect: advertising identifiers,
+          contact lists, photos, microphone data, health data, financial
+          data, or any special-category data (as defined by Article 9
+          GDPR).
         </p>
 
         <h2>3. Why We Use Your Data</h2>
@@ -87,6 +102,14 @@ export default function PrivacyPage() {
             <strong>To keep the Service secure and working</strong> — detect
             abuse, prevent fraud, diagnose errors. Legal basis: our legitimate
             interests (Art. 6(1)(f) GDPR).
+          </li>
+          <li>
+            <strong>To understand how the app is used in aggregate</strong>{' '}
+            — measure feature adoption, spot broken flows, and publish
+            community-level statistics on our marketing site. Legal
+            basis: our legitimate interests (Art. 6(1)(f) GDPR). You can
+            object at any time by deleting your account, which stops
+            future analytics events tied to your identifier.
           </li>
           <li>
             <strong>To comply with legal obligations</strong> where they apply.
@@ -138,14 +161,29 @@ export default function PrivacyPage() {
             content that we publish (not user-generated content); bucket is
             located in <code>europe-west8</code> (Milan, Italy).
           </li>
+          <li>
+            <strong>PostHog</strong> — receives the product-analytics
+            events described in section 2 and stores them for aggregation.
+            We use the EU cloud instance (<code>eu.i.posthog.com</code>),
+            which hosts data on infrastructure inside the European Union.{' '}
+            <a
+              href="https://posthog.com/privacy"
+              target="_blank"
+              rel="noreferrer"
+            >
+              PostHog Privacy Policy
+            </a>
+            .
+          </li>
         </ul>
 
         <h2>5. International Transfers</h2>
         <p>
-          Your personal data (account record and favorites) is stored on
-          infrastructure located within the European Union — MongoDB Atlas in
-          Frankfurt and Render in Frankfurt. Published media content is stored
-          on Google Cloud in Milan.
+          Your personal data (account record, favorites, and product-
+          analytics events) is stored on infrastructure located within the
+          European Union — MongoDB Atlas in Frankfurt, Render in Frankfurt,
+          and PostHog EU. Published media content is stored on Google
+          Cloud in Milan.
         </p>
         <p>
           Some of the processors we rely on are headquartered outside the
@@ -167,6 +205,13 @@ export default function PrivacyPage() {
             <strong>Technical/server logs:</strong> retained for up to 30 days,
             then discarded, except where a longer period is required to
             investigate a security incident.
+          </li>
+          <li>
+            <strong>Product-analytics events:</strong> retained by PostHog
+            for aggregation according to PostHog's default retention (12
+            months for events at time of writing). Events are never re-
+            identified back to your account by us after collection; they
+            are only used in aggregate.
           </li>
         </ul>
 
@@ -220,10 +265,13 @@ export default function PrivacyPage() {
 
         <h2>10. Cookies and Similar Technologies</h2>
         <p>
-          The GuideMe website (this site) does not set analytics or advertising
-          cookies. The mobile app does not use browser cookies. Our
-          authentication provider, Clerk, may set cookies necessary for sign-in
-          if you sign in via the web.
+          The GuideMe website (this site) does not set analytics or
+          advertising cookies. The mobile app does not use browser
+          cookies. Our authentication provider, Clerk, may set cookies
+          necessary for sign-in if you sign in via the web. The mobile
+          analytics library (PostHog) stores its pseudonymous device
+          identifier in on-device storage (not a browser cookie); this
+          identifier is cleared when you sign out or reinstall the app.
         </p>
 
         <h2>11. Changes to This Policy</h2>

@@ -3,6 +3,7 @@ import { Animated, Pressable } from 'react-native'
 import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@clerk/clerk-expo'
+import { usePostHog } from 'posthog-react-native'
 import { useToastController } from '@tamagui/toast'
 import { Star } from '@tamagui/lucide-icons'
 import { H2, Paragraph, SizableText, XStack, YStack } from 'tamagui'
@@ -49,6 +50,7 @@ export function RatingPromptSheet({
   const { t } = useTranslation()
   const router = useRouter()
   const toast = useToastController()
+  const posthog = usePostHog()
   const { isSignedIn } = useAuth()
   const { submit } = useRateTarget()
   const getMyRating = useMyRating()
@@ -135,6 +137,12 @@ export function RatingPromptSheet({
 
       try {
         await submit(targetType, targetId, value)
+        posthog?.capture('rating_submitted', {
+          type: targetType,
+          id: targetId,
+          value,
+          is_update: existingRating !== null,
+        })
       } catch (err) {
         if (err instanceof UnauthorizedError) {
           if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current)
@@ -158,6 +166,7 @@ export function RatingPromptSheet({
       router,
       onClose,
       thanksOpacity,
+      posthog,
     ],
   )
 

@@ -7,6 +7,7 @@ import 'dotenv/config';
 
 mongoose.set('strictQuery', true);
 import { AdminDiscoverModule } from './admin/discover/admin-discover.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { CacheModule } from './cache/cache.module';
 import { DirectionsModule } from './directions/directions.module';
 import { DiscoverModule } from './discover/discover.module';
@@ -23,6 +24,7 @@ const dbUrl = process.env.MONGODB_URL;
     DirectionsModule,
     DiscoverModule,
     AdminDiscoverModule,
+    AnalyticsModule,
     RatingsModule,
     UsersModule,
   ],

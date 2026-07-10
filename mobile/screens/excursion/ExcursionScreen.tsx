@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
+import { usePostHog } from 'posthog-react-native'
 import * as Location from 'expo-location'
 import MapView, {
   Circle,
@@ -184,6 +185,7 @@ function ExcursionBody({
 }) {
   const [phase, setPhase] = useState<Phase>('preview')
   const ratingPrompt = useRatingPrompt('excursion', id)
+  const posthog = usePostHog()
 
   // Fire the rating prompt shortly after the user hits 'complete' so the
   // CompletePanel renders first and the sheet feels like a follow-up, not
@@ -196,6 +198,42 @@ function ExcursionBody({
     }, 1200)
     return () => clearTimeout(timeout)
   }, [phase, ratingPrompt])
+
+  // Emit exactly one `excursion_completed` per (userSession, excursion). We
+  // don't need to guard cross-app-launches because completing the same
+  // excursion twice in one PostHog session is signal, not noise — but
+  // within a single visit to this screen the phase can bounce complete →
+  // outro → complete via user undo. Only fire on the first arrival.
+  const completedFiredRef = useRef(false)
+  useEffect(() => {
+    if (phase !== 'complete') {
+      completedFiredRef.current = false
+      return
+    }
+    if (completedFiredRef.current) return
+    completedFiredRef.current = true
+    posthog?.capture('excursion_completed', {
+      excursion_id: id,
+      stop_count: stops.length,
+    })
+  }, [phase, posthog, id, stops.length])
+
+  // `excursion_started` — the first time the user leaves the preview panel
+  // in this session. Feeds the top of the funnel (started → arrived → …
+  // → completed). Guarded per-mount so navigating between stops or
+  // undoing back to preview doesn't re-fire — one "started" per session
+  // is the useful semantic.
+  const startedFiredRef = useRef(false)
+  useEffect(() => {
+    if (startedFiredRef.current) return
+    if (phase === 'preview') return
+    startedFiredRef.current = true
+    posthog?.capture('excursion_started', {
+      excursion_id: id,
+      stop_count: stops.length,
+    })
+  }, [phase, posthog, id, stops.length])
+
   const [currentIndex, setCurrentIndex] = useState(0)
   // The stop the user has chosen to begin from. Defaults to 0 (first stop)
   // and only changes when the user explicitly picks a different one via
@@ -439,6 +477,24 @@ function ExcursionBody({
     }
     previousPhaseRef.current = phase
   }, [phase])
+
+  // `stop_arrived` — fires once per (session, stop). Deduped by the last
+  // arrived index so that undoing out of arrived and re-arriving at the
+  // same stop doesn't over-count, but skipping ahead or continuing to a
+  // new stop still emits. Uses the same session-scoped ref pattern as
+  // completedFiredRef.
+  const lastArrivedIndexRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (phase !== 'arrived') return
+    if (lastArrivedIndexRef.current === currentIndex) return
+    lastArrivedIndexRef.current = currentIndex
+    posthog?.capture('stop_arrived', {
+      excursion_id: id,
+      stop_id: stops[currentIndex]?.id,
+      stop_index: currentIndex,
+      total_stops: stops.length,
+    })
+  }, [phase, currentIndex, posthog, id, stops])
 
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || !currentStop) return
@@ -1247,6 +1303,10 @@ function ExcursionBody({
         onPressFact={(f) => {
           setActiveFact(f)
           factBanner.dismiss()
+          posthog?.capture('fact_played', {
+            fact_id: f.id,
+            excursion_id: id,
+          })
         }}
         onDismiss={factBanner.dismiss}
       />
@@ -1289,6 +1349,7 @@ function ExcursionBody({
           >
             <BottomPanel
               phase={phase}
+              excursionId={id}
               currentStop={currentStop}
               currentIndex={currentIndex}
               currentSubStopIndex={currentSubStopIndex}
@@ -1686,6 +1747,7 @@ function UndoSkipPill({
 
 function BottomPanel({
   phase,
+  excursionId,
   currentStop,
   currentIndex,
   currentSubStopIndex,
@@ -1714,6 +1776,7 @@ function BottomPanel({
   onMoreInfo,
 }: {
   phase: Phase
+  excursionId: string
   currentStop?: ExcursionStop
   currentIndex: number
   currentSubStopIndex: number
@@ -1801,7 +1864,7 @@ function BottomPanel({
       )}
 
       {phase === 'outro' && outro && (
-        <OutroPanel outro={outro} onFinish={onFinish} />
+        <OutroPanel outro={outro} excursionId={excursionId} onFinish={onFinish} />
       )}
 
       {phase === 'complete' && (
@@ -2555,9 +2618,11 @@ function ArrivedPanel({
 // finish behavior — exiting the excursion screen).
 function OutroPanel({
   outro,
+  excursionId,
   onFinish,
 }: {
   outro: PublicExcursionOutro
+  excursionId: string
   onFinish: () => void
 }) {
   const { t } = useTranslation()
@@ -2574,6 +2639,8 @@ function OutroPanel({
       <AudioPlayer
         audioUrl={outro.audioUrl}
         title={t('excursion.stopSheet.audioTitle')}
+        analyticsSourceType="outro"
+        analyticsSourceId={excursionId}
       />
       <Paragraph
         color="$color"

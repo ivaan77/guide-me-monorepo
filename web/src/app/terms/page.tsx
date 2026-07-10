@@ -13,7 +13,7 @@ export default function TermsPage() {
   return (
     <main className="min-h-screen flex flex-col">
       <SiteHeader />
-      <LegalPage title="Terms of Service" effectiveDate="8 July 2026">
+      <LegalPage title="Terms of Service" effectiveDate="10 July 2026">
         <p>
           These Terms of Service (“<strong>Terms</strong>”) govern your use of the
           GuideMe mobile app, website, and related services (together, the “
@@ -92,9 +92,12 @@ export default function TermsPage() {
         <h2>7. Third-Party Services</h2>
         <p>
           The Service integrates third-party services, including Clerk
-          (authentication) and Google Maps (mapping and walking directions). Your
-          use of those integrations is also subject to their respective terms.
-          We are not responsible for third-party services or content.
+          (authentication), Google Maps (mapping and walking directions),
+          and PostHog (product analytics). Your use of those integrations
+          is also subject to their respective terms. We are not responsible
+          for third-party services or content. For details on what data is
+          shared with each processor and why, see our{' '}
+          <a href="/privacy">Privacy Policy</a>.
         </p>
 
         <h2>8. Location and Directions</h2>

@@ -136,6 +136,8 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
           <AudioPlayer
             audioUrl={stop.audioUrl}
             title={t('excursion.stopSheet.audioTitle')}
+            analyticsSourceType="stop"
+            analyticsSourceId={stop.id}
           />
           <Paragraph
             color="$color"

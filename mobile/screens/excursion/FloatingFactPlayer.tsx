@@ -12,6 +12,7 @@ import {
 import type { PublicInterestingFact } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
+import { useAudioPlaybackTracker } from '../../hooks/useAudioPlaybackTracker'
 
 const ON_AMBER = palette.navy
 
@@ -77,6 +78,16 @@ function PlayerCard({
   const duration = status?.duration ?? 0
   const currentTime = status?.currentTime ?? 0
   const progress = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0
+
+  // Fact-audio contributes to the marketing "hours listened" counter. Each
+  // fact renders a fresh PlayerCard (key=fact.id in the parent) so unmount
+  // fires per-fact and the ms totals get emitted one event per fact.
+  useAudioPlaybackTracker({
+    isPlaying,
+    sourceType: 'fact',
+    sourceId: fact.id,
+    enabled: !!fact.audioUrl,
+  })
 
   // Auto-play on mount.
   useEffect(() => {

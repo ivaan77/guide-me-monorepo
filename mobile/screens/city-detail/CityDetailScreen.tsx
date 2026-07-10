@@ -179,6 +179,8 @@ export function CityDetailScreen({ id }: Props) {
               title={t('city.audioTitle')}
               promptKey="city.audioPrompt"
               playingKey="city.audioPlaying"
+              analyticsSourceType="city"
+              analyticsSourceId={city.id}
             />
           </YStack>
         )}
