@@ -12,9 +12,11 @@ export class BlogRepository {
 
   // --- Public reads (status: 'published' only) ---
 
-  async findPublished(
-    opts: { category?: BlogCategory; limit: number; skip: number },
-  ): Promise<{ posts: BlogDocument[]; total: number }> {
+  async findPublished(opts: {
+    category?: BlogCategory;
+    limit: number;
+    skip: number;
+  }): Promise<{ posts: BlogDocument[]; total: number }> {
     const filter: FilterQuery<Blog> = { status: 'published' };
     if (opts.category) filter.category = opts.category;
     const [posts, total] = await Promise.all([

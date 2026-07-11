@@ -22,7 +22,9 @@ export function tiptapPlainText(doc: TipTapDoc | undefined): string {
 
 // Returns undefined when doc is empty so the client can render "· 4 min read"
 // only for actual articles.
-export function tiptapReadingMinutes(doc: TipTapDoc | undefined): number | undefined {
+export function tiptapReadingMinutes(
+  doc: TipTapDoc | undefined,
+): number | undefined {
   const text = tiptapPlainText(doc);
   if (!text) return undefined;
   const words = text.split(/\s+/).length;

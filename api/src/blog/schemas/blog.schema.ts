@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
-import { LocalizedStringSub, LocalizedStringSubSchema } from '../../discover/schemas/locale.subdocuments';
+import {
+  LocalizedStringSub,
+  LocalizedStringSubSchema,
+} from '../../discover/schemas/locale.subdocuments';
 
 export const BLOG_CATEGORIES = [
   'travel-tips',

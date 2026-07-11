@@ -35,12 +35,17 @@ export class BlogService {
   ): Promise<PublicBlogDetailResponse> {
     const doc = await this.repo.findPublishedBySlug(slug);
     if (!doc) throw new NotFoundException(`Blog post not found: ${slug}`);
-    const body = pickLocalizedRichText(doc.body as unknown as LocalizedRichText, locale);
+    const body = pickLocalizedRichText(
+      doc.body as unknown as LocalizedRichText,
+      locale,
+    );
     return {
       post: {
         ...this.toSummary(doc, locale, body),
         body,
-        metaTitle: doc.metaTitle ? pickLocalized(doc.metaTitle, locale) : undefined,
+        metaTitle: doc.metaTitle
+          ? pickLocalized(doc.metaTitle, locale)
+          : undefined,
         metaDescription: doc.metaDescription
           ? pickLocalized(doc.metaDescription, locale)
           : undefined,
@@ -58,7 +63,9 @@ export class BlogService {
     locale: Locale,
     resolvedBody?: TipTapDoc,
   ): PublicBlogSummary {
-    const body = resolvedBody ?? pickLocalizedRichText(doc.body as unknown as LocalizedRichText, locale);
+    const body =
+      resolvedBody ??
+      pickLocalizedRichText(doc.body as unknown as LocalizedRichText, locale);
     return {
       slug: doc.slug,
       category: doc.category,

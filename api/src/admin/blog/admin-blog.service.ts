@@ -61,7 +61,8 @@ export class AdminBlogService {
     if (dto.ogImage !== undefined) update.ogImage = dto.ogImage;
     if (dto.title !== undefined) update.title = dto.title;
     if (dto.excerpt !== undefined) update.excerpt = dto.excerpt;
-    if (dto.body !== undefined) update.body = dto.body as unknown as BlogDocument['body'];
+    if (dto.body !== undefined)
+      update.body = dto.body as unknown as BlogDocument['body'];
     if (dto.metaTitle !== undefined) update.metaTitle = dto.metaTitle;
     if (dto.metaDescription !== undefined) {
       update.metaDescription = dto.metaDescription;
@@ -103,8 +104,12 @@ export class AdminBlogService {
       metaDescription: doc.metaDescription,
       publishedAt: doc.publishedAt?.toISOString(),
       // Mongoose `timestamps: true` adds these as Dates.
-      createdAt: (doc as unknown as { createdAt: Date }).createdAt.toISOString(),
-      updatedAt: (doc as unknown as { updatedAt: Date }).updatedAt.toISOString(),
+      createdAt: (
+        doc as unknown as { createdAt: Date }
+      ).createdAt.toISOString(),
+      updatedAt: (
+        doc as unknown as { updatedAt: Date }
+      ).updatedAt.toISOString(),
     };
   }
 }
