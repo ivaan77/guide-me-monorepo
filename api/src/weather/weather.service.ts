@@ -53,10 +53,7 @@ export class WeatherService {
     if (cached !== undefined) return cached;
 
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      REQUEST_TIMEOUT_MS,
-    );
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       // Ask Open-Meteo for the daily aggregates we care about. `timezone=auto`
@@ -92,9 +89,7 @@ export class WeatherService {
 
       const daily = json.daily;
       if (!daily?.time?.length) {
-        this.logger.warn(
-          `Open-Meteo returned empty daily block for ${date}`,
-        );
+        this.logger.warn(`Open-Meteo returned empty daily block for ${date}`);
         return null;
       }
 
@@ -119,9 +114,7 @@ export class WeatherService {
           `Open-Meteo timeout for ${roundedLat},${roundedLng}:${date}`,
         );
       } else {
-        this.logger.warn(
-          `Open-Meteo fetch failed: ${(err as Error).message}`,
-        );
+        this.logger.warn(`Open-Meteo fetch failed: ${(err as Error).message}`);
       }
       return null;
     } finally {

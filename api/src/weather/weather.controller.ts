@@ -34,9 +34,7 @@ export class WeatherController {
       throw new BadRequestException('Invalid `lng` (must be -180..180).');
     }
     if (!date || !DATE_RE.test(date)) {
-      throw new BadRequestException(
-        'Invalid `date` (expected yyyy-mm-dd).',
-      );
+      throw new BadRequestException('Invalid `date` (expected yyyy-mm-dd).');
     }
 
     const weather = await this.weather.getForecast(lat, lng, date);
