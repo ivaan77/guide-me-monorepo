@@ -8,6 +8,7 @@ import {
   HelpCircle,
   LogOut,
   MapPin,
+  Newspaper,
   Store,
 } from 'lucide-react'
 
@@ -52,6 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           icon={<Store className="h-4 w-4" />}
           label="Places & Events"
         />
+        <NavLink href="/blogs" icon={<Newspaper className="h-4 w-4" />} label="Blog" />
         <NavLink href="/stats" icon={<BarChart3 className="h-4 w-4" />} label="Stats" />
         <NavLink href="/web-content" icon={<Globe className="h-4 w-4" />} label="Web content" />
         <NavLink href="/help" icon={<HelpCircle className="h-4 w-4" />} label="Help" />

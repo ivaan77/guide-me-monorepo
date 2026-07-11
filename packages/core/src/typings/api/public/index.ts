@@ -103,6 +103,8 @@ export type PublicCityDetail = PublicCity & {
     locals?: PublicCategoryItem[]
     workshops?: PublicCategoryItem[]
     playareas?: PublicCategoryItem[]
+    petFriendly?: PublicCategoryItem[]
+    kidsFriendly?: PublicCategoryItem[]
 }
 
 export type PublicCityDetailResponse = {
@@ -162,6 +164,8 @@ export type PoiCategory =
     | 'local'
     | 'workshop'
     | 'playarea'
+    | 'petFriendly'
+    | 'kidsFriendly'
 
 // PublicPoi is now the resolved Place reference: the api dereferences
 // excursion.pois[].placeSlug into the full Place document so mobile gets
@@ -399,4 +403,86 @@ export type PublicWeather = {
 
 export type PublicWeatherResponse = {
     weather: PublicWeather
+}
+
+// --- Blog / Stories ---
+
+// Fixed list of blog categories. Kept small on purpose — free-text tags
+// give better search but require admin-side taxonomy management. Add
+// entries here + to BlogCategoryLabels in the app when new categories
+// are needed. The mobile app treats an unknown category as 'news' at
+// the render layer.
+export const BLOG_CATEGORIES = [
+    'travel-tips',
+    'city-guide',
+    'food-drink',
+    'news',
+] as const
+export type BlogCategory = (typeof BLOG_CATEGORIES)[number]
+
+// Publish workflow: draft = admin-only preview, published = live on web
+// + app. Kept intentionally simple — scheduled/archived can be added later
+// without breaking clients (parse as 'draft' when unknown).
+export const BLOG_STATUSES = ['draft', 'published'] as const
+export type BlogStatus = (typeof BLOG_STATUSES)[number]
+
+// TipTap stores documents as a nested JSON tree of nodes. Rather than
+// modeling every node here (paragraph, heading, image, youtube, appLink,
+// etc.), we treat the doc as opaque JSON. The rich-text renderers on web
+// and mobile know how to walk it, and admin's TipTap editor produces it
+// directly.
+//
+// Shape at the top level is always `{ type: 'doc', content: [...] }`.
+// Consumers should defensively handle missing/malformed docs — the
+// renderers fall back to an empty state rather than crashing.
+export type TipTapDoc = {
+    type: 'doc'
+    content?: unknown[]
+}
+
+// Localized rich-text field. English required, other locales optional and
+// fall back to English at read time. Same pattern as LocalizedString but
+// wrapping a TipTap doc instead of a plain string.
+export type LocalizedRichText = {
+    en: TipTapDoc
+} & Partial<Record<Locale, TipTapDoc>>
+
+// Public-facing blog card as it appears in the /blog index (web) or the
+// Stories tab (mobile). Body is stripped intentionally — the list view
+// only needs enough to render a card + link to the detail view.
+export type PublicBlogSummary = {
+    slug: string
+    category: BlogCategory
+    title: string
+    excerpt: string
+    coverImage: string
+    // ISO timestamp. Ordering is server-side (publishedAt DESC) so the
+    // client can render in-order without re-sorting.
+    publishedAt: string
+    // Optional reading-time hint in minutes, computed server-side from the
+    // TipTap doc. Renders as "· 4 min read" on cards when present.
+    readingMinutes?: number
+}
+
+// Full blog post as returned by the detail endpoint. `body` is the TipTap
+// JSON for the resolved locale. Meta fields are only populated when the
+// author set them; renderers should fall back to title/excerpt when unset.
+export type PublicBlogDetail = PublicBlogSummary & {
+    body: TipTapDoc
+    metaTitle?: string
+    metaDescription?: string
+    ogImage?: string
+}
+
+export type PublicBlogListResponse = {
+    posts: PublicBlogSummary[]
+    // Total match count across all pages. Enables "Page 2 of 5" pagination
+    // UI on the web index without a HEAD request.
+    total: number
+    locale: Locale
+}
+
+export type PublicBlogDetailResponse = {
+    post: PublicBlogDetail
+    locale: Locale
 }

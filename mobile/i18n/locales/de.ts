@@ -114,6 +114,8 @@ export const de = {
       parks: 'Parks',
       workshops: 'Workshops',
       playareas: 'Spielecken',
+      kidsFriendly: 'Kinderfreundlich',
+      petFriendly: 'Haustierfreundlich',
       locals: 'Lokale Tipps',
     },
     subCategoryOther: 'Sonstige',
@@ -148,6 +150,8 @@ export const de = {
       local: 'Lokaler Tipp',
       workshop: 'Workshop',
       playarea: 'Spielecke',
+      petFriendly: 'Haustierfreundlich',
+      kidsFriendly: 'Kinderfreundlich',
     },
   },
   excursion: {

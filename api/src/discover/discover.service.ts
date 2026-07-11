@@ -134,6 +134,8 @@ export class DiscoverService {
       locals: bucket('local'),
       workshops: bucket('workshop'),
       playareas: bucket('playarea'),
+      petFriendly: bucket('petFriendly'),
+      kidsFriendly: bucket('kidsFriendly'),
     };
 
     return { city: detail, locale };

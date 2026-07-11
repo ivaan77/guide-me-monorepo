@@ -8,8 +8,10 @@ import {
   Heart,
   Landmark,
   Mountain,
+  PawPrint,
   ShoppingBag,
   Trees,
+  Users,
   UtensilsCrossed,
   Wine,
 } from '@tamagui/lucide-icons'
@@ -39,4 +41,6 @@ export const POI_CATEGORY_META: Record<PoiCategory, PoiCategoryMeta> = {
   local: { color: '#E11D48', icon: Heart },
   workshop: { color: '#9333EA', icon: Brush },
   playarea: { color: '#F472B6', icon: Baby },
+  petFriendly: { color: '#0EA5E9', icon: PawPrint },
+  kidsFriendly: { color: '#FB923C', icon: Users },
 }

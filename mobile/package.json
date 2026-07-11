@@ -53,7 +53,7 @@
     "expo-secure-store": "^55.0.14",
     "expo-splash-screen": "~55.0.21",
     "expo-status-bar": "~55.0.6",
-    "expo-system-ui": "~5o5.0.18",
+    "expo-system-ui": "~55.0.18",
     "expo-web-browser": "~55.0.16",
     "fuse.js": "^7.4.2",
     "i18next": "^26.2.0",

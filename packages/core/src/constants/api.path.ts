@@ -14,6 +14,11 @@ export const AdminPath = {
         getPlaceReferences: (slug: string): string =>
             `/admin/discover/places/${slug}/references`,
     },
+    Blog: {
+        posts: '/admin/blogs',
+        postBySlug: '/admin/blogs/:slug',
+        getPost: (slug: string): string => `/admin/blogs/${slug}`,
+    },
 }
 
 export const MePath = {
@@ -49,6 +54,11 @@ export const PublicPath = {
     },
     Weather: {
         forecast: '/public/weather',
+    },
+    Blog: {
+        list: '/public/blogs',
+        postBySlug: '/public/blogs/:slug',
+        getPost: (slug: string): string => `/public/blogs/${slug}`,
     },
 }
 

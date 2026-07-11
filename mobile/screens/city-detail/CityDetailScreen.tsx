@@ -22,8 +22,10 @@ import {
   Heart,
   Landmark,
   Mountain,
+  PawPrint,
   ShoppingBag,
   Trees,
+  Users,
   UtensilsCrossed,
   Wine,
 } from '@tamagui/lucide-icons'
@@ -358,6 +360,20 @@ export function CityDetailScreen({ id }: Props) {
             title={t('city.sections.playareas')}
             icon={Baby}
             items={city.playareas}
+            hrefFor={(item) => `/place/${item.id}`}
+            userLocation={userLocation}
+          />
+          <CategorySection
+            title={t('city.sections.kidsFriendly')}
+            icon={Users}
+            items={city.kidsFriendly}
+            hrefFor={(item) => `/place/${item.id}`}
+            userLocation={userLocation}
+          />
+          <CategorySection
+            title={t('city.sections.petFriendly')}
+            icon={PawPrint}
+            items={city.petFriendly}
             hrefFor={(item) => `/place/${item.id}`}
             userLocation={userLocation}
           />

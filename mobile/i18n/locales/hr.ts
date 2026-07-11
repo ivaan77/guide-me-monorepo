@@ -117,6 +117,8 @@ export const hr = {
       parks: 'Parkovi',
       workshops: 'Radionice',
       playareas: 'Igraonice',
+      kidsFriendly: 'Za djecu',
+      petFriendly: 'Ljubimci dobrodošli',
       locals: 'Lokalne preporuke',
     },
     subCategoryOther: 'Ostalo',
@@ -152,6 +154,8 @@ export const hr = {
       local: 'Lokalna preporuka',
       workshop: 'Radionica',
       playarea: 'Igraonica',
+      petFriendly: 'Ljubimci dobrodošli',
+      kidsFriendly: 'Za djecu',
     },
   },
   excursion: {

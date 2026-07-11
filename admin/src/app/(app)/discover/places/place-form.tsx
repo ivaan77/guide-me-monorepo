@@ -47,6 +47,8 @@ const CATEGORIES = [
   'local',
   'workshop',
   'playarea',
+  'petFriendly',
+  'kidsFriendly',
 ] as const
 
 const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
@@ -63,6 +65,8 @@ const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
   local: 'Local pick',
   workshop: 'Workshop',
   playarea: 'Play area',
+  petFriendly: 'Pet friendly',
+  kidsFriendly: 'Kids friendly',
 }
 
 const localizedSchema = z.object({

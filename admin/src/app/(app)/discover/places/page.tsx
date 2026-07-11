@@ -24,6 +24,8 @@ const VALID_CATEGORIES: PoiCategory[] = [
   'local',
   'workshop',
   'playarea',
+  'petFriendly',
+  'kidsFriendly',
 ]
 
 export default async function PlacesPage({

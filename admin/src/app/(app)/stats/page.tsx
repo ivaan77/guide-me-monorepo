@@ -41,6 +41,8 @@ const CATEGORY_LABEL: Record<PoiCategory, string> = {
   local: 'Local picks',
   workshop: 'Workshops',
   playarea: 'Play areas',
+  petFriendly: 'Pet friendly',
+  kidsFriendly: 'Kids friendly',
 }
 
 const CATEGORY_ORDER: PoiCategory[] = [
@@ -57,6 +59,8 @@ const CATEGORY_ORDER: PoiCategory[] = [
   'local',
   'workshop',
   'playarea',
+  'petFriendly',
+  'kidsFriendly',
 ]
 
 export default async function StatsPage() {
