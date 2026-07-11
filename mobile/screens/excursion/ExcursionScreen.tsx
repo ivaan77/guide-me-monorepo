@@ -80,7 +80,6 @@ import { StartFromPicker } from './StartFromPicker'
 import { SubStopPager } from './SubStopPager'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
-import { StopsList } from './StopsList'
 import { StopsSheet } from './StopsSheet'
 import { ImageLightbox } from '../../common/ImageLightbox'
 import {
