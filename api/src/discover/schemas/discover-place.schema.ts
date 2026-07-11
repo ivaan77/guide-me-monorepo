@@ -3,6 +3,8 @@ import { HydratedDocument } from 'mongoose';
 import {
   LatLngSub,
   LatLngSubSchema,
+  LocalizedAudioDurationSub,
+  LocalizedAudioDurationSubSchema,
   LocalizedAudioSub,
   LocalizedAudioSubSchema,
   LocalizedStringSub,
@@ -69,8 +71,29 @@ export class DiscoverPlace {
   @Prop({ type: LocalizedAudioSubSchema })
   audioUrl?: LocalizedAudioSub;
 
+  // Server-populated. See LocalizedAudioDurationSub.
+  @Prop({ type: LocalizedAudioDurationSubSchema, default: {} })
+  audioDurationMs?: LocalizedAudioDurationSub;
+
   @Prop({ required: true, default: true, index: true })
   isEnabled: boolean;
+
+  // Denormalized rating aggregate. See DiscoverCity for the pattern.
+  @Prop({ type: Number, default: 0 })
+  ratingSum: number;
+
+  @Prop({ type: Number, default: 0 })
+  ratingCount: number;
+
+  // When true this doc appears in the admin-curated public web gallery.
+  // Independent of `isEnabled` — a place must be both enabled AND featured
+  // to appear on the marketing site. `webFeaturedOrder` drives sort order;
+  // lower values render first. Ties break by slug for stability.
+  @Prop({ required: true, default: false, index: true })
+  webFeatured: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  webFeaturedOrder: number;
 }
 
 export type DiscoverPlaceDocument = HydratedDocument<DiscoverPlace>;

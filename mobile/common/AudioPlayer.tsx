@@ -7,6 +7,7 @@ import {
   useAudioPlayer,
   useAudioPlayerStatus,
 } from 'expo-audio'
+import { useAudioPlaybackTracker } from '../hooks/useAudioPlaybackTracker'
 import {
   Headphones,
   Pause,
@@ -42,6 +43,11 @@ type Props = {
   // Optional override for the "no audio uploaded" message. Defaults to the
   // existing stop sheet copy.
   missingKey?: string
+  // Analytics metadata — attached to the `audio_played` event on unmount.
+  // Callers pass their source shape (a stop slug on an excursion, a place
+  // slug on the place screen, etc). Unset falls back to 'other'.
+  analyticsSourceType?: 'stop' | 'sub_stop' | 'fact' | 'place' | 'city' | 'outro'
+  analyticsSourceId?: string | null
 }
 
 export function AudioPlayer({
@@ -50,6 +56,8 @@ export function AudioPlayer({
   promptKey,
   playingKey,
   missingKey,
+  analyticsSourceType,
+  analyticsSourceId,
 }: Props) {
   const { t } = useTranslation()
 
@@ -58,6 +66,16 @@ export function AudioPlayer({
   const player = useAudioPlayer(audioUrl ?? null)
   const status: AudioStatus | null = useAudioPlayerStatus(player)
   const isPlaying = status?.playing ?? false
+
+  // Accumulates listened-time while playing; flushes as a single
+  // `audio_played` event when this component unmounts. `enabled` gate
+  // prevents recording on stub cards that have no URL.
+  useAudioPlaybackTracker({
+    isPlaying,
+    sourceType: analyticsSourceType ?? 'stop',
+    sourceId: analyticsSourceId,
+    enabled: !!audioUrl,
+  })
   // While the user is dragging the scrub slider we follow their finger
   // optimistically (status updates would yank the thumb back to the actual
   // playback position). null when no drag is in progress.

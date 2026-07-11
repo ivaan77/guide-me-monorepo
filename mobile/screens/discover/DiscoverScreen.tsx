@@ -1,10 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FlatList, ScrollView, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { usePostHog } from 'posthog-react-native'
 import { XStack, YStack, useTheme } from 'tamagui'
+import type { PublicCity } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useFuzzySearch } from '../../hooks/useFuzzySearch'
+import { useLayout } from '../../hooks/useLayout'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { CityCard } from './CityCard'
 import { CityCardSkeleton } from './CityCardSkeleton'
 import { EmptyState } from './EmptyState'
@@ -12,32 +17,56 @@ import { SearchBar } from './SearchBar'
 
 const GUTTER = 16
 const H_PADDING = 20
-const SEARCH_DEBOUNCE_MS = 250
+const SEARCH_DEBOUNCE_MS = 350
 const SKELETON_COUNT = 8
+
+// Fields on PublicCity we want the fuzzy matcher to consider. Explicit
+// tuple (not derived) so TypeScript catches drift if PublicCity changes.
+const SEARCH_KEYS: (keyof PublicCity & string)[] = ['name', 'country']
 
 export function DiscoverScreen() {
   const { width } = useWindowDimensions()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
-  const cardWidth = (width - H_PADDING * 2 - GUTTER) / 2
+  const { isTablet } = useLayout()
+  // On tablets clamp the effective grid width so cards stay a sensible
+  // size — otherwise 500pt+ card widths look empty and text lines get
+  // uncomfortably long. On phones we use the full screen.
+  const effectiveWidth = isTablet
+    ? Math.min(width, TABLET_MAX_CONTENT_WIDTH)
+    : width
+  const cardWidth = (effectiveWidth - H_PADDING * 2 - GUTTER) / 2
+  // Horizontal margin used by list containers to center the fixed-width
+  // grid on tablets. Zero on phones (full-bleed).
+  const tabletSideMargin = isTablet
+    ? Math.max(0, (width - TABLET_MAX_CONTENT_WIDTH) / 2)
+    : 0
 
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS)
+  const posthog = usePostHog()
 
   const bottomPadding = useTabBarPadding()
 
   const { data, isPending, isError, error, refetch } = useCities()
 
-  const filtered = useMemo(() => {
-    if (!data) return []
-    const q = debouncedQuery.trim().toLowerCase()
-    if (!q) return data
-    return data.filter(
-      (city) =>
-        city.name.toLowerCase().includes(q) ||
-        city.country.toLowerCase().includes(q),
-    )
-  }, [data, debouncedQuery])
+  // Fuzzy match on name + country, diacritic-insensitive. Handles typos
+  // ("zabreb" → Zagreb) and diacritic-free input ("sibenik" → Šibenik).
+  // Debounced query keeps the Fuse index off the render hot path.
+  const filtered = useFuzzySearch(data, SEARCH_KEYS, debouncedQuery)
+
+  // Fire `search_performed` once per debounced query (skip empty). PII
+  // guard: never send the raw text — length + result count only. Signal
+  // is "did the search yield anything?", not "what did they search for."
+  useEffect(() => {
+    if (!debouncedQuery.trim()) return
+    if (isPending || isError) return
+    posthog?.capture('search_performed', {
+      query_length: debouncedQuery.trim().length,
+      result_count: filtered.length,
+      had_results: filtered.length > 0,
+    })
+  }, [debouncedQuery, filtered.length, isPending, isError, posthog])
 
   const bg = theme.background.val
 
@@ -58,7 +87,14 @@ export function DiscoverScreen() {
 
   function renderBody() {
     if (isPending) {
-      return <SkeletonGrid header={header} cardWidth={cardWidth} bg={bg} />
+      return (
+        <SkeletonGrid
+          header={header}
+          cardWidth={cardWidth}
+          bg={bg}
+          sideMargin={tabletSideMargin}
+        />
+      )
     }
 
     if (isError) {
@@ -91,7 +127,8 @@ export function DiscoverScreen() {
         numColumns={2}
         style={{ backgroundColor: bg }}
         contentContainerStyle={{
-          paddingHorizontal: H_PADDING,
+          paddingLeft: H_PADDING + tabletSideMargin,
+          paddingRight: H_PADDING + tabletSideMargin,
           paddingBottom: bottomPadding,
           backgroundColor: bg,
           flexGrow: 1,
@@ -113,17 +150,20 @@ function SkeletonGrid({
   header,
   cardWidth,
   bg,
+  sideMargin,
 }: {
   header: React.ReactNode
   cardWidth: number
   bg: string
+  sideMargin: number
 }) {
   const rows = Math.ceil(SKELETON_COUNT / 2)
   return (
     <ScrollView
       style={{ backgroundColor: bg }}
       contentContainerStyle={{
-        paddingHorizontal: H_PADDING,
+        paddingLeft: H_PADDING + sideMargin,
+        paddingRight: H_PADDING + sideMargin,
         paddingBottom: 24,
         backgroundColor: bg,
         flexGrow: 1,

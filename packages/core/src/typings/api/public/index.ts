@@ -41,6 +41,15 @@ export type PublicCity = {
     country: string
     image: string
     editorPick?: PublicEditorPick
+    rating?: PublicRatingAggregate
+}
+
+// Aggregate rating info surfaced on public list + detail responses. Omitted
+// (undefined) when no ratings exist yet — mobile hides the badge in that case.
+// avg is rounded to 1 decimal by the server so clients don't have to.
+export type PublicRatingAggregate = {
+    avg: number
+    count: number
 }
 
 export type AllPublicCitiesResponse = {
@@ -62,6 +71,12 @@ export type PublicCategoryItem = {
     description?: string
     images?: string[]
     subCategory?: string
+    rating?: PublicRatingAggregate
+    // Optional lat/lng of the underlying place. Feeds the "distance from
+    // me" client-side sort on CityDetailScreen. Excursion category items
+    // never populate this (an excursion is a route, not a point); place
+    // category items populate it whenever the source doc has coords.
+    coords?: PublicLatLng
 }
 
 // City detail exposes each POI category as its own optional list so the
@@ -190,6 +205,7 @@ export type PublicExcursion = {
     pois?: PublicPoi[]
     interestingFacts?: PublicInterestingFact[]
     outro?: PublicExcursionOutro
+    rating?: PublicRatingAggregate
 }
 
 export type PublicExcursionResponse = {
@@ -213,9 +229,110 @@ export type PublicPlaceDetail = {
     coords?: PublicLatLng
     audioUrl?: string
     subCategory?: string
+    rating?: PublicRatingAggregate
 }
 
 export type PublicPlaceResponse = {
     place: PublicPlaceDetail
     locale: Locale
+}
+
+// --- Public web (marketing site) ---
+
+// Aggregate counts + audio duration for the public web landing/stats band.
+// Server caches this response (1h TTL) so numbers can lag slightly; every
+// count is over enabled records only. `placesByCategory` covers every value
+// in PoiCategory (missing categories emit 0) so the UI can render a stable
+// shape without runtime guards.
+export type PublicStats = {
+    cities: number
+    excursions: number
+    excursionStops: number
+    places: number
+    placesByCategory: Record<PoiCategory, number>
+    // Total narration duration across all interesting facts, in milliseconds.
+    // Facts without a populated `audioDurationMs` contribute 0 — the number
+    // is a lower bound until every fact is backfilled.
+    audioDurationMs: number
+}
+
+export type PublicStatsResponse = {
+    stats: PublicStats
+}
+
+// One item in the admin-curated web gallery. Sourced from either a City or a
+// Place (`sourceType` disambiguates). `id` is the source doc's slug; taken
+// together with `sourceType` it forms a stable, unique key. `link` is an
+// optional deep-link back into the mobile app (or a public web route) — the
+// web renders a click affordance only when present.
+export type PublicGalleryItem = {
+    id: string
+    sourceType: 'city' | 'place'
+    title: string
+    subtitle?: string
+    image: string
+    link?: string
+}
+
+export type PublicGalleryResponse = {
+    items: PublicGalleryItem[]
+}
+
+// Usage counters derived from PostHog events. Distinct from PublicStats
+// (which counts *content produced* in Mongo): these describe *engagement*
+// — how many humans used the app and what they did. All values are
+// cumulative all-time. Returns zeros when PostHog is unreachable so the
+// landing degrades gracefully to hiding the band.
+//
+// `users` — count of distinct sign-ups. Anonymous device sessions that
+// never signed up are NOT counted here (see the `user_signup` event fired
+// on Clerk account creation).
+// `audioListenedHours` — sum of `duration_ms` across every `audio_played`
+// event, converted to hours, rounded to the nearest integer.
+// `routesCompleted` — count of `excursion_completed` events (once per
+// excursion arrival, guarded against double-fires in the mobile app).
+// `countriesReached` — count of distinct $geoip_country_code across every
+// event PostHog has ever ingested. Auto-attached by the SDK.
+// `averageRating` — mean rating across all cities/excursions/places, rounded
+// to 1 decimal. Sourced from Mongo (ratings collection, authoritative)
+// rather than PostHog so users who rated pre-analytics still count.
+// `ratingsCount` — total rating rows in Mongo. Included so the average
+// isn't shown alone (a "4.5 average" from 2 ratings is misleading).
+export type PublicUsageStats = {
+    users: number
+    audioListenedHours: number
+    routesCompleted: number
+    countriesReached: number
+    averageRating: number
+    ratingsCount: number
+}
+
+export type PublicUsageStatsResponse = {
+    stats: PublicUsageStats
+}
+
+// Popularity-ranked gallery items — a data-driven complement to the
+// admin-curated PublicGalleryItem. Same shape as the curated one for easy
+// rendering, plus a `popularity` field so the UI can label how "hot" each
+// item is (e.g. "1.2k walkers"). Sourced from PostHog event counts and
+// projected back onto the discover Mongo docs so titles/images still come
+// from the source of truth.
+//
+// Populated best-effort — when PostHog is unreachable or has no events,
+// the endpoint returns an empty items array (never throws). Cached 1h.
+export type PublicPopularItem = {
+    id: string
+    sourceType: 'city' | 'excursion' | 'place'
+    title: string
+    subtitle?: string
+    image: string
+    // How the popularity was measured — different for each sourceType so
+    // the label on the web reads sensibly ("walkers" for excursions,
+    // "explorers" for cities, "saves" for places).
+    popularity: number
+    popularityKind: 'walkers' | 'explorers' | 'saves'
+}
+
+export type PublicPopularGalleryResponse = {
+    items: PublicPopularItem[]
 }

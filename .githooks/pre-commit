@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Guide-Me pre-commit hook. Runs before every commit.
+#
+# Enabled by pointing git at this directory once per clone:
+#   git config core.hooksPath .githooks
+# Or by running the helper script from the repo root:
+#   yarn hooks:install
+#
+# Adding new checks:
+#   Put them below. Each check should exit non-zero to abort the commit,
+#   and print a helpful message to stderr.
+
+set -euo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# yarn.lock cacheKey drift — see scripts/check-yarn-lock-cachekey.sh for
+# context. Runs on every commit so a stale lockfile can never even leave
+# the developer's machine.
+#
+# Only run when yarn.lock is being committed OR is already committed and
+# present. Skipping when the file is genuinely absent (e.g. first commit
+# of a new repo) keeps the hook usable outside guide-me-monorepo if
+# copied elsewhere.
+if [ -f "$REPO_ROOT/yarn.lock" ]; then
+  bash "$REPO_ROOT/scripts/check-yarn-lock-cachekey.sh"
+fi

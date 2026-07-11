@@ -17,16 +17,19 @@ import {
   AdminAllPlacesResponse,
   AdminCityResponse,
   AdminExcursionResponse,
+  AdminGalleryResponse,
   AdminPath,
   AdminPlaceReferencesResponse,
   AdminPlaceResponse,
   AdminStatsResponse,
+  AdminWebPath,
   PoiCategory,
 } from '@guide-me-app/core';
 import { AdminTokenGuard } from '../admin-token.guard';
 import { AdminDiscoverService } from './admin-discover.service';
 import { CreateCityDto, UpdateCityDto } from './dto/city.dto';
 import { CreateExcursionDto, UpdateExcursionDto } from './dto/excursion.dto';
+import { GalleryUpdateDto } from './dto/gallery.dto';
 import { CreatePlaceDto, UpdatePlaceDto } from './dto/place.dto';
 
 // All endpoints below are gated by the shared-secret AdminTokenGuard.
@@ -150,5 +153,18 @@ export class AdminDiscoverController {
   @Get(AdminPath.Discover.stats)
   async getStats(): Promise<AdminStatsResponse> {
     return { stats: await this.service.getStats() };
+  }
+
+  // ---------- Web content (public web gallery curator) ----------
+
+  @Get(AdminWebPath.gallery)
+  async listGallery(): Promise<AdminGalleryResponse> {
+    return this.service.listGallery();
+  }
+
+  @Patch(AdminWebPath.gallery)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateGallery(@Body() dto: GalleryUpdateDto): Promise<void> {
+    await this.service.updateGallery(dto);
   }
 }

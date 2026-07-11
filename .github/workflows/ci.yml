@@ -45,6 +45,13 @@ jobs:
       - name: Activate pinned yarn
         run: corepack prepare yarn@4.16.0 --activate
 
+      # Fail fast on yarn.lock cacheKey drift. The shared script is the
+      # single source of truth for what cacheKey to expect — the same
+      # script runs from the local .githooks/pre-commit hook, so bumping
+      # yarn only requires editing scripts/check-yarn-lock-cachekey.sh.
+      - name: Verify yarn.lock cacheKey matches pinned yarn
+        run: bash scripts/check-yarn-lock-cachekey.sh
+
       - name: Restore yarn cache
         uses: actions/cache@v4
         with:

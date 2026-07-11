@@ -22,6 +22,10 @@ export const MePath = {
     favoriteByRef: '/me/favorites/:type/:id',
     deleteFavorite: (type: string, id: string): string =>
         `/me/favorites/${type}/${id}`,
+    ratings: '/me/ratings',
+    ratingByRef: '/me/ratings/:type/:id',
+    deleteRating: (type: string, id: string): string =>
+        `/me/ratings/${type}/${id}`,
 }
 
 export const PublicPath = {
@@ -37,4 +41,14 @@ export const PublicPath = {
         getExcursionById: (id: string): string => `/public/discover/excursions/${id}`,
         getPlaceById: (id: string): string => `/public/discover/places/${id}`,
     },
+    Web: {
+        stats: '/public/web/stats',
+        gallery: '/public/web/gallery',
+        usageStats: '/public/web/usage-stats',
+        popularGallery: '/public/web/popular-gallery',
+    },
+}
+
+export const AdminWebPath = {
+    gallery: '/admin/web-content/gallery',
 }

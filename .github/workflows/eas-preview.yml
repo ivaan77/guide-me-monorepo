@@ -42,6 +42,11 @@ jobs:
       - name: Activate pinned yarn
         run: corepack prepare yarn@4.16.0 --activate
 
+      # Fail fast on lockfile cacheKey drift — shared script also used by
+      # the local pre-commit hook. See scripts/check-yarn-lock-cachekey.sh.
+      - name: Verify yarn.lock cacheKey matches pinned yarn
+        run: bash scripts/check-yarn-lock-cachekey.sh
+
       - name: Install eas-cli
         run: npm i -g eas-cli
 

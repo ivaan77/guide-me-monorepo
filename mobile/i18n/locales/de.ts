@@ -1,6 +1,8 @@
-import type { Translations } from './en'
-
-export const de: Translations = {
+// Note: not typed as `Translations` (typeof en) so plural-suffixed keys
+// can be spelled out per-locale without forcing shape-parity across all
+// locales (Croatian in particular needs _few in addition to _one/_other).
+// Missing keys still fall back to `en` at runtime via fallbackLng.
+export const de = {
   common: {
     tryAgain: 'Erneut versuchen',
     skip: 'Überspringen',
@@ -45,6 +47,41 @@ export const de: Translations = {
     themeLight: 'Hell',
     themeDark: 'Dunkel',
     languageSystem: 'System',
+    legal: 'Rechtliches',
+    terms: 'Nutzungsbedingungen',
+    privacy: 'Datenschutzerklärung',
+    account: 'Konto',
+    deleteAccount: 'Konto löschen',
+    deleteAccountConfirmTitle: 'Konto löschen?',
+    deleteAccountConfirmMessage:
+      'Dein Profil, deine Favoriten und deine Anmeldedaten werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.',
+    deleteAccountConfirmAction: 'Löschen',
+    deleteAccountCancel: 'Abbrechen',
+    deleteAccountErrorTitle: 'Konto konnte nicht gelöscht werden',
+    deleteAccountErrorMessage: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
+  },
+  ratings: {
+    rateCity: 'Diese Stadt bewerten',
+    rateExcursion: 'Diese Tour bewerten',
+    ratePlace: 'Diesen Ort bewerten',
+    yourRating: 'Deine Bewertung',
+    tapToRate: 'Zum Bewerten auf einen Stern tippen',
+    countLabel_one: '{{count}} Bewertung',
+    countLabel_other: '{{count}} Bewertungen',
+    signInToRate: 'Zum Bewerten anmelden',
+    noRatingsYet: 'Noch keine Bewertungen',
+    beFirstToRate: 'Sei der Erste, der bewertet',
+    prompt: {
+      titleCity: 'Wie war {{name}}?',
+      titleExcursion: 'Wie war diese Tour?',
+      titlePlace: 'Wie war {{name}}?',
+      subtitle: 'Tippe auf einen Stern. Deine Bewertung hilft anderen Reisenden.',
+      subtitleUpdate: 'Tippe auf einen anderen Stern, um deine Bewertung zu ändern.',
+      skip: 'Nicht jetzt',
+      cancel: 'Abbrechen',
+      thanks: 'Danke!',
+      updated: 'Bewertung aktualisiert',
+    },
   },
   auth: {
     titleA: 'Von hier',
@@ -55,6 +92,8 @@ export const de: Translations = {
     continueWithApple: 'Mit Apple fortfahren',
     skip: 'Ohne Anmeldung fortfahren',
     signInFailedTitle: 'Anmeldung fehlgeschlagen',
+    legalNoticeBefore: 'Mit dem Fortfahren stimmst du unseren',
+    legalNoticeAnd: 'und der',
   },
   city: {
     notFound: 'Diese Stadt konnten wir nicht finden.',
@@ -78,9 +117,18 @@ export const de: Translations = {
       locals: 'Lokale Tipps',
     },
     subCategoryOther: 'Sonstige',
+    sort: {
+      editorial: 'Empfohlen',
+      rating: 'Top-Bewertung',
+      distance: 'Nächstgelegen',
+    },
+    browseAll_one: 'Alle {{count}} anzeigen',
+    browseAll_other: 'Alle {{count}} anzeigen',
+    browseCollapse: 'Weniger anzeigen',
   },
   place: {
     notFound: 'Diesen Ort konnten wir nicht finden.',
+    openInMaps: 'In Karten öffnen',
     fallbackDescription:
       'Ein handverlesener Ort, der einen Umweg wert ist. Details und Öffnungszeiten folgen bald — vorerst genügen Adresse und Kategorie für den Anfang.',
     audioTitle: 'Audioguide',
@@ -108,7 +156,10 @@ export const de: Translations = {
     farFromStop: 'Weit von der Station',
     preview: {
       title: 'Bereit zur Entdeckung?',
-      subtitle: '{{count}} Stationen · wir führen dich zwischen ihnen.',
+      subtitle_one: '{{count}} Station · wir bringen dich direkt hin.',
+      subtitle_other: '{{count}} Stationen · wir führen dich zwischen ihnen.',
+      badge_one: 'Bereit · {{count}} Station',
+      badge_other: 'Bereit · {{count}} Stationen',
       start: 'Starten',
     },
     navigating: {
@@ -120,30 +171,45 @@ export const de: Translations = {
       continue: 'Weiter',
       finish: 'Beenden',
       next: 'Weiter',
-      bundleIntro: '{{count}} Stationen bei {{bundle}}',
+      bundleIntro_one: '{{count}} Station bei {{bundle}}',
+      bundleIntro_other: '{{count}} Stationen bei {{bundle}}',
       bundlePosition: '{{index}} von {{total}} · {{bundle}}',
-      startStops: '{{count}} Stationen starten',
+      bundleIntroBadge_one: 'Bundle · {{count}} Station',
+      bundleIntroBadge_other: 'Bundle · {{count}} Stationen',
+      bundlePositionBadge: 'Bundle · {{index}} von {{total}}',
+      startStops_one: '{{count}} Station starten',
+      startStops_other: '{{count}} Stationen starten',
       skipSubStop: '{{name}} überspringen',
       skipBundle: 'Alle Stationen bei {{bundle}} überspringen',
     },
     outro: {
+      badge: 'Abschluss',
       finish: 'Beenden',
     },
     complete: {
+      badge: 'Abgeschlossen',
       title: 'Tour abgeschlossen',
-      body: 'Du hast alle {{total}} Stationen besucht. Hoffentlich hat sich der Weg gelohnt.',
+      body_one: 'Du hast {{count}} Station besucht. Hoffentlich hat sich der Weg gelohnt.',
+      body_other: 'Du hast alle {{count}} Stationen besucht. Hoffentlich hat sich der Weg gelohnt.',
       done: 'Fertig',
     },
     list: {
       current: 'Aktuell',
-      bundleCount: '{{count}} Stationen',
+      bundleCount_one: '{{count}} Station',
+      bundleCount_other: '{{count}} Stationen',
     },
     stopSheet: {
       audioTitle: 'Audioguide',
       audioPrompt: 'Zum Abspielen tippen',
       audioPlaying: 'Wird abgespielt…',
       audioMissing: 'Für diese Station gibt es noch kein Audio.',
-      bundleHeader: '{{count}} Stationen an diesem Ort',
+      bundleHeader_one: '{{count}} Station an diesem Ort',
+      bundleHeader_other: '{{count}} Stationen an diesem Ort',
+    },
+    stopsSheet: {
+      chip: 'Stationen',
+      title_one: 'Stationen · {{count}}',
+      title_other: 'Stationen · {{count}}',
     },
     facts: {
       bannerLabel: 'Wusstest du schon?',

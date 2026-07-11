@@ -1,24 +1,35 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Image,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   type ViewToken,
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
+import { usePostHog } from 'posthog-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
-import { ChevronLeft } from '@tamagui/lucide-icons'
+import { ChevronLeft, Navigation } from '@tamagui/lucide-icons'
 import type { PoiCategory, PublicPlaceDetail } from '@guide-me-app/core'
 import { H1, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
+import { RatingPromptSheet } from '../../common/RatingPromptSheet'
+import { RatingStars } from '../../common/RatingStars'
 import { usePlace } from '../../hooks/usePlace'
+import { useLayout } from '../../hooks/useLayout'
+import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
+import { clearAuthChoice } from '../../providers/AuthChoice'
 import { EmptyState } from '../discover/EmptyState'
+import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
+
+const LOGIN_HREF = '/login' as Href
 import { CLEAN_MAP_STYLE } from '../excursion/cleanMapStyle'
 import { PlaceDetailSkeleton } from './PlaceDetailSkeleton'
 
@@ -31,11 +42,57 @@ const H_PADDING = 20
 const TAB_BAR_HEIGHT = 49
 
 export function PlaceDetailScreen({ id }: Props) {
-  const { width } = useWindowDimensions()
+  const { width: rawWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { t } = useTranslation()
   const { data: place, isPending, isError, refetch } = usePlace(id)
+  const ratingPrompt = useDwellRatingPrompt('place', id, { enabled: !!place })
+  const posthog = usePostHog()
+  const { isTablet } = useLayout()
+  // Same tablet cap as CityDetailScreen — see comment there.
+  const width = isTablet ? Math.min(rawWidth, TABLET_MAX_CONTENT_WIDTH) : rawWidth
+  const sideMargin = isTablet
+    ? Math.max(0, (rawWidth - TABLET_MAX_CONTENT_WIDTH) / 2)
+    : 0
+
+  const onOpenDirections = useCallback(async () => {
+    if (!place?.coords) return
+    const { latitude, longitude } = place.coords
+    posthog?.capture('external_map_opened', {
+      place_id: id,
+      platform: Platform.OS,
+    })
+    // Walking directions since GuideMe is a walking-tour app. If the OS
+    // maps app scheme isn't handled (rare — e.g., stripped Android build
+    // without Google Maps installed), fall back to a web URL that any
+    // browser can open.
+    const label = encodeURIComponent(place.name)
+    const primary =
+      Platform.OS === 'ios'
+        ? `maps://?daddr=${latitude},${longitude}&dirflg=w&q=${label}`
+        : `google.navigation:q=${latitude},${longitude}&mode=w`
+    const fallback = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=walking`
+    try {
+      const canOpen = await Linking.canOpenURL(primary)
+      await Linking.openURL(canOpen ? primary : fallback)
+    } catch {
+      try {
+        await Linking.openURL(fallback)
+      } catch {
+        // Silent — user just sees nothing happen. Rare enough not to toast.
+      }
+    }
+  }, [place, id, posthog])
+
+  const onTapRating = useCallback(async () => {
+    if (ratingPrompt.isGuest) {
+      await clearAuthChoice()
+      router.push(LOGIN_HREF)
+      return
+    }
+    ratingPrompt.openManual()
+  }, [ratingPrompt, router])
 
   const categoryLabel = (category: PoiCategory): string =>
     t(`place.category.${category}` as const)
@@ -74,7 +131,11 @@ export function PlaceDetailScreen({ id }: Props) {
     <YStack flex={1} bg="$background">
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        contentContainerStyle={{
+          paddingBottom: bottomPadding,
+          paddingLeft: sideMargin,
+          paddingRight: sideMargin,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <HeroCarousel
@@ -85,21 +146,31 @@ export function PlaceDetailScreen({ id }: Props) {
         />
 
         <YStack px={H_PADDING} pt="$5" gap="$3">
-          <SizableText
-            size="$2"
-            color="$colorPress"
-            fontFamily="$body"
-            fontWeight="600"
-            style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
-          >
-            {place.meta}
-          </SizableText>
+          <XStack justify="space-between" items="center">
+            <SizableText
+              size="$2"
+              color="$colorPress"
+              fontFamily="$body"
+              fontWeight="600"
+              style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+            >
+              {place.meta}
+            </SizableText>
+            <RatingStars
+              mode="display"
+              aggregate={place.rating}
+              showEmptyState
+              onPress={onTapRating}
+            />
+          </XStack>
           {place.audioUrl && (
             <AudioPlayer
               audioUrl={place.audioUrl}
               title={t('place.audioTitle')}
               promptKey="place.audioPrompt"
               playingKey="place.audioPlaying"
+              analyticsSourceType="place"
+              analyticsSourceId={place.id}
             />
           )}
           <Paragraph
@@ -111,43 +182,64 @@ export function PlaceDetailScreen({ id }: Props) {
             {place.description ?? t('place.fallbackDescription')}
           </Paragraph>
           {place.coords && (
-            <YStack
-              mt="$2"
-              rounded="$5"
-              overflow="hidden"
-              borderWidth={1}
-              borderColor="$borderColor"
-            >
-              <MapView
-                // Google Maps on both platforms so customMapStyle applies
-                // and the look matches the excursion screen.
-                provider={PROVIDER_GOOGLE}
-                style={{ width: '100%', height: 200 }}
-                initialRegion={{
-                  latitude: place.coords.latitude,
-                  longitude: place.coords.longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
-                // Static preview only — disable everything that lets a tap
-                // get swallowed instead of scrolling the page.
-                scrollEnabled={false}
-                zoomEnabled={false}
-                rotateEnabled={false}
-                pitchEnabled={false}
-                // Strip Google/Apple's own POI clutter so only our pin shows.
-                customMapStyle={CLEAN_MAP_STYLE}
-                showsPointsOfInterests={false}
-                showsBuildings={false}
-                showsTraffic={false}
-                showsIndoors={false}
+            <Pressable onPress={onOpenDirections}>
+              <YStack
+                mt="$2"
+                rounded="$5"
+                overflow="hidden"
+                borderWidth={1}
+                borderColor="$borderColor"
               >
-                <Marker
-                  coordinate={place.coords}
-                  title={place.name}
-                />
-              </MapView>
-            </YStack>
+                <MapView
+                  // Google Maps on both platforms so customMapStyle applies
+                  // and the look matches the excursion screen.
+                  provider={PROVIDER_GOOGLE}
+                  style={{ width: '100%', height: 200 }}
+                  initialRegion={{
+                    latitude: place.coords.latitude,
+                    longitude: place.coords.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  // Static preview only — disable everything that lets a tap
+                  // get swallowed instead of scrolling the page.
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  rotateEnabled={false}
+                  pitchEnabled={false}
+                  // Let the outer Pressable catch taps — otherwise MapView
+                  // absorbs them and the "Open in Maps" affordance is dead.
+                  pointerEvents="none"
+                  // Strip Google/Apple's own POI clutter so only our pin shows.
+                  customMapStyle={CLEAN_MAP_STYLE}
+                  showsPointsOfInterests={false}
+                  showsBuildings={false}
+                  showsTraffic={false}
+                  showsIndoors={false}
+                >
+                  <Marker coordinate={place.coords} title={place.name} />
+                </MapView>
+                <XStack
+                  items="center"
+                  gap="$2"
+                  px="$3"
+                  py="$2.5"
+                  bg="$surfaceMuted"
+                  borderTopWidth={1}
+                  borderColor="$borderColor"
+                >
+                  <Navigation size={16} color="$primary" />
+                  <SizableText
+                    size="$3"
+                    color="$color"
+                    fontFamily="$body"
+                    fontWeight="600"
+                  >
+                    {t('place.openInMaps')}
+                  </SizableText>
+                </XStack>
+              </YStack>
+            </Pressable>
           )}
         </YStack>
       </ScrollView>
@@ -161,6 +253,14 @@ export function PlaceDetailScreen({ id }: Props) {
       >
         <FavoriteButton refToFavorite={{ type: 'place', id: place.id }} />
       </YStack>
+
+      <RatingPromptSheet
+        visible={ratingPrompt.visible}
+        onClose={ratingPrompt.close}
+        targetType="place"
+        targetId={place.id}
+        entityName={place.name}
+      />
     </YStack>
   )
 }

@@ -22,7 +22,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "script:prune-orphan-favorites": "ts-node scripts/prune-orphan-favorites.ts"
+    "script:prune-orphan-favorites": "ts-node scripts/prune-orphan-favorites.ts",
+    "script:backfill-audio-durations": "ts-node scripts/backfill-audio-durations.ts"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.11",
@@ -39,6 +40,7 @@
     "dotenv": "^16.4.5",
     "mongodb": "6.13.1",
     "mongoose": "^8.2.0",
+    "music-metadata": "^11.13.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
   },

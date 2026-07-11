@@ -3,6 +3,7 @@ import { Alert, Platform } from 'react-native'
 import { useSSO, useSignInWithApple } from '@clerk/clerk-expo'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { Apple } from '@tamagui/lucide-icons'
+import { usePostHog } from 'posthog-react-native'
 import { Button, Spinner, YStack } from 'tamagui'
 import Svg, { Path } from 'react-native-svg'
 import { useTranslation } from 'react-i18next'
@@ -20,6 +21,7 @@ type Props = {
 
 export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
   const { t } = useTranslation()
+  const posthog = usePostHog()
   const { startSSOFlow } = useSSO()
   const { startAppleAuthenticationFlow } = useSignInWithApple()
   const [appleAvailable, setAppleAvailable] = useState(false)
@@ -38,6 +40,7 @@ export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
   const onGoogle = useCallback(async () => {
     if (pending) return
     setPending('google')
+    posthog?.capture('sign_in_started', { provider: 'google' })
     try {
       const { createdSessionId, setActive } = await startSSOFlow({
         strategy: 'oauth_google',
@@ -45,9 +48,14 @@ export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId })
         await writeAuthChoice('signed-in')
+        posthog?.capture('sign_in_completed', { provider: 'google' })
         onSignedIn?.()
       }
     } catch (err) {
+      posthog?.capture('sign_in_failed', {
+        provider: 'google',
+        reason: (err as Error)?.message?.slice(0, 100) ?? 'unknown',
+      })
       Alert.alert(
         t('auth.signInFailedTitle'),
         err instanceof Error ? err.message : String(err),
@@ -55,27 +63,37 @@ export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
     } finally {
       setPending(null)
     }
-  }, [pending, startSSOFlow, onSignedIn, t])
+  }, [pending, posthog, startSSOFlow, onSignedIn, t])
 
   const onApple = useCallback(async () => {
     if (pending) return
     setPending('apple')
+    posthog?.capture('sign_in_started', { provider: 'apple' })
     try {
       const { createdSessionId, setActive } = await startAppleAuthenticationFlow()
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId })
         await writeAuthChoice('signed-in')
+        posthog?.capture('sign_in_completed', { provider: 'apple' })
         onSignedIn?.()
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      if (!/canceled|cancelled/i.test(msg)) {
+      if (/canceled|cancelled/i.test(msg)) {
+        // User canceled the Apple sheet — not a failure, but useful signal
+        // for funnel drop-off analysis (are we losing them at the OS dialog?).
+        posthog?.capture('sign_in_canceled', { provider: 'apple' })
+      } else {
+        posthog?.capture('sign_in_failed', {
+          provider: 'apple',
+          reason: msg.slice(0, 100),
+        })
         Alert.alert(t('auth.signInFailedTitle'), msg)
       }
     } finally {
       setPending(null)
     }
-  }, [pending, startAppleAuthenticationFlow, onSignedIn, t])
+  }, [pending, posthog, startAppleAuthenticationFlow, onSignedIn, t])
 
   const onSkipPress = useCallback(async () => {
     setPending('skip')

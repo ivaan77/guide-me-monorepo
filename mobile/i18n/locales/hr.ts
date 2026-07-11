@@ -1,6 +1,8 @@
-import type { Translations } from './en'
-
-export const hr: Translations = {
+// Note: not typed as `Translations` (typeof en) because Croatian's plural
+// resolution requires _few in addition to _one/_other, so its object shape
+// necessarily diverges from English. Missing keys still fall back to `en`
+// at runtime via i18next's fallbackLng.
+export const hr = {
   common: {
     tryAgain: 'Pokušaj ponovno',
     skip: 'Preskoči',
@@ -45,6 +47,44 @@ export const hr: Translations = {
     themeLight: 'Svijetlo',
     themeDark: 'Tamno',
     languageSystem: 'Sustav',
+    legal: 'Pravno',
+    terms: 'Uvjeti korištenja',
+    privacy: 'Pravila privatnosti',
+    account: 'Račun',
+    deleteAccount: 'Obriši račun',
+    deleteAccountConfirmTitle: 'Obrisati račun?',
+    deleteAccountConfirmMessage:
+      'Ovo trajno briše tvoj profil, favorite i identitet za prijavu. Ne može se poništiti.',
+    deleteAccountConfirmAction: 'Obriši',
+    deleteAccountCancel: 'Odustani',
+    deleteAccountErrorTitle: 'Brisanje računa nije uspjelo',
+    deleteAccountErrorMessage: 'Nešto je pošlo po zlu. Pokušaj ponovno.',
+  },
+  ratings: {
+    rateCity: 'Ocijeni ovaj grad',
+    rateExcursion: 'Ocijeni ovu turu',
+    ratePlace: 'Ocijeni ovo mjesto',
+    yourRating: 'Tvoja ocjena',
+    tapToRate: 'Dodirni zvjezdicu za ocjenu',
+    // Croatian plural forms via CLDR: one (1, 21, 31…), few (2–4, 22–24…),
+    // other (0, 5–20, 25–30…). i18next picks the right suffix per {{count}}.
+    countLabel_one: '{{count}} ocjena',
+    countLabel_few: '{{count}} ocjene',
+    countLabel_other: '{{count}} ocjena',
+    signInToRate: 'Prijavi se za ocjenjivanje',
+    noRatingsYet: 'Još nema ocjena',
+    beFirstToRate: 'Budi prvi koji ocjenjuje',
+    prompt: {
+      titleCity: 'Kako ti se svidio {{name}}?',
+      titleExcursion: 'Kako ti se svidjela ova tura?',
+      titlePlace: 'Kako ti se svidjelo {{name}}?',
+      subtitle: 'Dodirni zvjezdicu. Tvoja ocjena pomaže drugim putnicima.',
+      subtitleUpdate: 'Dodirni drugu zvjezdicu za promjenu ocjene.',
+      skip: 'Ne sad',
+      cancel: 'Odustani',
+      thanks: 'Hvala!',
+      updated: 'Ocjena ažurirana',
+    },
   },
   auth: {
     titleA: 'Odavde',
@@ -55,6 +95,8 @@ export const hr: Translations = {
     continueWithApple: 'Nastavi s Appleom',
     skip: 'Nastavi bez prijave',
     signInFailedTitle: 'Prijava nije uspjela',
+    legalNoticeBefore: 'Nastavkom prihvaćaš naše',
+    legalNoticeAnd: 'i',
   },
   city: {
     notFound: 'Taj grad nismo uspjeli pronaći.',
@@ -78,9 +120,19 @@ export const hr: Translations = {
       locals: 'Lokalne preporuke',
     },
     subCategoryOther: 'Ostalo',
+    sort: {
+      editorial: 'Preporučeno',
+      rating: 'Najbolje ocijenjeno',
+      distance: 'Najbliže',
+    },
+    browseAll_one: 'Pregledaj svih {{count}}',
+    browseAll_few: 'Pregledaj sve {{count}}',
+    browseAll_other: 'Pregledaj svih {{count}}',
+    browseCollapse: 'Prikaži manje',
   },
   place: {
     notFound: 'To mjesto nismo uspjeli pronaći.',
+    openInMaps: 'Otvori u Kartama',
     fallbackDescription:
       'Pažljivo odabrano mjesto vrijedno obilaska. Detalji i radno vrijeme uskoro stižu — za sada su dovoljni adresa i kategorija.',
     audioTitle: 'Audio vodič',
@@ -108,7 +160,12 @@ export const hr: Translations = {
     farFromStop: 'Daleko od postaje',
     preview: {
       title: 'Spreman za istraživanje?',
-      subtitle: '{{count}} postaja · vodimo te između njih.',
+      subtitle_one: '{{count}} postaja · odvest ćemo te ravno tamo.',
+      subtitle_few: '{{count}} postaje · vodimo te između njih.',
+      subtitle_other: '{{count}} postaja · vodimo te između njih.',
+      badge_one: 'Spremno · {{count}} postaja',
+      badge_few: 'Spremno · {{count}} postaje',
+      badge_other: 'Spremno · {{count}} postaja',
       start: 'Započni',
     },
     navigating: {
@@ -120,30 +177,52 @@ export const hr: Translations = {
       continue: 'Nastavi',
       finish: 'Završi',
       next: 'Sljedeće',
-      bundleIntro: '{{count}} postaja na {{bundle}}',
+      bundleIntro_one: '{{count}} postaja na {{bundle}}',
+      bundleIntro_few: '{{count}} postaje na {{bundle}}',
+      bundleIntro_other: '{{count}} postaja na {{bundle}}',
       bundlePosition: '{{index}} od {{total}} · {{bundle}}',
-      startStops: 'Započni {{count}} postaja',
+      bundleIntroBadge_one: 'Grupa · {{count}} postaja',
+      bundleIntroBadge_few: 'Grupa · {{count}} postaje',
+      bundleIntroBadge_other: 'Grupa · {{count}} postaja',
+      bundlePositionBadge: 'Grupa · {{index}} od {{total}}',
+      startStops_one: 'Započni {{count}} postaju',
+      startStops_few: 'Započni {{count}} postaje',
+      startStops_other: 'Započni {{count}} postaja',
       skipSubStop: 'Preskoči {{name}}',
       skipBundle: 'Preskoči sve postaje na {{bundle}}',
     },
     outro: {
+      badge: 'Kraj',
       finish: 'Završi',
     },
     complete: {
+      badge: 'Završeno',
       title: 'Tura završena',
-      body: 'Posjetio si svih {{total}} postaja. Nadamo se da je vrijedilo.',
+      body_one: 'Posjetio si {{count}} postaju. Nadamo se da je vrijedilo.',
+      body_few: 'Posjetio si {{count}} postaje. Nadamo se da je vrijedilo.',
+      body_other: 'Posjetio si svih {{count}} postaja. Nadamo se da je vrijedilo.',
       done: 'Gotovo',
     },
     list: {
       current: 'Trenutno',
-      bundleCount: '{{count}} postaja',
+      bundleCount_one: '{{count}} postaja',
+      bundleCount_few: '{{count}} postaje',
+      bundleCount_other: '{{count}} postaja',
     },
     stopSheet: {
       audioTitle: 'Audio vodič',
       audioPrompt: 'Dodirni za reprodukciju',
       audioPlaying: 'Reproducira se…',
       audioMissing: 'Za ovu postaju još nema audio zapisa.',
-      bundleHeader: '{{count}} postaja na ovom mjestu',
+      bundleHeader_one: '{{count}} postaja na ovom mjestu',
+      bundleHeader_few: '{{count}} postaje na ovom mjestu',
+      bundleHeader_other: '{{count}} postaja na ovom mjestu',
+    },
+    stopsSheet: {
+      chip: 'Postaje',
+      title_one: 'Postaje · {{count}}',
+      title_few: 'Postaje · {{count}}',
+      title_other: 'Postaje · {{count}}',
     },
     facts: {
       bannerLabel: 'Jeste li znali?',

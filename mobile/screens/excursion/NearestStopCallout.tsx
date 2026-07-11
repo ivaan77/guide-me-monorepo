@@ -4,6 +4,7 @@ import { MapPin } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
 import type { PublicLatLng } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
+import { SHADOW } from '../../constants/Sizes'
 
 // Navy text reads cleanly on the bright accent — same pairing used by the
 // FloatingFactBanner / FloatingFactPlayer.
@@ -37,13 +38,7 @@ export function NearestStopCallout({ coords }: Props) {
           py="$1"
           rounded="$10"
           bg="$accent"
-          style={{
-            shadowColor: '#B26B00',
-            shadowOpacity: 0.3,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 4,
-          }}
+          style={SHADOW.amberPill}
         >
           <MapPin size={11} color={ON_ACCENT as any} />
           <SizableText

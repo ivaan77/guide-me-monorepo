@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Animated as RNAnimated, Pressable } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Pause, Play, Sparkles, X } from '@tamagui/lucide-icons'
-import { SizableText, XStack, YStack, useTheme } from 'tamagui'
+import { SizableText, XStack, YStack } from 'tamagui'
 import Animated, { FadeIn, FadeOut, Easing } from 'react-native-reanimated'
 import {
   useAudioPlayer,
@@ -11,6 +11,8 @@ import {
 } from 'expo-audio'
 import type { PublicInterestingFact } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
+import { SHADOW } from '../../constants/Sizes'
+import { useAudioPlaybackTracker } from '../../hooks/useAudioPlaybackTracker'
 
 const ON_AMBER = palette.navy
 
@@ -64,18 +66,22 @@ function PlayerCard({
   onDismiss: () => void
 }) {
   const { t } = useTranslation()
-  const theme = useTheme()
-  // Amber pill (matches the FloatingFactBanner aesthetic so the transition
-  // banner → player feels like the same object morphing rather than two
-  // unrelated widgets).
-  const accent = theme.accent?.val ?? '#F59E0B'
-
   const player = useAudioPlayer(fact.audioUrl ?? null)
   const status: AudioStatus | null = useAudioPlayerStatus(player)
   const isPlaying = status?.playing ?? false
   const duration = status?.duration ?? 0
   const currentTime = status?.currentTime ?? 0
   const progress = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0
+
+  // Fact-audio contributes to the marketing "hours listened" counter. Each
+  // fact renders a fresh PlayerCard (key=fact.id in the parent) so unmount
+  // fires per-fact and the ms totals get emitted one event per fact.
+  useAudioPlaybackTracker({
+    isPlaying,
+    sourceType: 'fact',
+    sourceId: fact.id,
+    enabled: !!fact.audioUrl,
+  })
 
   // Auto-play on mount.
   useEffect(() => {
@@ -119,11 +125,7 @@ function PlayerCard({
       rounded="$6"
       style={{
         overflow: 'hidden',
-        shadowColor: '#B26B00',
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 8,
+        ...SHADOW.amberFloating,
       }}
     >
       <XStack items="center" gap="$2.5" px="$3" py="$2.5">

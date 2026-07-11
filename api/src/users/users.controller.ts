@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Req,
@@ -31,6 +32,12 @@ export class UsersController {
   @Get('me')
   me(@Req() req: AuthedRequest): Promise<MeResponse> {
     return this.service.getOrCreate(req.clerkUserId);
+  }
+
+  @Delete('me')
+  @HttpCode(204)
+  deleteMe(@Req() req: AuthedRequest): Promise<void> {
+    return this.service.deleteAccount(req.clerkUserId);
   }
 
   @Post('me/favorites')

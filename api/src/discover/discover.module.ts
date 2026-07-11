@@ -1,6 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { CacheModule } from '../cache/cache.module';
+import { AudioDurationReconciler } from './audio-duration-reconciler';
+import { AudioProbeService } from './audio-probe.service';
 import { DiscoverController } from './discover.controller';
 import { DiscoverCacheInterceptor } from './discover.interceptor';
 import { DiscoverRepository } from './discover.repository';
@@ -21,6 +24,7 @@ import {
 @Module({
   imports: [
     CacheModule,
+    forwardRef(() => AnalyticsModule),
     MongooseModule.forFeature([
       { name: DiscoverCity.name, schema: DiscoverCitySchema },
       { name: DiscoverExcursion.name, schema: DiscoverExcursionSchema },
@@ -28,7 +32,15 @@ import {
     ]),
   ],
   controllers: [DiscoverController],
-  providers: [DiscoverService, DiscoverRepository, DiscoverCacheInterceptor],
-  exports: [DiscoverRepository], // shared with AdminDiscoverModule
+  providers: [
+    DiscoverService,
+    DiscoverRepository,
+    DiscoverCacheInterceptor,
+    AudioProbeService,
+    AudioDurationReconciler,
+  ],
+  // Shared with AdminDiscoverModule (repository + reconciler) and any future
+  // consumer that needs to probe audio (backfill CLI, etc).
+  exports: [DiscoverRepository, AudioProbeService, AudioDurationReconciler],
 })
 export class DiscoverModule {}

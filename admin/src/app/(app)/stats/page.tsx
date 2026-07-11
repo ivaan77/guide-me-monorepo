@@ -1,16 +1,27 @@
 import Link from 'next/link'
 import type { PoiCategory } from '@guide-me-app/core'
+import {
+  getPopularGalleryAction,
+  getUsageStatsAction,
+} from '@/actions/analytics'
 import { getStatsAction } from '@/actions/stats'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/forms/page-header'
+import { AssetsLineChart } from '@/components/stats/assets-line-chart'
 import { CumulativeLineChart } from '@/components/stats/cumulative-line-chart'
 import {
   Building2,
+  CheckCircle2,
   Compass,
+  Flame,
+  Globe,
+  Headphones,
   Map as MapIcon,
   PinOff,
   Sparkles,
+  Star,
   Store,
+  Users,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -48,7 +59,15 @@ const CATEGORY_ORDER: PoiCategory[] = [
 ]
 
 export default async function StatsPage() {
-  const stats = await getStatsAction()
+  // Parallel fetches. Analytics endpoints call PostHog + Mongo — if
+  // PostHog is unreachable we still want the content-produced stats to
+  // render, so we swallow errors on the usage/popular fetches and treat
+  // them as "no data" rather than propagating to the whole page.
+  const [stats, usageStats, popularItems] = await Promise.all([
+    getStatsAction(),
+    getUsageStatsAction().catch(() => null),
+    getPopularGalleryAction().catch(() => []),
+  ])
   return (
     <>
       <PageHeader
@@ -121,6 +140,104 @@ export default async function StatsPage() {
           </CardContent>
         </Card>
 
+        {/* Assets chart — images + audio hours on separate y-axes */}
+        <Card>
+          <CardContent className="pt-6 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Headphones className="h-4 w-4" />
+              <p className="text-sm font-medium">Assets over time</p>
+            </div>
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Cumulative image count and total narration hours. Both attributed
+              to the day each parent doc was created — image adds via later
+              edits are not re-dated. Two y-axes so the lines stay readable at
+              any relative magnitude.
+            </p>
+            <AssetsLineChart data={stats.timeseries} />
+          </CardContent>
+        </Card>
+
+        {/* Community engagement (analytics) — usage counters sourced from
+            PostHog + the ratings collection. Same endpoints the marketing
+            web consumes, cached 1h server-side. Renders "not available" if
+            the analytics fetch failed (typically PostHog env vars missing
+            in this environment). */}
+        <Card>
+          <CardContent className="pt-6 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <p className="text-sm font-medium">Community engagement</p>
+            </div>
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              What real usage looks like. Numbers include ratings from Mongo
+              (authoritative, day-one) and PostHog events (users, hours
+              listened, routes completed, countries). Values cache 1h on
+              the API; the marketing landing shows the same figures.
+            </p>
+            {usageStats == null ? (
+              <p className="text-xs text-[var(--color-muted-foreground)] italic">
+                Analytics endpoint unreachable. Check API is running and
+                POSTHOG_* env vars are set.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <StatTile
+                  icon={<Users className="h-4 w-4" />}
+                  label="Explorers"
+                  value={usageStats.users}
+                />
+                <StatTile
+                  icon={<Headphones className="h-4 w-4" />}
+                  label="Hours listened"
+                  value={usageStats.audioListenedHours}
+                />
+                <StatTile
+                  icon={<CheckCircle2 className="h-4 w-4" />}
+                  label="Routes completed"
+                  value={usageStats.routesCompleted}
+                />
+                <StatTile
+                  icon={<Globe className="h-4 w-4" />}
+                  label="Countries"
+                  value={usageStats.countriesReached}
+                />
+                <StatTile
+                  icon={<Star className="h-4 w-4" />}
+                  label="Avg rating"
+                  value={usageStats.averageRating}
+                  sub={`${usageStats.ratingsCount} ratings`}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Popular right now — data-driven view of what the public gallery
+            surfaces. Lets admin spot which entities are actually being
+            engaged with, complementing the editorial curator at
+            /web-content. Empty when analytics is unavailable or before
+            events have accumulated. */}
+        {popularItems.length > 0 && (
+          <Card>
+            <CardContent className="pt-6 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Flame className="h-4 w-4" />
+                <p className="text-sm font-medium">Popular right now</p>
+              </div>
+              <p className="text-xs text-[var(--color-muted-foreground)]">
+                Ranked by usage events — walkers for excursions, explorers
+                for cities, saves for places. Hydrated back to live docs;
+                disabled/deleted entities silently drop out.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {popularItems.map((item) => (
+                  <PopularItemTile key={`${item.sourceType}:${item.id}`} item={item} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Inactive lists */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <InactiveList
@@ -179,6 +296,58 @@ function StatTile({
         )}
       </CardContent>
     </Card>
+  )
+}
+
+function PopularItemTile({
+  item,
+}: {
+  item: {
+    id: string
+    sourceType: 'city' | 'excursion' | 'place'
+    title: string
+    subtitle?: string
+    image: string
+    popularity: number
+    popularityKind: 'walkers' | 'explorers' | 'saves'
+  }
+}) {
+  // Deep-link to the entity's admin edit page. Excursions/places/cities
+  // all share the same /discover/<type>s/<slug> route shape.
+  const routeSegment =
+    item.sourceType === 'city'
+      ? 'cities'
+      : item.sourceType === 'excursion'
+        ? 'excursions'
+        : 'places'
+  const href = `/discover/${routeSegment}/${item.id}`
+  const badge =
+    item.sourceType === 'city'
+      ? 'City'
+      : item.sourceType === 'excursion'
+        ? 'Tour'
+        : 'Place'
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-md border border-[var(--color-border)] p-2 hover:bg-[var(--color-accent)] transition-colors"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={item.image}
+        alt=""
+        className="h-12 w-16 rounded object-cover flex-shrink-0"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] uppercase tracking-wider text-[var(--color-muted-foreground)]">
+          {badge}
+        </p>
+        <p className="text-sm font-medium truncate">{item.title}</p>
+        <p className="text-xs text-[var(--color-primary)] font-semibold tabular-nums">
+          {item.popularity} {item.popularityKind}
+        </p>
+      </div>
+    </Link>
   )
 }
 

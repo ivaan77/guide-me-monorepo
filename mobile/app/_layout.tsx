@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Text as RNText, TextInput as RNTextInput } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
@@ -21,9 +22,11 @@ import {
 } from '@expo-google-fonts/geist-mono'
 import { useAuth } from '@clerk/clerk-expo'
 import { AppProvider } from '../providers/AppProvider'
+import { PostHogProvider } from '../providers/PostHogProvider'
 import { useAppTheme } from '../providers/ThemeContext'
 import { readAuthChoice } from '../providers/AuthChoice'
 import { OfflineBanner } from '../common/OfflineBanner'
+import { PostHogIdentityGate } from '../providers/PostHogIdentityGate'
 
 export { ErrorBoundary } from 'expo-router'
 
@@ -32,6 +35,19 @@ export const unstable_settings = {
 }
 
 SplashScreen.preventAutoHideAsync()
+
+// Accessibility: allow OS-level text scaling but cap the multiplier so the
+// hero titles / large headings don't overflow the layout on the largest
+// accessibility text sizes. 1.4x is the largest scale where the current
+// UI holds together in visual QA on iPhone SE and Pixel 5.
+const MAX_TEXT_SCALE = 1.4
+// TS: React Native's public types don't declare defaultProps on these
+// components even though the runtime supports it.
+;((RNText as unknown as { defaultProps?: Record<string, unknown> }).defaultProps ??=
+  {}).maxFontSizeMultiplier = MAX_TEXT_SCALE
+;((
+  RNTextInput as unknown as { defaultProps?: Record<string, unknown> }
+).defaultProps ??= {}).maxFontSizeMultiplier = MAX_TEXT_SCALE
 
 export default function RootLayout() {
   const [fontsLoaded, fontsError] = useFonts({
@@ -61,11 +77,15 @@ export default function RootLayout() {
   }
 
   return (
-    <AppProvider>
-      <AuthGate>
-        <RootLayoutNav />
-      </AuthGate>
-    </AppProvider>
+    <PostHogProvider>
+      <AppProvider>
+        <PostHogIdentityGate>
+          <AuthGate>
+            <RootLayoutNav />
+          </AuthGate>
+        </PostHogIdentityGate>
+      </AppProvider>
+    </PostHogProvider>
   )
 }
 

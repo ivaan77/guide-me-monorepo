@@ -6,13 +6,23 @@ import {
 import {
   AdminCity,
   AdminExcursion,
+  AdminGalleryItem,
+  AdminGalleryResponse,
+  AdminGalleryUpdateRequest,
   AdminInactiveRef,
   AdminPlace,
   AdminStats,
   AdminStatsTimeseriesPoint,
+  DEFAULT_LOCALE,
   PoiCategory,
 } from '@guide-me-app/core';
 import { PLACE_CATEGORIES } from '../../discover/schemas/discover-place.schema';
+import { AudioDurationReconciler } from '../../discover/audio-duration-reconciler';
+import {
+  collectCityAudioSlots,
+  collectExcursionAudioSlots,
+  collectPlaceAudioSlots,
+} from '../../discover/audio-slot-collectors';
 import { CacheService } from '../../cache/cache.service';
 import { DISCOVER_CACHE_PREFIX } from '../../discover/discover.interceptor';
 import { DiscoverRepository } from '../../discover/discover.repository';
@@ -30,6 +40,7 @@ export class AdminDiscoverService {
     private readonly repo: DiscoverRepository,
     private readonly cache: CacheService,
     private readonly usersRepo: UsersRepository,
+    private readonly audioReconciler: AudioDurationReconciler,
   ) {}
 
   // ---------------- Cities ----------------
@@ -50,11 +61,13 @@ export class AdminDiscoverService {
     if (existing)
       throw new ConflictException(`City slug already exists: ${dto.slug}`);
     await this.assertCityPlaceSlugsValid(dto.cityPlaceSlugs ?? [], dto.slug);
-    const doc = await this.repo.insertCity({
+    const draft: Partial<DiscoverCityDocument> = {
       ...dto,
       cityPlaceSlugs: dto.cityPlaceSlugs ?? [],
       isEnabled: dto.isEnabled ?? true,
-    });
+    };
+    await this.audioReconciler.reconcile(collectCityAudioSlots(draft, null));
+    const doc = await this.repo.insertCity(draft);
     await this.bustCache();
     return this.toAdminCity(doc);
   }
@@ -63,7 +76,16 @@ export class AdminDiscoverService {
     if (dto.cityPlaceSlugs !== undefined) {
       await this.assertCityPlaceSlugsValid(dto.cityPlaceSlugs, slug);
     }
-    const doc = await this.repo.updateCityBySlug(slug, { $set: dto });
+    const draft: Partial<DiscoverCityDocument> = { ...dto };
+    // If audio was touched on this update, probe against the prior state so
+    // unchanged URLs keep their existing durations.
+    if (dto.audioUrl !== undefined) {
+      const existing = await this.repo.findCityBySlugAdmin(slug);
+      await this.audioReconciler.reconcile(
+        collectCityAudioSlots(draft, existing),
+      );
+    }
+    const doc = await this.repo.updateCityBySlug(slug, { $set: draft });
     if (!doc) throw new NotFoundException(`City not found: ${slug}`);
     await this.bustCache();
     return this.toAdminCity(doc);
@@ -108,13 +130,18 @@ export class AdminDiscoverService {
     if (existing)
       throw new ConflictException(`Excursion slug already exists: ${dto.slug}`);
     await this.assertPoiRefsExist(dto.pois ?? [], dto.citySlug);
-    const doc = await this.repo.insertExcursion({
-      ...dto,
-      stops: dto.stops ?? [],
-      pois: dto.pois ?? [],
-      interestingFacts: dto.interestingFacts ?? [],
+    const draft: Partial<DiscoverExcursionDocument> = {
+      ...(dto as unknown as Partial<DiscoverExcursionDocument>),
+      stops: (dto.stops ?? []) as unknown as DiscoverExcursionDocument['stops'],
+      pois: (dto.pois ?? []) as unknown as DiscoverExcursionDocument['pois'],
+      interestingFacts: (dto.interestingFacts ??
+        []) as unknown as DiscoverExcursionDocument['interestingFacts'],
       isEnabled: dto.isEnabled ?? true,
-    });
+    };
+    await this.audioReconciler.reconcile(
+      collectExcursionAudioSlots(draft, null),
+    );
+    const doc = await this.repo.insertExcursion(draft);
     await this.bustCache();
     return this.toAdminExcursion(doc);
   }
@@ -140,7 +167,22 @@ export class AdminDiscoverService {
       }
       await this.assertPoiRefsExist(dto.pois, citySlug);
     }
-    const doc = await this.repo.updateExcursionBySlug(slug, { $set: dto });
+    const draft: Partial<DiscoverExcursionDocument> = {
+      ...(dto as unknown as Partial<DiscoverExcursionDocument>),
+    };
+    // Probe only when any audio-bearing surface was touched. Otherwise the
+    // existing durations stay in place untouched.
+    if (
+      dto.stops !== undefined ||
+      dto.interestingFacts !== undefined ||
+      dto.outro !== undefined
+    ) {
+      const existing = await this.repo.findExcursionBySlugAdmin(slug);
+      await this.audioReconciler.reconcile(
+        collectExcursionAudioSlots(draft, existing),
+      );
+    }
+    const doc = await this.repo.updateExcursionBySlug(slug, { $set: draft });
     if (!doc) throw new NotFoundException(`Excursion not found: ${slug}`);
     await this.bustCache();
     return this.toAdminExcursion(doc);
@@ -183,10 +225,12 @@ export class AdminDiscoverService {
     const existing = await this.repo.findPlaceBySlugAdmin(dto.slug);
     if (existing)
       throw new ConflictException(`Place slug already exists: ${dto.slug}`);
-    const doc = await this.repo.insertPlace({
+    const draft: Partial<DiscoverPlaceDocument> = {
       ...dto,
       isEnabled: dto.isEnabled ?? true,
-    });
+    };
+    await this.audioReconciler.reconcile(collectPlaceAudioSlots(draft, null));
+    const doc = await this.repo.insertPlace(draft);
     await this.bustCache();
     return this.toAdminPlace(doc);
   }
@@ -197,7 +241,14 @@ export class AdminDiscoverService {
       if (!city)
         throw new NotFoundException(`Parent city not found: ${dto.citySlug}`);
     }
-    const doc = await this.repo.updatePlaceBySlug(slug, { $set: dto });
+    const draft: Partial<DiscoverPlaceDocument> = { ...dto };
+    if (dto.audioUrl !== undefined) {
+      const existing = await this.repo.findPlaceBySlugAdmin(slug);
+      await this.audioReconciler.reconcile(
+        collectPlaceAudioSlots(draft, existing),
+      );
+    }
+    const doc = await this.repo.updatePlaceBySlug(slug, { $set: draft });
     if (!doc) throw new NotFoundException(`Place not found: ${slug}`);
     await this.bustCache();
     return this.toAdminPlace(doc);
@@ -297,9 +348,21 @@ export class AdminDiscoverService {
     };
 
     const timeseries = buildCumulativeTimeseries({
-      cities: cities.map(extractCreatedAt),
-      excursions: excursions.map(extractCreatedAt),
-      places: places.map(extractCreatedAt),
+      cities: cities.map((c) => ({
+        createdAt: extractCreatedAt(c),
+        images: countCityImages(c),
+        audioDurationMs: sumCityAudioDurationMs(c),
+      })),
+      excursions: excursions.map((e) => ({
+        createdAt: extractCreatedAt(e),
+        images: countExcursionImages(e),
+        audioDurationMs: sumExcursionAudioDurationMs(e),
+      })),
+      places: places.map((p) => ({
+        createdAt: extractCreatedAt(p),
+        images: countPlaceImages(p),
+        audioDurationMs: sumPlaceAudioDurationMs(p),
+      })),
     });
 
     return {
@@ -389,6 +452,8 @@ export class AdminDiscoverService {
       audioUrl: doc.audioUrl,
       cityPlaceSlugs: doc.cityPlaceSlugs ?? [],
       isEnabled: doc.isEnabled,
+      webFeatured: doc.webFeatured ?? false,
+      webFeaturedOrder: doc.webFeaturedOrder ?? 0,
       createdAt: (doc as any).createdAt?.toISOString?.(),
       updatedAt: (doc as any).updatedAt?.toISOString?.(),
     };
@@ -426,9 +491,77 @@ export class AdminDiscoverService {
       subCategory: doc.subCategory,
       audioUrl: doc.audioUrl,
       isEnabled: doc.isEnabled,
+      webFeatured: doc.webFeatured ?? false,
+      webFeaturedOrder: doc.webFeaturedOrder ?? 0,
       createdAt: (doc as any).createdAt?.toISOString?.(),
       updatedAt: (doc as any).updatedAt?.toISOString?.(),
     };
+  }
+
+  // ---------------- Web content (gallery) ----------------
+
+  // Returns every candidate gallery item — both cities and places — with
+  // their current webFeatured flag + order. The admin UI renders this as a
+  // browser + drag-reorder surface. Includes disabled docs so admins can
+  // spot content that would silently drop out of the public gallery.
+  async listGallery(): Promise<AdminGalleryResponse> {
+    const [cities, places] = await Promise.all([
+      this.repo.findAllCitiesAdmin(),
+      this.repo.findAllPlacesAdmin(),
+    ]);
+    // English is used for gallery titles/subtitles — the admin UI is not
+    // localized either.
+    const items: AdminGalleryItem[] = [
+      ...cities.map(
+        (c): AdminGalleryItem => ({
+          slug: c.slug,
+          sourceType: 'city',
+          title: c.name?.[DEFAULT_LOCALE] ?? c.slug,
+          subtitle: c.country?.[DEFAULT_LOCALE],
+          image: c.image,
+          webFeatured: c.webFeatured ?? false,
+          webFeaturedOrder: c.webFeaturedOrder ?? 0,
+        }),
+      ),
+      ...places.map(
+        (p): AdminGalleryItem => ({
+          slug: p.slug,
+          sourceType: 'place',
+          title: p.name?.[DEFAULT_LOCALE] ?? p.slug,
+          subtitle: p.meta?.[DEFAULT_LOCALE],
+          image: p.image,
+          webFeatured: p.webFeatured ?? false,
+          webFeaturedOrder: p.webFeaturedOrder ?? 0,
+        }),
+      ),
+    ];
+    return { items };
+  }
+
+  // Bulk-writes every entry's webFeatured + webFeaturedOrder in one pass.
+  // Unknown slugs are silently skipped — the client is expected to keep
+  // local state in sync with a subsequent list call. Empty input is a
+  // no-op. Cache bust runs once at the end regardless of how many entries.
+  async updateGallery(input: AdminGalleryUpdateRequest): Promise<void> {
+    const entries = input.items ?? [];
+    if (entries.length === 0) return;
+    await Promise.all(
+      entries.map((e) => {
+        if (e.sourceType === 'city') {
+          return this.repo.setCityWebFeatured(
+            e.slug,
+            e.webFeatured,
+            e.webFeaturedOrder,
+          );
+        }
+        return this.repo.setPlaceWebFeatured(
+          e.slug,
+          e.webFeatured,
+          e.webFeaturedOrder,
+        );
+      }),
+    );
+    await this.bustCache();
   }
 }
 
@@ -446,39 +579,146 @@ function extractCreatedAt(doc: unknown): Date | null {
   return null;
 }
 
+// One entity's contribution to the timeseries — count-of-one on the entity
+// type, plus its image count and total audio duration at the moment we're
+// snapshotting. `images` and `audioDurationMs` are attributed to the doc's
+// createdAt day, even though updates can add more assets later.
+type EntityContribution = {
+  createdAt: Date | null;
+  images: number;
+  audioDurationMs: number;
+};
+
 // Builds a sparse cumulative timeseries: one point per UTC day on which at
 // least one entity (city, excursion, or place) was created. Each point holds
 // the running totals up to and including that day. Sparse, not daily, so
 // the response stays small even across long gaps.
 function buildCumulativeTimeseries(grouped: {
-  cities: Array<Date | null>;
-  excursions: Array<Date | null>;
-  places: Array<Date | null>;
+  cities: EntityContribution[];
+  excursions: EntityContribution[];
+  places: EntityContribution[];
 }): AdminStatsTimeseriesPoint[] {
-  type Tally = { cities: number; excursions: number; places: number };
+  type Tally = {
+    cities: number;
+    excursions: number;
+    places: number;
+    images: number;
+    audioDurationMs: number;
+  };
+  const emptyTally = (): Tally => ({
+    cities: 0,
+    excursions: 0,
+    places: 0,
+    images: 0,
+    audioDurationMs: 0,
+  });
   const perDay = new Map<string, Tally>();
 
-  const bump = (date: Date | null, key: keyof Tally): void => {
-    if (!date) return;
-    const day = date.toISOString().slice(0, 10);
-    const cur = perDay.get(day) ?? { cities: 0, excursions: 0, places: 0 };
+  const bump = (
+    entry: EntityContribution,
+    key: 'cities' | 'excursions' | 'places',
+  ): void => {
+    if (!entry.createdAt) return;
+    const day = entry.createdAt.toISOString().slice(0, 10);
+    const cur = perDay.get(day) ?? emptyTally();
     cur[key]++;
+    cur.images += entry.images;
+    cur.audioDurationMs += entry.audioDurationMs;
     perDay.set(day, cur);
   };
 
-  for (const d of grouped.cities) bump(d, 'cities');
-  for (const d of grouped.excursions) bump(d, 'excursions');
-  for (const d of grouped.places) bump(d, 'places');
+  for (const e of grouped.cities) bump(e, 'cities');
+  for (const e of grouped.excursions) bump(e, 'excursions');
+  for (const e of grouped.places) bump(e, 'places');
 
   const sortedDays = [...perDay.keys()].sort();
   let cumC = 0;
   let cumE = 0;
   let cumP = 0;
+  let cumImg = 0;
+  let cumAudio = 0;
   return sortedDays.map((day) => {
     const t = perDay.get(day)!;
     cumC += t.cities;
     cumE += t.excursions;
     cumP += t.places;
-    return { date: day, cities: cumC, excursions: cumE, places: cumP };
+    cumImg += t.images;
+    cumAudio += t.audioDurationMs;
+    return {
+      date: day,
+      cities: cumC,
+      excursions: cumE,
+      places: cumP,
+      images: cumImg,
+      audioDurationMs: cumAudio,
+    };
   });
+}
+
+// ---- Per-entity image + audio duration helpers ----
+
+const SUPPORTED_LOCALE_KEYS = ['en', 'de', 'hr'] as const;
+
+function countCityImages(c: DiscoverCityDocument): number {
+  return c.image ? 1 : 0;
+}
+
+function countPlaceImages(p: DiscoverPlaceDocument): number {
+  return (p.image ? 1 : 0) + (p.images?.length ?? 0);
+}
+
+function countExcursionImages(e: DiscoverExcursionDocument): number {
+  let total = e.image ? 1 : 0;
+  for (const s of e.stops ?? []) {
+    total += s.image ? 1 : 0;
+    total += s.images?.length ?? 0;
+    for (const sub of s.subStops ?? []) {
+      total += sub.image ? 1 : 0;
+      total += sub.images?.length ?? 0;
+    }
+  }
+  if (e.outro) {
+    total += e.outro.image ? 1 : 0;
+    total += e.outro.images?.length ?? 0;
+  }
+  return total;
+}
+
+// Sums populated per-locale durations on a single audio slot pair,
+// gated by URL presence to protect against orphaned durations.
+function sumSlot(
+  urls: { en?: string; de?: string; hr?: string } | undefined,
+  durations: { en?: number; de?: number; hr?: number } | undefined,
+): number {
+  if (!urls || !durations) return 0;
+  let total = 0;
+  for (const l of SUPPORTED_LOCALE_KEYS) {
+    const u = urls[l];
+    const d = durations[l];
+    if (u && typeof d === 'number' && d > 0) total += d;
+  }
+  return total;
+}
+
+function sumCityAudioDurationMs(c: DiscoverCityDocument): number {
+  return sumSlot(c.audioUrl, c.audioDurationMs);
+}
+
+function sumPlaceAudioDurationMs(p: DiscoverPlaceDocument): number {
+  return sumSlot(p.audioUrl, p.audioDurationMs);
+}
+
+function sumExcursionAudioDurationMs(e: DiscoverExcursionDocument): number {
+  let total = 0;
+  for (const s of e.stops ?? []) {
+    total += sumSlot(s.audioUrl, s.audioDurationMs);
+    for (const sub of s.subStops ?? []) {
+      total += sumSlot(sub.audioUrl, sub.audioDurationMs);
+    }
+  }
+  for (const f of e.interestingFacts ?? []) {
+    total += sumSlot(f.audioUrl, f.audioDurationMs);
+  }
+  if (e.outro) total += sumSlot(e.outro.audioUrl, e.outro.audioDurationMs);
+  return total;
 }

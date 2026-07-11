@@ -142,6 +142,8 @@ function SubStopBody({
           <AudioPlayer
             audioUrl={sub.audioUrl}
             title={t('excursion.stopSheet.audioTitle')}
+            analyticsSourceType="sub_stop"
+            analyticsSourceId={sub.id}
           />
           <Paragraph color="$color" fontFamily="$body" size="$4" lineHeight="$6">
             {sub.description}

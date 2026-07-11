@@ -3,6 +3,7 @@ import { View } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { SizableText, YStack } from 'tamagui'
 import type { PublicLatLng } from '@guide-me-app/core'
+import { SHADOW } from '../../constants/Sizes'
 
 // Violet accent used wherever a stop with sub-stops appears (map pin,
 // stops list row, bundle controls). Distinct enough from the primary
@@ -151,11 +152,7 @@ export function StopBundlePin({
           style={{
             borderWidth: 1.5,
             borderColor: pinColor,
-            shadowColor: '#000',
-            shadowOpacity: 0.15,
-            shadowRadius: 2,
-            shadowOffset: { width: 0, height: 1 },
-            elevation: 3,
+            ...SHADOW.pinTight,
           }}
         >
           <SizableText
