@@ -18,7 +18,9 @@ import { useMe } from '../../hooks/useMe'
 import { useCity } from '../../hooks/useCity'
 import { useExcursion } from '../../hooks/useExcursion'
 import { usePlace } from '../../hooks/usePlace'
+import { useLayout } from '../../hooks/useLayout'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { EmptyState } from '../discover/EmptyState'
 
 const LOGIN_HREF = '/login' as Href
@@ -30,6 +32,7 @@ export function FavoritesScreen() {
   const insets = useSafeAreaInsets()
   const { isSignedIn } = useAuth()
   const { data: me, isPending, isError, refetch } = useMe()
+  const { isTablet } = useLayout()
 
   const onSignIn = useCallback(async () => {
     await clearAuthChoice()
@@ -141,10 +144,18 @@ export function FavoritesScreen() {
           paddingHorizontal: H_PADDING,
           paddingTop: 12,
           paddingBottom: bottomPadding,
+          alignItems: isTablet ? 'center' : 'stretch',
         }}
         showsVerticalScrollIndicator={false}
       >
-        <YStack gap="$6">
+        <YStack
+          gap="$6"
+          style={
+            isTablet
+              ? { width: '100%', maxWidth: TABLET_MAX_CONTENT_WIDTH }
+              : undefined
+          }
+        >
           {sections.cities.length > 0 && (
             <Section title={t('favorites.sections.cities')} icon={MapPin}>
               {sections.cities.map((ref) => (

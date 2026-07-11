@@ -35,7 +35,9 @@ import { FavoriteButton } from '../../common/FavoriteButton'
 import { RatingPromptSheet } from '../../common/RatingPromptSheet'
 import { RatingStars } from '../../common/RatingStars'
 import { useCity } from '../../hooks/useCity'
+import { useLayout } from '../../hooks/useLayout'
 import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
+import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { clearAuthChoice } from '../../providers/AuthChoice'
 
 const LOGIN_HREF = '/login' as Href
@@ -108,13 +110,22 @@ function haversineMeters(a: LatLng, b: LatLng): number {
 }
 
 export function CityDetailScreen({ id }: Props) {
-  const { width } = useWindowDimensions()
+  const { width: rawWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { t } = useTranslation()
   const { data: city, isPending, isError, refetch } = useCity(id)
   const ratingPrompt = useDwellRatingPrompt('city', id, { enabled: !!city })
   const userLocation = useCoarseUserLocation()
+  const { isTablet } = useLayout()
+  // On tablets, cap the working content width so the hero image doesn't
+  // stretch to 1024pt+ (unreadably large) and body text lines stay in the
+  // 60-80 char comfort zone. `width` is the clamp used for downstream
+  // sizing; `sideMargin` centers everything on the screen.
+  const width = isTablet ? Math.min(rawWidth, TABLET_MAX_CONTENT_WIDTH) : rawWidth
+  const sideMargin = isTablet
+    ? Math.max(0, (rawWidth - TABLET_MAX_CONTENT_WIDTH) / 2)
+    : 0
 
   const onTapRating = useCallback(async () => {
     if (ratingPrompt.isGuest) {
@@ -159,7 +170,11 @@ export function CityDetailScreen({ id }: Props) {
     <YStack flex={1} bg="$background">
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        contentContainerStyle={{
+          paddingBottom: bottomPadding,
+          paddingLeft: sideMargin,
+          paddingRight: sideMargin,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <YStack width={width} height={heroHeight}>

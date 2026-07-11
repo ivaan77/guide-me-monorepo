@@ -7,7 +7,9 @@ import type { PublicCity } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useFuzzySearch } from '../../hooks/useFuzzySearch'
+import { useLayout } from '../../hooks/useLayout'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { CityCard } from './CityCard'
 import { CityCardSkeleton } from './CityCardSkeleton'
 import { EmptyState } from './EmptyState'
@@ -26,7 +28,19 @@ export function DiscoverScreen() {
   const { width } = useWindowDimensions()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
-  const cardWidth = (width - H_PADDING * 2 - GUTTER) / 2
+  const { isTablet } = useLayout()
+  // On tablets clamp the effective grid width so cards stay a sensible
+  // size — otherwise 500pt+ card widths look empty and text lines get
+  // uncomfortably long. On phones we use the full screen.
+  const effectiveWidth = isTablet
+    ? Math.min(width, TABLET_MAX_CONTENT_WIDTH)
+    : width
+  const cardWidth = (effectiveWidth - H_PADDING * 2 - GUTTER) / 2
+  // Horizontal margin used by list containers to center the fixed-width
+  // grid on tablets. Zero on phones (full-bleed).
+  const tabletSideMargin = isTablet
+    ? Math.max(0, (width - TABLET_MAX_CONTENT_WIDTH) / 2)
+    : 0
 
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS)
@@ -73,7 +87,14 @@ export function DiscoverScreen() {
 
   function renderBody() {
     if (isPending) {
-      return <SkeletonGrid header={header} cardWidth={cardWidth} bg={bg} />
+      return (
+        <SkeletonGrid
+          header={header}
+          cardWidth={cardWidth}
+          bg={bg}
+          sideMargin={tabletSideMargin}
+        />
+      )
     }
 
     if (isError) {
@@ -106,7 +127,8 @@ export function DiscoverScreen() {
         numColumns={2}
         style={{ backgroundColor: bg }}
         contentContainerStyle={{
-          paddingHorizontal: H_PADDING,
+          paddingLeft: H_PADDING + tabletSideMargin,
+          paddingRight: H_PADDING + tabletSideMargin,
           paddingBottom: bottomPadding,
           backgroundColor: bg,
           flexGrow: 1,
@@ -128,17 +150,20 @@ function SkeletonGrid({
   header,
   cardWidth,
   bg,
+  sideMargin,
 }: {
   header: React.ReactNode
   cardWidth: number
   bg: string
+  sideMargin: number
 }) {
   const rows = Math.ceil(SKELETON_COUNT / 2)
   return (
     <ScrollView
       style={{ backgroundColor: bg }}
       contentContainerStyle={{
-        paddingHorizontal: H_PADDING,
+        paddingLeft: H_PADDING + sideMargin,
+        paddingRight: H_PADDING + sideMargin,
         paddingBottom: 24,
         backgroundColor: bg,
         flexGrow: 1,

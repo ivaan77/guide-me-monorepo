@@ -23,9 +23,11 @@ import { FavoriteButton } from '../../common/FavoriteButton'
 import { RatingPromptSheet } from '../../common/RatingPromptSheet'
 import { RatingStars } from '../../common/RatingStars'
 import { usePlace } from '../../hooks/usePlace'
+import { useLayout } from '../../hooks/useLayout'
 import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
 import { clearAuthChoice } from '../../providers/AuthChoice'
 import { EmptyState } from '../discover/EmptyState'
+import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 
 const LOGIN_HREF = '/login' as Href
 import { CLEAN_MAP_STYLE } from '../excursion/cleanMapStyle'
@@ -40,13 +42,19 @@ const H_PADDING = 20
 const TAB_BAR_HEIGHT = 49
 
 export function PlaceDetailScreen({ id }: Props) {
-  const { width } = useWindowDimensions()
+  const { width: rawWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { t } = useTranslation()
   const { data: place, isPending, isError, refetch } = usePlace(id)
   const ratingPrompt = useDwellRatingPrompt('place', id, { enabled: !!place })
   const posthog = usePostHog()
+  const { isTablet } = useLayout()
+  // Same tablet cap as CityDetailScreen — see comment there.
+  const width = isTablet ? Math.min(rawWidth, TABLET_MAX_CONTENT_WIDTH) : rawWidth
+  const sideMargin = isTablet
+    ? Math.max(0, (rawWidth - TABLET_MAX_CONTENT_WIDTH) / 2)
+    : 0
 
   const onOpenDirections = useCallback(async () => {
     if (!place?.coords) return
@@ -123,7 +131,11 @@ export function PlaceDetailScreen({ id }: Props) {
     <YStack flex={1} bg="$background">
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        contentContainerStyle={{
+          paddingBottom: bottomPadding,
+          paddingLeft: sideMargin,
+          paddingRight: sideMargin,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <HeroCarousel

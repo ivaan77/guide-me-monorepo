@@ -10,6 +10,8 @@ import {
 } from 'react-native'
 import { YStack } from 'tamagui'
 import { useAppTheme } from '../providers/ThemeContext'
+import { useLayout } from '../hooks/useLayout'
+import { TABLET_MAX_CONTENT_WIDTH } from '../constants/Sizes'
 
 const SWIPE_DISMISS_THRESHOLD = 100
 
@@ -32,9 +34,16 @@ export function BottomSheet({
   header,
   children,
 }: Props) {
-  const { height: screenHeight } = useWindowDimensions()
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions()
   const sheetHeight = screenHeight * heightRatio
   const { c } = useAppTheme()
+  const { isTablet } = useLayout()
+  // On tablets the sheet is a centered, fixed-width column instead of a
+  // full-width slab. Prevents 1024pt-wide sheets on iPad that make the
+  // content look sparse and the touch targets awkwardly far apart.
+  const sheetWidth = isTablet
+    ? Math.min(screenWidth, TABLET_MAX_CONTENT_WIDTH)
+    : screenWidth
 
   // Slide + fade animations driven manually so we control the dismiss animation
   // and avoid the platform Modal's default slide flash.
@@ -113,7 +122,7 @@ export function BottomSheet({
       transparent
       statusBarTranslucent
     >
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
         <Animated.View
           style={[
             StyleSheet.absoluteFillObject,
@@ -129,6 +138,7 @@ export function BottomSheet({
         <Animated.View
           style={{
             height: sheetHeight,
+            width: sheetWidth,
             transform: [{ translateY }],
           }}
         >

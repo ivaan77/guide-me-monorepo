@@ -50,6 +50,15 @@ export const TAB_BAR_EXTRA = 16
 // buttons on modals, etc.). Used to be `right: 20` / `right: 16` mixed.
 export const FLOATING_EDGE_PADDING = 16
 
+// Maximum content width on tablet screens (>=768pt). Prevents scrolling
+// content and modal sheets from stretching to the full 1024pt+ of an iPad,
+// which produces unreadably wide text lines and a stretched hero image.
+// Phones (<768pt) ignore this cap — they use their full screen width.
+// 640pt = comfortably reads as "an iPhone-Pro-Max-sized column" centered
+// on iPad; big enough that images look substantial, small enough that
+// paragraph text stays within the 60-80 char comfort zone.
+export const TABLET_MAX_CONTENT_WIDTH = 640
+
 // Icon size scale. Existing code uses scattered literals — 16, 18, 20, 22,
 // 28, 40, 44 — with no semantic anchor. New code should map to these tokens.
 // Rationale for the values:

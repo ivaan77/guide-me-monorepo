@@ -8,6 +8,8 @@ import * as WebBrowser from 'expo-web-browser'
 import { Button, H2, Paragraph, SizableText, YStack } from 'tamagui'
 import { ExternalLink, LogOut, Trash2, User } from '@tamagui/lucide-icons'
 import { LanguageToggle } from './LanguageToggle'
+import { useLayout } from '../../hooks/useLayout'
+import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { ThemeToggle } from './ThemeToggle'
 import { clearAuthChoice, writeAuthChoice } from '../../providers/AuthChoice'
 import { useAppTheme } from '../../providers/ThemeContext'
@@ -25,6 +27,7 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets()
   const bottomPadding = useTabBarPadding()
   const deleteAccount = useDeleteAccount()
+  const { isTablet } = useLayout()
 
   const displayName =
     user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
@@ -77,10 +80,25 @@ export function ProfileScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: c.background }}
-      contentContainerStyle={{ paddingBottom: bottomPadding, backgroundColor: c.background }}
+      contentContainerStyle={{
+        paddingBottom: bottomPadding,
+        backgroundColor: c.background,
+        alignItems: isTablet ? 'center' : 'stretch',
+      }}
       showsVerticalScrollIndicator={false}
     >
-      <YStack flex={1} bg="$background" px="$5" pt={insets.top + 24} gap="$6">
+      <YStack
+        flex={1}
+        bg="$background"
+        px="$5"
+        pt={insets.top + 24}
+        gap="$6"
+        style={
+          isTablet
+            ? { width: '100%', maxWidth: TABLET_MAX_CONTENT_WIDTH }
+            : undefined
+        }
+      >
         <YStack items="center" gap="$3">
           {user?.imageUrl ? (
             <Image
