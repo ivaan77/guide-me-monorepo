@@ -114,6 +114,12 @@ export class DiscoverService {
         meta: pickLocalized(e.meta, locale),
         image: e.image,
         rating: toRatingAggregate(e),
+        // First-stop coord + sensitivity so mobile can render a compact
+        // weather badge on the row without a second round-trip. Falls
+        // back to 'outdoor' for the same defensive reason as the excursion
+        // detail projection.
+        coords: e.stops?.[0]?.coords,
+        weatherSensitivity: e.weatherSensitivity ?? 'outdoor',
       })),
       restaurants: bucket('restaurant'),
       cafes: bucket('cafe'),

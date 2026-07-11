@@ -21,7 +21,14 @@ import {
 // list card can show "★ 4.3 · 27" alongside the excursion.
 export type ExcursionSummary = Pick<
   DiscoverExcursionDocument,
-  'slug' | 'name' | 'meta' | 'image' | 'ratingSum' | 'ratingCount'
+  | 'slug'
+  | 'name'
+  | 'meta'
+  | 'image'
+  | 'ratingSum'
+  | 'ratingCount'
+  | 'stops'
+  | 'weatherSensitivity'
 >;
 
 const ENABLED_FILTER = { isEnabled: true };
@@ -65,6 +72,11 @@ export class DiscoverRepository {
         image: 1,
         ratingSum: 1,
         ratingCount: 1,
+        // First-stop coords + sensitivity power the CityDetail weather
+        // badge. Projecting stops.coords only (not the whole subtree) so
+        // we're not lifting locale bundles or audio metadata per row.
+        'stops.coords': 1,
+        weatherSensitivity: 1,
       })
       .lean<ExcursionSummary[]>()
       .exec();

@@ -73,10 +73,15 @@ export type PublicCategoryItem = {
     subCategory?: string
     rating?: PublicRatingAggregate
     // Optional lat/lng of the underlying place. Feeds the "distance from
-    // me" client-side sort on CityDetailScreen. Excursion category items
-    // never populate this (an excursion is a route, not a point); place
-    // category items populate it whenever the source doc has coords.
+    // me" client-side sort on CityDetailScreen. Place items populate it
+    // whenever the source doc has coords. Excursion items populate it
+    // with their first-stop coord so a weather badge can render on the
+    // CityDetail excursion row without needing a separate fetch.
     coords?: PublicLatLng
+    // Only populated for excursion items — feeds the CityDetail weather
+    // badge. Absent on POI items (a restaurant doesn't have "sensitivity"
+    // to weather in the same sense).
+    weatherSensitivity?: WeatherSensitivity
 }
 
 // City detail exposes each POI category as its own optional list so the

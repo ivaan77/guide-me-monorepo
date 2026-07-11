@@ -44,6 +44,7 @@ const LOGIN_HREF = '/login' as Href
 import { EmptyState } from '../discover/EmptyState'
 import { Accordion } from './Accordion'
 import { CategoryListItem } from './CategoryListItem'
+import { WeatherBadge } from './WeatherBadge'
 import { CityDetailSkeleton } from './CityDetailSkeleton'
 import { EditorsPickBanner } from './EditorsPickBanner'
 
@@ -269,6 +270,12 @@ export function CityDetailScreen({ id }: Props) {
             defaultOpen
             allowDistanceSort={false}
             userLocation={userLocation}
+            renderTrailingBadge={(item) => (
+              <WeatherBadge
+                coords={item.coords}
+                sensitivity={item.weatherSensitivity}
+              />
+            )}
           />
           <CategorySection
             title={t('city.sections.restaurants')}
@@ -443,6 +450,7 @@ function CategorySection({
   defaultOpen = false,
   allowDistanceSort = true,
   userLocation,
+  renderTrailingBadge,
 }: {
   title: string
   icon: React.ComponentType<IconProps>
@@ -459,6 +467,9 @@ function CategorySection({
   // permission was denied or resolution hasn't landed yet — the chip stays
   // available but tapping it falls back to editorial ordering.
   userLocation?: LatLng | null
+  // Optional per-row right-side chip. Excursions section passes a weather
+  // badge; other categories omit it.
+  renderTrailingBadge?: (item: PublicCategoryItem) => React.ReactNode
 }) {
   const { t } = useTranslation()
   const [sortMode, setSortMode] = useState<SortMode>('editorial')
@@ -553,6 +564,7 @@ function CategorySection({
               item={item}
               isLast={idx === visibleGroups[0].items.length - 1 && !overCap}
               href={hrefFor?.(item)}
+              trailingBadge={renderTrailingBadge?.(item)}
             />
           ))
         : visibleGroups.map((group, gIdx) => (
@@ -580,6 +592,7 @@ function CategorySection({
                     !overCap
                   }
                   href={hrefFor?.(item)}
+                  trailingBadge={renderTrailingBadge?.(item)}
                 />
               ))}
             </YStack>
