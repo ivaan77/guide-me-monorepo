@@ -111,6 +111,14 @@ export const en = {
       locals: 'Local picks',
     },
     subCategoryOther: 'Other',
+    sort: {
+      editorial: 'Featured',
+      rating: 'Top rated',
+      distance: 'Nearest',
+    },
+    browseAll_one: 'Browse all {{count}}',
+    browseAll_other: 'Browse all {{count}}',
+    browseCollapse: 'Show fewer',
   },
   place: {
     notFound: 'We couldn’t find that place.',

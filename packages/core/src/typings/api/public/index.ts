@@ -72,6 +72,11 @@ export type PublicCategoryItem = {
     images?: string[]
     subCategory?: string
     rating?: PublicRatingAggregate
+    // Optional lat/lng of the underlying place. Feeds the "distance from
+    // me" client-side sort on CityDetailScreen. Excursion category items
+    // never populate this (an excursion is a route, not a point); place
+    // category items populate it whenever the source doc has coords.
+    coords?: PublicLatLng
 }
 
 // City detail exposes each POI category as its own optional list so the

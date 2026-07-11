@@ -117,6 +117,14 @@ export const de = {
       locals: 'Lokale Tipps',
     },
     subCategoryOther: 'Sonstige',
+    sort: {
+      editorial: 'Empfohlen',
+      rating: 'Top-Bewertung',
+      distance: 'Nächstgelegen',
+    },
+    browseAll_one: 'Alle {{count}} anzeigen',
+    browseAll_other: 'Alle {{count}} anzeigen',
+    browseCollapse: 'Weniger anzeigen',
   },
   place: {
     notFound: 'Diesen Ort konnten wir nicht finden.',

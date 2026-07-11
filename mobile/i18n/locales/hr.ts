@@ -120,6 +120,15 @@ export const hr = {
       locals: 'Lokalne preporuke',
     },
     subCategoryOther: 'Ostalo',
+    sort: {
+      editorial: 'Preporučeno',
+      rating: 'Najbolje ocijenjeno',
+      distance: 'Najbliže',
+    },
+    browseAll_one: 'Pregledaj svih {{count}}',
+    browseAll_few: 'Pregledaj sve {{count}}',
+    browseAll_other: 'Pregledaj svih {{count}}',
+    browseCollapse: 'Prikaži manje',
   },
   place: {
     notFound: 'To mjesto nismo uspjeli pronaći.',

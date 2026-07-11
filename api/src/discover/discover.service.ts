@@ -313,6 +313,9 @@ export class DiscoverService {
         ? pickLocalized(doc.subCategory, locale)
         : undefined,
       rating: toRatingAggregate(doc),
+      // Feeds client-side "distance from me" sort on CityDetailScreen.
+      // Optional at the type level since legacy docs may lack coords.
+      coords: doc.coords,
     };
   }
 
