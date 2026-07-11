@@ -74,7 +74,8 @@ type HeaderProps = {
   badge: string
   // The main title. Bigger, wraps to two lines max.
   title: string
-  // Optional right-hand accessory (e.g. tiny image thumbnail on Arrived).
+  // Optional LEFT-hand accessory (e.g. tiny image thumbnail on Arrived, or
+  // a nav-icon circle on Navigating). Rendered before the badge/title.
   accessory?: React.ReactNode
 }
 

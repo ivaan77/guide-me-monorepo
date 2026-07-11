@@ -206,6 +206,11 @@ export const de = {
       bundleHeader_one: '{{count}} Station an diesem Ort',
       bundleHeader_other: '{{count}} Stationen an diesem Ort',
     },
+    stopsSheet: {
+      chip: 'Stationen',
+      title_one: 'Stationen · {{count}}',
+      title_other: 'Stationen · {{count}}',
+    },
     facts: {
       bannerLabel: 'Wusstest du schon?',
     },

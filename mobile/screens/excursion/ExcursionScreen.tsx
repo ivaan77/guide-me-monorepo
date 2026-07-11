@@ -22,6 +22,7 @@ import MapView, {
 import {
   ChevronDown,
   ChevronLeft,
+  List,
   LocateFixed,
   MapPin,
   MapPinOff,
@@ -80,6 +81,7 @@ import { SubStopPager } from './SubStopPager'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsList } from './StopsList'
+import { StopsSheet } from './StopsSheet'
 import { ImageLightbox } from '../../common/ImageLightbox'
 import {
   BUNDLE_ACCENT,
@@ -189,6 +191,7 @@ function ExcursionBody({
   const [phase, setPhase] = useState<Phase>('preview')
   const ratingPrompt = useRatingPrompt('excursion', id)
   const posthog = usePostHog()
+  const { t } = useTranslation()
 
   // Fire the rating prompt shortly after the user hits 'complete' so the
   // CompletePanel renders first and the sheet feels like a follow-up, not
@@ -306,6 +309,10 @@ function ExcursionBody({
   }, [permissionDenied, userLocation, permissionAttempt])
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null)
+  // Full-height sheet listing every stop + POI. Opened via the "Stops · N"
+  // chip on the PhaseCardHeader. Moved out of the snap card 2026-07-11 —
+  // see StopsSheet comment for context.
+  const [stopsSheetOpen, setStopsSheetOpen] = useState(false)
   // Fact currently playing in the FloatingFactPlayer. Non-modal: the map and
   // bottom card stay fully interactive while audio plays. Dismiss = clear =
   // unmount the player = audio stops cleanly.
@@ -350,16 +357,44 @@ function ExcursionBody({
 
   const { height: screenHeight } = useWindowDimensions()
 
-  // Three snap points for the bottom container as a fraction of the screen
-  // (mini / default / max). The map fills the inverse so resizing the bottom
-  // shrinks the map and vice versa. Default matches the prior 50/50 split
-  // closely enough that the screen reads unchanged when first opened.
-  const BOTTOM_SNAP_FRACTIONS = [0.15, 0.45, 0.7] as const
-  const DEFAULT_SNAP_INDEX = 1
-  const snapHeights = useMemo(
-    () => BOTTOM_SNAP_FRACTIONS.map((f) => screenHeight * f),
-    [screenHeight],
-  )
+  // Three snap points for the bottom container: [MIN, FIT, MAX].
+  //   MIN — small peek at 15% of screen (map dominant, card partial)
+  //   FIT — computed to match the actual PhaseCard content height, so
+  //         there's zero empty space below the card in the default state
+  //   MAX — 70% of screen (card dominant, small map preview)
+  // FIT is dynamic (grows/shrinks per phase — Preview is short, Arrived-
+  // bundle is tall) and re-snaps automatically on phase change UNLESS the
+  // user has manually chosen a different snap since. That respects a user
+  // who dragged to MAX to browse the map without yanking them back.
+  const MIN_SNAP_FRACTION = 0.15
+  const MAX_SNAP_FRACTION = 0.7
+  const HANDLE_HEIGHT = 28
+  // Fallback FIT height for the initial render, before onLayout has
+  // measured the card. Picks the middle of the old 45% default so first-
+  // paint is close to what users historically saw.
+  const INITIAL_FIT_FRACTION = 0.45
+  const DEFAULT_SNAP_INDEX = 1 // 0=MIN, 1=FIT, 2=MAX
+  const snapHeights = useMemo(() => {
+    const min = screenHeight * MIN_SNAP_FRACTION
+    const max = screenHeight * MAX_SNAP_FRACTION
+    // FIT is computed lazily below from bottomPanelHeight; here we just
+    // provide the min/max bookends. FIT gets patched in on every render
+    // via computedSnapHeights (see below).
+    return [min, screenHeight * INITIAL_FIT_FRACTION, max]
+  }, [screenHeight])
+  // Actual snap heights used everywhere, with FIT computed from the
+  // measured panel height. Clamped to sit between MIN and MAX so a very
+  // tall card doesn't push the map off-screen and an empty card doesn't
+  // let FIT drop below MIN.
+  const computedSnapHeights = useMemo(() => {
+    const min = snapHeights[0]
+    const max = snapHeights[2]
+    const rawFit = bottomPanelHeight + HANDLE_HEIGHT
+    const fit = rawFit > 0
+      ? Math.max(min, Math.min(max, rawFit))
+      : snapHeights[1]
+    return [min, fit, max] as const
+  }, [snapHeights, bottomPanelHeight])
   const [snapIndex, setSnapIndex] = useState<number>(DEFAULT_SNAP_INDEX)
   const bottomHeightAnim = useRef(
     new Animated.Value(snapHeights[DEFAULT_SNAP_INDEX]),
@@ -378,12 +413,32 @@ function ExcursionBody({
     return () => bottomHeightAnim.removeListener(id)
   }, [bottomHeightAnim])
 
-  // When the screen height changes (rotation / split-screen on tablets),
-  // recompute the snap targets and re-pin the current snap.
+  // When the computed snap targets change (screen height change OR the
+  // PhaseCard's measured height changed and we're currently sitting on
+  // the FIT snap), re-pin the animated value so we don't sit at a stale
+  // height. No-op if the target height didn't actually change — the effect
+  // fires on every bottomPanelHeight tick but MIN/MAX are stable, so this
+  // guard prevents spurious spring animations.
   useEffect(() => {
-    bottomHeightRef.current = snapHeights[snapIndex]
-    bottomHeightAnim.setValue(snapHeights[snapIndex])
-  }, [snapHeights, snapIndex, bottomHeightAnim])
+    const target = computedSnapHeights[snapIndex]
+    if (Math.abs(bottomHeightRef.current - target) < 0.5) return
+    bottomHeightRef.current = target
+    Animated.spring(bottomHeightAnim, {
+      toValue: target,
+      useNativeDriver: false,
+      bounciness: 4,
+    }).start()
+  }, [computedSnapHeights, snapIndex, bottomHeightAnim])
+
+  // On phase change, reset to FIT so the card auto-sizes to the new
+  // phase's content. If the user manually dragged to MIN or MAX during
+  // the prior phase, we deliberately reset — every phase gets its own
+  // default. We could persist the user's choice across phases, but the
+  // phases have very different card heights, so an old snap choice
+  // usually reads worse than a fresh FIT default.
+  useEffect(() => {
+    setSnapIndex(DEFAULT_SNAP_INDEX)
+  }, [phase])
 
   const mapHeightAnim = useMemo(
     () =>
@@ -394,7 +449,7 @@ function ExcursionBody({
   // Map height as a plain number, derived from the current snap. Used by the
   // initial map fit logic (the camera math needs a scalar, not an animated
   // value); the visible <Animated.View> uses mapHeightAnim directly.
-  const mapHeight = screenHeight - snapHeights[snapIndex]
+  const mapHeight = screenHeight - computedSnapHeights[snapIndex]
 
   const currentStop = stops[currentIndex]
 
@@ -582,23 +637,23 @@ function ExcursionBody({
           // (negative dy) grows it. Clamp to the min/max snap targets so we
           // can't drag outside the snap range.
           const next = dragStartHeightRef.current - gesture.dy
-          const min = snapHeights[0]
-          const max = snapHeights[snapHeights.length - 1]
+          const min = computedSnapHeights[0]
+          const max = computedSnapHeights[computedSnapHeights.length - 1]
           bottomHeightAnim.setValue(Math.max(min, Math.min(max, next)))
         },
         onPanResponderRelease: (_, gesture) => {
           const released = dragStartHeightRef.current - gesture.dy
           let nearestIdx = 0
           let nearestDist = Infinity
-          for (let i = 0; i < snapHeights.length; i++) {
-            const d = Math.abs(snapHeights[i] - released)
+          for (let i = 0; i < computedSnapHeights.length; i++) {
+            const d = Math.abs(computedSnapHeights[i] - released)
             if (d < nearestDist) {
               nearestDist = d
               nearestIdx = i
             }
           }
           Animated.spring(bottomHeightAnim, {
-            toValue: snapHeights[nearestIdx],
+            toValue: computedSnapHeights[nearestIdx],
             useNativeDriver: false,
             bounciness: 6,
           }).start()
@@ -606,13 +661,13 @@ function ExcursionBody({
         },
         onPanResponderTerminate: () => {
           Animated.spring(bottomHeightAnim, {
-            toValue: snapHeights[snapIndex],
+            toValue: computedSnapHeights[snapIndex],
             useNativeDriver: false,
             bounciness: 6,
           }).start()
         },
       }),
-    [bottomHeightAnim, snapHeights, snapIndex],
+    [bottomHeightAnim, computedSnapHeights, snapIndex],
   )
 
   // User-interaction cooldown for the auto-camera. While `Date.now()` is
@@ -1300,6 +1355,45 @@ function ExcursionBody({
           <LocateFixed size={22} color={primary as any} />
         </Pressable>
       )}
+      {/* Stops FAB — floats above the snap card (inside the map's shrinkable
+          Animated.View, so it naturally hovers just above the top edge of
+          the card). Hidden on outro/complete since browsing stops has no
+          forward-looking value in wrap-up phases. Sits on the LEFT to
+          avoid colliding with the re-center button on the right during
+          the navigating phase. */}
+      {(phase === 'preview' ||
+        phase === 'navigating' ||
+        phase === 'arrived') && (
+        <Pressable
+          onPress={() => setStopsSheetOpen(true)}
+          style={{
+            position: 'absolute',
+            bottom: 16,
+            left: H_PADDING,
+            zIndex: 12,
+            height: 48,
+            paddingHorizontal: 14,
+            borderRadius: 24,
+            backgroundColor: '#FFFFFF',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            ...SHADOW.card,
+          }}
+          hitSlop={8}
+        >
+          <List size={20} color={primary as any} />
+          <SizableText
+            size="$3"
+            fontFamily="$body"
+            fontWeight="700"
+            color="$color"
+            style={{ letterSpacing: 0.2 }}
+          >
+            {t('excursion.stopsSheet.chip', { defaultValue: 'Stops' })} · {stops.length}
+          </SizableText>
+        </Pressable>
+      )}
       </Animated.View>
 
       <BackButton topInset={topInset} onPress={goBack} />
@@ -1338,6 +1432,11 @@ function ExcursionBody({
 
       {waitingForGps && <WaitingForGpsToast topInset={topInset} />}
 
+      {/* Snap card — just the drag handle + BottomPanel now. The list of
+          stops used to live between them but competed with the PhaseCard
+          for vertical space (users saw 1-2 stops max). It moved into
+          <StopsSheet> (opened from the "Stops · N" chip on each phase's
+          header), giving it real 85%-screen room to breathe. */}
       <Animated.View
         style={{ width: '100%', height: bottomHeightAnim, overflow: 'hidden' }}
       >
@@ -1349,17 +1448,6 @@ function ExcursionBody({
             {...snapPanResponder.panHandlers}
           >
             <YStack width={56} height={5} rounded={3} bg="$borderColor" />
-          </YStack>
-          <YStack flex={1}>
-            <StopsList
-              stops={stops}
-              pois={pois}
-              currentIndex={currentIndex}
-              phase={phase}
-              onPoiPress={setSelectedPoi}
-              onStopPress={(stop) => setLightboxUri(stop.image)}
-              onSubStopPress={(sub) => setLightboxUri(sub.image)}
-            />
           </YStack>
           <YStack
             onLayout={(e) =>
@@ -1505,6 +1593,18 @@ function ExcursionBody({
         nearestIndex={nearestStopIndex}
         onSelect={pickStartFrom}
         onClose={() => setStartFromPickerOpen(false)}
+      />
+
+      <StopsSheet
+        visible={stopsSheetOpen}
+        onClose={() => setStopsSheetOpen(false)}
+        stops={stops}
+        pois={pois}
+        currentIndex={currentIndex}
+        phase={phase}
+        onPoiPress={setSelectedPoi}
+        onStopPress={(stop) => setLightboxUri(stop.image)}
+        onSubStopPress={(sub) => setLightboxUri(sub.image)}
       />
 
       <ImageLightbox uri={lightboxUri} onClose={() => setLightboxUri(null)} />

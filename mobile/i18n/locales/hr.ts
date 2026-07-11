@@ -218,6 +218,12 @@ export const hr = {
       bundleHeader_few: '{{count}} postaje na ovom mjestu',
       bundleHeader_other: '{{count}} postaja na ovom mjestu',
     },
+    stopsSheet: {
+      chip: 'Postaje',
+      title_one: 'Postaje · {{count}}',
+      title_few: 'Postaje · {{count}}',
+      title_other: 'Postaje · {{count}}',
+    },
     facts: {
       bannerLabel: 'Jeste li znali?',
     },

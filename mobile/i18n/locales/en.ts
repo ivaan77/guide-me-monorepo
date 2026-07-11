@@ -200,6 +200,11 @@ export const en = {
       bundleHeader_one: '{{count}} stop at this place',
       bundleHeader_other: '{{count}} stops at this place',
     },
+    stopsSheet: {
+      chip: 'Stops',
+      title_one: 'Stops · {{count}}',
+      title_other: 'Stops · {{count}}',
+    },
     facts: {
       bannerLabel: 'Did you know?',
     },
