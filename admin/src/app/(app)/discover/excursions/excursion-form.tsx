@@ -164,6 +164,10 @@ const baseSchema = {
   // disable the outro without wiping authored content.
   outroEnabled: z.boolean(),
   isEnabled: z.boolean(),
+  // Required. Drives the mobile "check the forecast" recommendation on
+  // ExcursionScreen preview. See PublicExcursion.weatherSensitivity for
+  // the semantics of each value.
+  weatherSensitivity: z.enum(['outdoor', 'mixed', 'indoor']),
 }
 
 const createSchema = z.object({ slug: z.string().regex(SLUG_REGEX), ...baseSchema })
@@ -212,6 +216,9 @@ export function ExcursionForm(props: Props) {
         outro: props.initialValues.outro,
         outroEnabled: !!props.initialValues.outro,
         isEnabled: props.initialValues.isEnabled,
+        // Fallback shouldn't fire (backfill script sets this on every doc)
+        // but keeps the form robust if a doc slips through.
+        weatherSensitivity: props.initialValues.weatherSensitivity ?? 'outdoor',
       }
     : {
         slug: '',
@@ -225,6 +232,7 @@ export function ExcursionForm(props: Props) {
         outro: undefined,
         outroEnabled: false,
         isEnabled: true,
+        weatherSensitivity: 'outdoor',
       }
 
   const form = useForm<CreateValues>({
@@ -799,6 +807,46 @@ export function ExcursionForm(props: Props) {
               />
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 flex flex-col gap-3">
+          <div>
+            <p className="text-sm font-medium">Weather exposure</p>
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Drives the mobile app's "check the forecast" recommendation
+              on the excursion preview. Choose based on where the walker
+              actually spends most of their time on the route.
+            </p>
+          </div>
+          <Select
+            value={form.watch('weatherSensitivity')}
+            onValueChange={(v) =>
+              form.setValue(
+                'weatherSensitivity',
+                v as 'outdoor' | 'mixed' | 'indoor',
+              )
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Pick exposure" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="outdoor">
+                Outdoor — walking outside most of the route (strong weather
+                warning on rain / wind).
+              </SelectItem>
+              <SelectItem value="mixed">
+                Mixed — indoor stops with outdoor connections (soft "bring
+                an umbrella" nudge).
+              </SelectItem>
+              <SelectItem value="indoor">
+                Indoor — museum tour, covered market, etc (weather warning
+                suppressed).
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 

@@ -13,6 +13,7 @@ import { DirectionsModule } from './directions/directions.module';
 import { DiscoverModule } from './discover/discover.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { UsersModule } from './users/users.module';
+import { WeatherModule } from './weather/weather.module';
 
 const dbUrl = process.env.MONGODB_URL;
 
@@ -27,6 +28,7 @@ const dbUrl = process.env.MONGODB_URL;
     AnalyticsModule,
     RatingsModule,
     UsersModule,
+    WeatherModule,
   ],
   controllers: [],
   providers: [

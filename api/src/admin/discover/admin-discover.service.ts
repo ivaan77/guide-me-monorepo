@@ -472,6 +472,11 @@ export class AdminDiscoverService {
         []) as AdminExcursion['interestingFacts'],
       outro: doc.outro as AdminExcursion['outro'],
       isEnabled: doc.isEnabled,
+      // Fallback to 'outdoor' defensively — the backfill script sets this
+      // on all existing docs, and the schema default catches new inserts,
+      // but this belt-and-suspenders keeps the response typed non-nullable
+      // even if a doc somehow slips through both gates.
+      weatherSensitivity: doc.weatherSensitivity ?? 'outdoor',
       createdAt: (doc as any).createdAt?.toISOString?.(),
       updatedAt: (doc as any).updatedAt?.toISOString?.(),
     };

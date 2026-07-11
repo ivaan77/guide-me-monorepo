@@ -12,6 +12,7 @@ import { CumulativeLineChart } from '@/components/stats/cumulative-line-chart'
 import {
   Building2,
   CheckCircle2,
+  CloudSun,
   Compass,
   Flame,
   Globe,
@@ -206,6 +207,12 @@ export default async function StatsPage() {
                   label="Avg rating"
                   value={usageStats.averageRating}
                   sub={`${usageStats.ratingsCount} ratings`}
+                />
+                <StatTile
+                  icon={<CloudSun className="h-4 w-4" />}
+                  label="Weather checks"
+                  value={usageStats.weatherChecks}
+                  sub="Excursion previews"
                 />
               </div>
             )}

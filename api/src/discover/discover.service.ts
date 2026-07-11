@@ -193,6 +193,8 @@ export class DiscoverService {
       interestingFacts: resolvedFacts.length > 0 ? resolvedFacts : undefined,
       outro,
       rating: toRatingAggregate(excursion),
+      // Same 'outdoor' fallback as the admin path — belt-and-suspenders.
+      weatherSensitivity: excursion.weatherSensitivity ?? 'outdoor',
     };
 
     return { excursion: publicExcursion, locale };

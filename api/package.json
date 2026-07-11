@@ -23,7 +23,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "script:prune-orphan-favorites": "ts-node scripts/prune-orphan-favorites.ts",
-    "script:backfill-audio-durations": "ts-node scripts/backfill-audio-durations.ts"
+    "script:backfill-audio-durations": "ts-node scripts/backfill-audio-durations.ts",
+    "script:backfill-weather-sensitivity": "ts-node scripts/backfill-weather-sensitivity.ts"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.11",

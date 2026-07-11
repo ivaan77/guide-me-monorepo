@@ -47,6 +47,9 @@ export const PublicPath = {
         usageStats: '/public/web/usage-stats',
         popularGallery: '/public/web/popular-gallery',
     },
+    Weather: {
+        forecast: '/public/weather',
+    },
 }
 
 export const AdminWebPath = {

@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -10,6 +11,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { WEATHER_SENSITIVITIES } from '@guide-me-app/core';
 import { LatLngDto } from './lat-lng.dto';
 import { LocalizedAudioDto } from './localized-audio.dto';
 import { LocalizedStringDto } from './localized-string.dto';
@@ -202,6 +204,11 @@ export class CreateExcursionDto {
   @IsOptional()
   @IsBoolean()
   isEnabled?: boolean;
+
+  // Required on Create — admin form MUST pick a value. Backfill script
+  // handled existing docs; no reason a new one should be ambiguous.
+  @IsIn(WEATHER_SENSITIVITIES as unknown as string[])
+  weatherSensitivity: (typeof WEATHER_SENSITIVITIES)[number];
 }
 
 export class UpdateExcursionDto {
@@ -250,4 +257,8 @@ export class UpdateExcursionDto {
   @IsOptional()
   @IsBoolean()
   isEnabled?: boolean;
+
+  @IsOptional()
+  @IsIn(WEATHER_SENSITIVITIES as unknown as string[])
+  weatherSensitivity?: (typeof WEATHER_SENSITIVITIES)[number];
 }

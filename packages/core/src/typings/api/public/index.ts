@@ -196,6 +196,18 @@ export type PublicExcursionOutro = {
     audioUrl?: string
 }
 
+// How exposed to the weather this excursion is. Drives the "check the
+// forecast before you go" recommendation on the mobile preview:
+//   outdoor — walking outside for most of the route (parks, viewpoints,
+//             open squares). Bad weather = strong "wait for a drier day".
+//   mixed   — some indoor stops (museums, cafes) but user still walks
+//             outside between them. Bad weather = "bring an umbrella"
+//             not "skip it".
+//   indoor  — mostly inside (a museum tour, a covered market). Weather
+//             warning is suppressed entirely.
+export const WEATHER_SENSITIVITIES = ['outdoor', 'mixed', 'indoor'] as const
+export type WeatherSensitivity = (typeof WEATHER_SENSITIVITIES)[number]
+
 export type PublicExcursion = {
     id: string
     name: string
@@ -206,6 +218,10 @@ export type PublicExcursion = {
     interestingFacts?: PublicInterestingFact[]
     outro?: PublicExcursionOutro
     rating?: PublicRatingAggregate
+    // Weather exposure — REQUIRED. Existing docs backfilled to 'outdoor'
+    // by scripts/backfill-weather-sensitivity.ts (see comment in the
+    // schema). All new authoring must pick a value.
+    weatherSensitivity: WeatherSensitivity
 }
 
 export type PublicExcursionResponse = {
@@ -305,6 +321,12 @@ export type PublicUsageStats = {
     countriesReached: number
     averageRating: number
     ratingsCount: number
+    // Count of `weather_checked` events. Fires once per (excursionId,
+    // date, result-classification) so it approximates "how often did a
+    // user consult the forecast before deciding to go?" Useful for
+    // gauging whether the feature is used, and eventually for
+    // correlating with excursion_started.
+    weatherChecks: number
 }
 
 export type PublicUsageStatsResponse = {
@@ -335,4 +357,41 @@ export type PublicPopularItem = {
 
 export type PublicPopularGalleryResponse = {
     items: PublicPopularItem[]
+}
+
+// Weather summary for one lat/lng at one date, backed by Open-Meteo via
+// the API's WeatherService. Values are the daily aggregates for the
+// requested date in the location's local timezone.
+//
+// Never trust `weatherCode` alone for logic — different providers use
+// different code sets. Use `precipitationMm` / `windKmh` / `tempMaxC` as
+// the primary signals; `weatherCode` is fine for icon selection but not
+// go/no-go decisions.
+export type PublicWeather = {
+    // ISO yyyy-mm-dd date this forecast applies to, in the location's
+    // local timezone (Open-Meteo does the conversion for us).
+    date: string
+    // Latitude/longitude the forecast was resolved for. Open-Meteo may
+    // snap to the nearest grid point (~1km); returned so the client can
+    // detect drift if needed.
+    resolvedLat: number
+    resolvedLng: number
+    // Daily max/min temperature in Celsius.
+    tempMaxC: number
+    tempMinC: number
+    // Total precipitation in millimeters over the day. > 2mm is "bring
+    // an umbrella"; > 10mm is "the trail will be muddy."
+    precipitationMm: number
+    // Max sustained wind in km/h. > 40 is "windy / bring layers"; > 60
+    // is "strongly consider postponing" for outdoor routes.
+    windKmh: number
+    // WMO weather code (0=clear, 1-3=partly cloudy, 45-48=fog, 51-67=rain,
+    // 71-77=snow, 80-82=showers, 85-86=snow showers, 95-99=thunder). Fine
+    // for picking an icon. Full mapping:
+    // https://open-meteo.com/en/docs#weathervariables
+    weatherCode: number
+}
+
+export type PublicWeatherResponse = {
+    weather: PublicWeather
 }

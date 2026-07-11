@@ -34,6 +34,12 @@ const HOGQL_COUNTRIES = `
     AND properties.$geoip_country_code != ''
 `;
 
+// Number of times users consulted the weather forecast. Emitted by
+// WeatherBanner on mobile whenever a real forecast renders. Cumulative
+// across all time — matches the same "cumulative all-time" product
+// decision as the other counters.
+const HOGQL_WEATHER_CHECKS = `SELECT count() FROM events WHERE event = 'weather_checked'`;
+
 @Injectable()
 export class UsageStatsService {
   constructor(
@@ -47,13 +53,15 @@ export class UsageStatsService {
   // {sum: 0, count: 0} on empty. Ratings live in Mongo not PostHog so the
   // number is accurate from day one, even before analytics ships.
   async getUsageStats(): Promise<PublicUsageStats> {
-    const [users, audioMs, routes, countries, ratingsAgg] = await Promise.all([
-      this.ph.querySingleNumber(HOGQL_USERS),
-      this.ph.querySingleNumber(HOGQL_AUDIO_MS),
-      this.ph.querySingleNumber(HOGQL_ROUTES),
-      this.ph.querySingleNumber(HOGQL_COUNTRIES),
-      this.ratingsRepo.computeGlobalAggregate(),
-    ]);
+    const [users, audioMs, routes, countries, weatherChecks, ratingsAgg] =
+      await Promise.all([
+        this.ph.querySingleNumber(HOGQL_USERS),
+        this.ph.querySingleNumber(HOGQL_AUDIO_MS),
+        this.ph.querySingleNumber(HOGQL_ROUTES),
+        this.ph.querySingleNumber(HOGQL_COUNTRIES),
+        this.ph.querySingleNumber(HOGQL_WEATHER_CHECKS),
+        this.ratingsRepo.computeGlobalAggregate(),
+      ]);
     const avg =
       ratingsAgg.count > 0
         ? Math.round((ratingsAgg.sum / ratingsAgg.count) * 10) / 10
@@ -65,6 +73,7 @@ export class UsageStatsService {
       countriesReached: countries ?? 0,
       averageRating: avg,
       ratingsCount: ratingsAgg.count,
+      weatherChecks: weatherChecks ?? 0,
     };
   }
 }
