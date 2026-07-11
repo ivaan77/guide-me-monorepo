@@ -35,7 +35,7 @@ export async function StatsBand() {
 
   return (
     <ul
-      className="mt-8 flex flex-wrap items-baseline justify-center gap-x-8 gap-y-3 text-[var(--color-ink-2)]"
+      className="mt-6 sm:mt-8 flex flex-wrap items-baseline justify-center gap-x-5 sm:gap-x-8 gap-y-3 text-[var(--color-ink-2)]"
       aria-label="Content produced"
     >
       {items.map((it) => (

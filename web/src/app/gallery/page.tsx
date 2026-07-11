@@ -30,10 +30,15 @@ export default async function GalleryPage() {
   const popular = popularRes?.items ?? []
 
   return (
-    <main className="min-h-screen flex flex-col">
+    // Layout intent (see landing page for the same fix): the page flows
+    // naturally instead of forcing 100vh. Short galleries (a few items)
+    // fit in one viewport with no dead space below the grid; long
+    // galleries scroll normally. Header sits at the top, footer at the
+    // bottom of ACTUAL content, not the bottom of the screen.
+    <main className="flex flex-col">
       <SiteHeader />
 
-      <section className="flex-1 px-6 sm:px-10 py-10 sm:py-16">
+      <section className="px-6 sm:px-10 py-8 sm:py-12">
         <div className="max-w-6xl mx-auto">
           <h1
             style={{
@@ -44,13 +49,13 @@ export default async function GalleryPage() {
           >
             Gallery
           </h1>
-          <p className="text-base sm:text-lg text-[var(--color-ink-2)] max-w-2xl mb-10">
+          <p className="text-base sm:text-lg text-[var(--color-ink-2)] max-w-2xl mb-8">
             Cities and places from the GuideMe app — narrated, mapped, and
             ready when you arrive.
           </p>
 
           {popular.length > 0 && (
-            <section className="mb-14">
+            <section className="mb-10">
               <div className="flex items-baseline justify-between gap-3 mb-4">
                 <h2
                   style={{ fontFamily: 'var(--font-display)' }}
