@@ -5,6 +5,9 @@
   "packageManager": "yarn@4.16.0",
   "scripts": {
     "eas-build-pre-install": "corepack enable && corepack prepare yarn@4.16.0 --activate",
+    "postinstall": "bash scripts/install-git-hooks.sh || true",
+    "hooks:install": "bash scripts/install-git-hooks.sh",
+    "hooks:check-lockfile": "bash scripts/check-yarn-lock-cachekey.sh",
     "build:all": "tsc --build --verbose",
     "core:build": "yarn workspace @guide-me-app/core run build",
     "api:build": "yarn workspace @guide-me-app/api run build",

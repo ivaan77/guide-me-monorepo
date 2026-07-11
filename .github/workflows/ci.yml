@@ -45,32 +45,12 @@ jobs:
       - name: Activate pinned yarn
         run: corepack prepare yarn@4.16.0 --activate
 
-      # Fail fast if the lockfile has a stale cacheKey. `yarn install
-      # --immutable` also catches this, but its error ("would have been
-      # modified by this install") reads as a general immutability
-      # violation and buries the actual fix ("run yarn install locally").
-      # This step spells it out so future-us doesn't burn a CI cycle
-      # diagnosing the same cacheKey drift over and over.
-      #
-      # Expected: yarn 4.16.0 writes `cacheKey: 10c0`. If we ever bump
-      # yarn, update this line AND the `corepack prepare` line above in
-      # the same commit as the lockfile rewrite.
+      # Fail fast on yarn.lock cacheKey drift. The shared script is the
+      # single source of truth for what cacheKey to expect — the same
+      # script runs from the local .githooks/pre-commit hook, so bumping
+      # yarn only requires editing scripts/check-yarn-lock-cachekey.sh.
       - name: Verify yarn.lock cacheKey matches pinned yarn
-        run: |
-          EXPECTED_CACHEKEY="10c0"
-          ACTUAL_CACHEKEY=$(grep -E '^  cacheKey:' yarn.lock | head -1 | awk '{print $2}')
-          if [ "$ACTUAL_CACHEKEY" != "$EXPECTED_CACHEKEY" ]; then
-            echo "::error::yarn.lock cacheKey drift detected."
-            echo "  Expected: $EXPECTED_CACHEKEY (yarn 4.16.0 format)"
-            echo "  Found:    $ACTUAL_CACHEKEY"
-            echo ""
-            echo "Fix locally, then commit yarn.lock:"
-            echo "  corepack prepare yarn@4.16.0 --activate"
-            echo "  yarn install"
-            echo "  git add yarn.lock && git commit -m 'chore: refresh yarn.lock cacheKey'"
-            exit 1
-          fi
-          echo "yarn.lock cacheKey OK: $ACTUAL_CACHEKEY"
+        run: bash scripts/check-yarn-lock-cachekey.sh
 
       - name: Restore yarn cache
         uses: actions/cache@v4
