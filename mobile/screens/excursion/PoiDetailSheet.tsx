@@ -28,6 +28,8 @@ const CATEGORY_EMOJI: Record<PoiCategory, string> = {
   local: '❤️',
   workshop: '🎨',
   playarea: '🧸',
+  petFriendly: '🐾',
+  kidsFriendly: '👨‍👩‍👧',
 }
 
 type Props = {

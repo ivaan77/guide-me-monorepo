@@ -185,6 +185,21 @@ export class DiscoverExcursion {
   @Prop({ required: true, default: true, index: true })
   isEnabled: boolean;
 
+  // How exposed the route is to weather ('outdoor' | 'mixed' | 'indoor').
+  // REQUIRED — every excursion must declare this so the mobile "check
+  // the forecast" recommendation always has a signal. Existing docs at
+  // migration time were backfilled to 'outdoor' via
+  // scripts/backfill-weather-sensitivity.ts on 2026-07-11 (safe default
+  // because most walking tours are outside; admin can edit to 'mixed'
+  // or 'indoor' where wrong).
+  @Prop({
+    type: String,
+    enum: ['outdoor', 'mixed', 'indoor'],
+    required: true,
+    default: 'outdoor',
+  })
+  weatherSensitivity: 'outdoor' | 'mixed' | 'indoor';
+
   // Denormalized rating aggregate. See DiscoverCity for the pattern.
   @Prop({ type: Number, default: 0 })
   ratingSum: number;

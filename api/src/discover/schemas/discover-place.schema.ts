@@ -25,6 +25,8 @@ export const PLACE_CATEGORIES = [
   'local',
   'workshop',
   'playarea',
+  'petFriendly',
+  'kidsFriendly',
 ] as const;
 export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];
 

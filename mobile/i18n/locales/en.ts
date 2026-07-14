@@ -8,6 +8,7 @@ export const en = {
   tabs: {
     discover: 'Discover',
     favorites: 'Favorites',
+    stories: 'Stories',
     profile: 'Profile',
   },
   discover: {
@@ -15,6 +16,31 @@ export const en = {
     noResultsTitle: 'No matches',
     noResultsBody: 'We couldn’t find any cities matching "{{query}}". Try a different name or country.',
     errorBody: 'We couldn’t load the city list right now.',
+  },
+  stories: {
+    title: 'Stories',
+    all: 'All',
+    allCities: 'All cities',
+    relatedTitle: 'Stories about this city',
+    emptyBody: 'No stories in this category yet. Check back soon.',
+    errorBody: 'We couldn’t load stories right now.',
+    readingMinutes_one: '{{count}} min read',
+    readingMinutes_other: '{{count}} min read',
+    category: {
+      'travel-tips': 'Travel tips',
+      'city-guide': 'City guide',
+      'food-drink': 'Food & drink',
+      news: 'News',
+    },
+    appLink: {
+      city: 'City',
+      place: 'Place',
+      excursion: 'Excursion',
+    },
+    editorPick: {
+      tip: 'Tip',
+      highlight: 'Highlight',
+    },
   },
   favorites: {
     emptyTitle: 'No favorites yet',
@@ -108,6 +134,8 @@ export const en = {
       parks: 'Parks',
       workshops: 'Workshops',
       playareas: 'Play areas',
+      kidsFriendly: 'Kids friendly',
+      petFriendly: 'Pet friendly',
       locals: 'Local picks',
     },
     subCategoryOther: 'Other',
@@ -142,6 +170,8 @@ export const en = {
       local: 'Local pick',
       workshop: 'Workshop',
       playarea: 'Play area',
+      petFriendly: 'Pet friendly',
+      kidsFriendly: 'Kids friendly',
     },
   },
   excursion: {
@@ -204,6 +234,30 @@ export const en = {
       chip: 'Stops',
       title_one: 'Stops · {{count}}',
       title_other: 'Stops · {{count}}',
+    },
+    weather: {
+      today: 'Today',
+      tomorrow: 'Tomorrow',
+      pickDate: 'When are you going?',
+      attribution: 'Weather data by Open-Meteo',
+      // Headlines shown in WeatherBanner. Sensitivity variants where
+      // relevant; shared copy where the message doesn't change.
+      clearOutdoor: 'Great walking weather on {{date}}',
+      clearMixed: 'Nice day for a wander on {{date}}',
+      cloudy: 'Overcast but walkable on {{date}}',
+      lightRainOutdoor: 'Some rain on {{date}} — bring an umbrella',
+      lightRainMixed: 'Occasional showers on {{date}}',
+      lightRainSub: 'Duck into a café between stops if it starts.',
+      heavyRainOutdoor: 'Heavy rain forecast for {{date}}',
+      heavyRainMixed: 'Wet day ahead on {{date}}',
+      heavyRainSub: 'Consider picking a drier day this week.',
+      windyOutdoor: 'Windy on {{date}} — bring a layer',
+      windyMixed: 'Breezy conditions on {{date}}',
+      hot: 'Hot day on {{date}} — hydrate',
+      hotSub: 'Cafés en route are great for a break.',
+      cold: 'Chilly on {{date}} — dress warm',
+      snowyOutdoor: 'Snow on {{date}} — plan accordingly',
+      snowyMixed: 'Snowy conditions on {{date}}',
     },
     facts: {
       bannerLabel: 'Did you know?',

@@ -87,12 +87,13 @@ export default function HelpPage() {
             no duplication.
           </p>
           <p>
-            <strong>Category</strong> is one of 13 values:{' '}
+            <strong>Category</strong> is one of 15 values:{' '}
             <code>restaurant</code>, <code>cafe</code>, <code>pastry</code>,{' '}
             <code>brunch</code>, <code>bar</code>, <code>shopping</code>,{' '}
             <code>event</code>, <code>park</code>, <code>museum</code>,{' '}
             <code>viewpoint</code>, <code>local</code>, <code>workshop</code>,{' '}
-            <code>playarea</code>. Each shows as its own section on the
+            <code>playarea</code>, <code>petFriendly</code>,{' '}
+            <code>kidsFriendly</code>. Each shows as its own section on the
             mobile city detail screen and as a colored circle marker on
             the excursion map.
           </p>

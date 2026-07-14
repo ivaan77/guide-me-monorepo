@@ -10,8 +10,10 @@ import { PageHeader } from '@/components/forms/page-header'
 import { AssetsLineChart } from '@/components/stats/assets-line-chart'
 import { CumulativeLineChart } from '@/components/stats/cumulative-line-chart'
 import {
+  BookOpen,
   Building2,
   CheckCircle2,
+  CloudSun,
   Compass,
   Flame,
   Globe,
@@ -40,6 +42,8 @@ const CATEGORY_LABEL: Record<PoiCategory, string> = {
   local: 'Local picks',
   workshop: 'Workshops',
   playarea: 'Play areas',
+  petFriendly: 'Pet friendly',
+  kidsFriendly: 'Kids friendly',
 }
 
 const CATEGORY_ORDER: PoiCategory[] = [
@@ -56,6 +60,8 @@ const CATEGORY_ORDER: PoiCategory[] = [
   'local',
   'workshop',
   'playarea',
+  'petFriendly',
+  'kidsFriendly',
 ]
 
 export default async function StatsPage() {
@@ -206,6 +212,18 @@ export default async function StatsPage() {
                   label="Avg rating"
                   value={usageStats.averageRating}
                   sub={`${usageStats.ratingsCount} ratings`}
+                />
+                <StatTile
+                  icon={<CloudSun className="h-4 w-4" />}
+                  label="Weather checks"
+                  value={usageStats.weatherChecks}
+                  sub="Excursion previews"
+                />
+                <StatTile
+                  icon={<BookOpen className="h-4 w-4" />}
+                  label="Stories read"
+                  value={usageStats.storyViews}
+                  sub="Article opens"
                 />
               </div>
             )}

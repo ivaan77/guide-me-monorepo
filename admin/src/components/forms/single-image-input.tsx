@@ -7,10 +7,11 @@ import {
   type FieldValues,
 } from 'react-hook-form'
 import { toast } from 'sonner'
-import { Loader2, Trash2, Upload } from 'lucide-react'
+import { Images, Loader2, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldHint } from '@/components/forms/field-hint'
 import { Label } from '@/components/ui/label'
+import { ImageGalleryPicker } from './image-gallery-picker'
 
 type Props<T extends FieldValues> = {
   control: Control<T>
@@ -70,6 +71,7 @@ function ImageSlot({
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -123,6 +125,16 @@ function ImageSlot({
             </Button>
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPickerOpen(true)}
+              disabled={isUploading}
+            >
+              <Images className="h-4 w-4" />
+              Gallery
+            </Button>
+            <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => onChange(undefined)}
@@ -134,20 +146,30 @@ function ImageSlot({
           </div>
         </div>
       ) : (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => fileRef.current?.click()}
-          disabled={isUploading}
-          className="w-fit"
-        >
-          {isUploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Upload className="h-4 w-4" />
-          )}
-          {isUploading ? 'Uploading…' : 'Upload image'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            {isUploading ? 'Uploading…' : 'Upload image'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setPickerOpen(true)}
+            disabled={isUploading}
+          >
+            <Images className="h-4 w-4" />
+            Pick from gallery
+          </Button>
+        </div>
       )}
       <input
         ref={fileRef}
@@ -159,6 +181,11 @@ function ImageSlot({
       {error && (
         <p className="text-xs text-[var(--color-destructive)]">{error}</p>
       )}
+      <ImageGalleryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={(url) => onChange(url)}
+      />
     </div>
   )
 }

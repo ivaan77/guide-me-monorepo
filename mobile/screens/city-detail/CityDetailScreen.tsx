@@ -22,8 +22,10 @@ import {
   Heart,
   Landmark,
   Mountain,
+  PawPrint,
   ShoppingBag,
   Trees,
+  Users,
   UtensilsCrossed,
   Wine,
 } from '@tamagui/lucide-icons'
@@ -44,6 +46,8 @@ const LOGIN_HREF = '/login' as Href
 import { EmptyState } from '../discover/EmptyState'
 import { Accordion } from './Accordion'
 import { CategoryListItem } from './CategoryListItem'
+import { RelatedStories } from './RelatedStories'
+import { WeatherBadge } from './WeatherBadge'
 import { CityDetailSkeleton } from './CityDetailSkeleton'
 import { EditorsPickBanner } from './EditorsPickBanner'
 
@@ -269,6 +273,12 @@ export function CityDetailScreen({ id }: Props) {
             defaultOpen
             allowDistanceSort={false}
             userLocation={userLocation}
+            renderTrailingBadge={(item) => (
+              <WeatherBadge
+                coords={item.coords}
+                sensitivity={item.weatherSensitivity}
+              />
+            )}
           />
           <CategorySection
             title={t('city.sections.restaurants')}
@@ -355,6 +365,20 @@ export function CityDetailScreen({ id }: Props) {
             userLocation={userLocation}
           />
           <CategorySection
+            title={t('city.sections.kidsFriendly')}
+            icon={Users}
+            items={city.kidsFriendly}
+            hrefFor={(item) => `/place/${item.id}`}
+            userLocation={userLocation}
+          />
+          <CategorySection
+            title={t('city.sections.petFriendly')}
+            icon={PawPrint}
+            items={city.petFriendly}
+            hrefFor={(item) => `/place/${item.id}`}
+            userLocation={userLocation}
+          />
+          <CategorySection
             title={t('city.sections.locals')}
             icon={Heart}
             items={city.locals}
@@ -362,6 +386,11 @@ export function CityDetailScreen({ id }: Props) {
             userLocation={userLocation}
           />
         </YStack>
+        {/* Related stories: renders nothing if the city has no tied
+            blog posts, so screens that don't have editorial coverage
+            stay uncluttered. Lives OUTSIDE the H_PADDING YStack so its
+            horizontal scroll can bleed to the screen edge. */}
+        <RelatedStories citySlug={city.id} />
       </ScrollView>
       <BackButton topInset={insets.top} onPress={goBack} />
       <YStack
@@ -443,6 +472,7 @@ function CategorySection({
   defaultOpen = false,
   allowDistanceSort = true,
   userLocation,
+  renderTrailingBadge,
 }: {
   title: string
   icon: React.ComponentType<IconProps>
@@ -459,6 +489,9 @@ function CategorySection({
   // permission was denied or resolution hasn't landed yet — the chip stays
   // available but tapping it falls back to editorial ordering.
   userLocation?: LatLng | null
+  // Optional per-row right-side chip. Excursions section passes a weather
+  // badge; other categories omit it.
+  renderTrailingBadge?: (item: PublicCategoryItem) => React.ReactNode
 }) {
   const { t } = useTranslation()
   const [sortMode, setSortMode] = useState<SortMode>('editorial')
@@ -553,6 +586,7 @@ function CategorySection({
               item={item}
               isLast={idx === visibleGroups[0].items.length - 1 && !overCap}
               href={hrefFor?.(item)}
+              trailingBadge={renderTrailingBadge?.(item)}
             />
           ))
         : visibleGroups.map((group, gIdx) => (
@@ -580,6 +614,7 @@ function CategorySection({
                     !overCap
                   }
                   href={hrefFor?.(item)}
+                  trailingBadge={renderTrailingBadge?.(item)}
                 />
               ))}
             </YStack>

@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react'
 import { Image, Pressable } from 'react-native'
 import { Link, type Href } from 'expo-router'
 import { SizableText, XStack, YStack } from 'tamagui'
@@ -8,9 +9,13 @@ type Props = {
   item: PublicCategoryItem
   isLast?: boolean
   href?: string
+  // Optional right-side chip rendered next to the item name. Used by the
+  // excursions section to show a today-weather badge; other categories
+  // pass nothing and the row keeps its original layout.
+  trailingBadge?: ReactNode
 }
 
-export function CategoryListItem({ item, isLast, href }: Props) {
+export function CategoryListItem({ item, isLast, href, trailingBadge }: Props) {
   const row = (
     <XStack
       items="center"
@@ -26,15 +31,19 @@ export function CategoryListItem({ item, isLast, href }: Props) {
         resizeMode="cover"
       />
       <YStack flex={1} gap="$1">
-        <SizableText
-          size="$4"
-          fontFamily="$body"
-          fontWeight="600"
-          color="$color"
-          numberOfLines={1}
-        >
-          {item.name}
-        </SizableText>
+        <XStack items="center" gap="$2">
+          <SizableText
+            size="$4"
+            fontFamily="$body"
+            fontWeight="600"
+            color="$color"
+            numberOfLines={1}
+            flex={1}
+          >
+            {item.name}
+          </SizableText>
+          {trailingBadge}
+        </XStack>
         <XStack items="center" gap="$2">
           <SizableText
             size="$2"

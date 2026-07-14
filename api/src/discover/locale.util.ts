@@ -1,8 +1,10 @@
 import {
   DEFAULT_LOCALE,
   Locale,
+  LocalizedRichText,
   LocalizedString,
   SUPPORTED_LOCALES,
+  TipTapDoc,
 } from '@guide-me-app/core';
 
 const SUPPORTED = new Set<string>(SUPPORTED_LOCALES);
@@ -36,4 +38,16 @@ export function parseAcceptLanguage(header: string | undefined): Locale {
 // if the target locale isn't populated for that field.
 export function pickLocalized(field: LocalizedString, locale: Locale): string {
   return field[locale] ?? field.en;
+}
+
+// Same as pickLocalized but for TipTap rich-text docs. Falls back to English
+// when the target locale is missing. If both are missing (shouldn't happen
+// past validation) we return an empty doc rather than throwing — renderers
+// treat that as "empty article" and degrade gracefully.
+const EMPTY_DOC: TipTapDoc = { type: 'doc', content: [] };
+export function pickLocalizedRichText(
+  field: LocalizedRichText,
+  locale: Locale,
+): TipTapDoc {
+  return field[locale] ?? field.en ?? EMPTY_DOC;
 }

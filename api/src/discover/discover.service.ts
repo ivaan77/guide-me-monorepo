@@ -114,6 +114,12 @@ export class DiscoverService {
         meta: pickLocalized(e.meta, locale),
         image: e.image,
         rating: toRatingAggregate(e),
+        // First-stop coord + sensitivity so mobile can render a compact
+        // weather badge on the row without a second round-trip. Falls
+        // back to 'outdoor' for the same defensive reason as the excursion
+        // detail projection.
+        coords: e.stops?.[0]?.coords,
+        weatherSensitivity: e.weatherSensitivity ?? 'outdoor',
       })),
       restaurants: bucket('restaurant'),
       cafes: bucket('cafe'),
@@ -128,6 +134,8 @@ export class DiscoverService {
       locals: bucket('local'),
       workshops: bucket('workshop'),
       playareas: bucket('playarea'),
+      petFriendly: bucket('petFriendly'),
+      kidsFriendly: bucket('kidsFriendly'),
     };
 
     return { city: detail, locale };
@@ -193,6 +201,8 @@ export class DiscoverService {
       interestingFacts: resolvedFacts.length > 0 ? resolvedFacts : undefined,
       outro,
       rating: toRatingAggregate(excursion),
+      // Same 'outdoor' fallback as the admin path — belt-and-suspenders.
+      weatherSensitivity: excursion.weatherSensitivity ?? 'outdoor',
     };
 
     return { excursion: publicExcursion, locale };

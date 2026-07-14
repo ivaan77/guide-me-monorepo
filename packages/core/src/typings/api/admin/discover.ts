@@ -2,6 +2,7 @@ import {
     LocalizedString,
     PoiCategory,
     PublicLatLng,
+    WeatherSensitivity,
 } from '../public'
 
 // Admin shape: raw localized fields (not pre-resolved), full editable surface.
@@ -118,6 +119,9 @@ export type AdminExcursion = {
     interestingFacts?: AdminInterestingFact[]
     outro?: AdminExcursionOutro
     isEnabled: boolean
+    // See WeatherSensitivity in public types for semantics. Required —
+    // existing docs backfilled to 'outdoor' via the migration script.
+    weatherSensitivity: WeatherSensitivity
     createdAt?: string
     updatedAt?: string
 }
@@ -133,6 +137,8 @@ export type AdminCreateExcursionRequest = {
     interestingFacts?: AdminInterestingFact[]
     outro?: AdminExcursionOutro
     isEnabled?: boolean
+    // Required for new excursions. If a caller omits it, the API rejects.
+    weatherSensitivity: WeatherSensitivity
 }
 
 export type AdminUpdateExcursionRequest = Partial<

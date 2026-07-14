@@ -37,6 +37,7 @@ import type {
   PublicLatLng,
   PublicPoi,
   PublicSubStop,
+  WeatherSensitivity,
 } from '@guide-me-app/core'
 import {
   Paragraph,
@@ -81,6 +82,7 @@ import { SubStopPager } from './SubStopPager'
 import { PoiDetailSheet } from './PoiDetailSheet'
 import { StopDetailSheet } from './StopDetailSheet'
 import { StopsSheet } from './StopsSheet'
+import { WeatherBanner } from './WeatherBanner'
 import { ImageLightbox } from '../../common/ImageLightbox'
 import {
   BUNDLE_ACCENT,
@@ -153,6 +155,7 @@ export function ExcursionScreen({ id }: Props) {
       facts={excursion.interestingFacts ?? []}
       outro={excursion.outro}
       title={excursion.name}
+      weatherSensitivity={excursion.weatherSensitivity}
       topInset={insets.top}
       bottomInset={insets.bottom}
       mapRef={mapRef}
@@ -169,6 +172,7 @@ function ExcursionBody({
   facts,
   outro,
   title,
+  weatherSensitivity,
   topInset,
   bottomInset,
   mapRef,
@@ -181,6 +185,7 @@ function ExcursionBody({
   facts: Fact[]
   outro?: PublicExcursionOutro
   title: string
+  weatherSensitivity: WeatherSensitivity
   topInset: number
   bottomInset: number
   mapRef: React.RefObject<MapView | null>
@@ -1456,6 +1461,8 @@ function ExcursionBody({
             <BottomPanel
               phase={phase}
               excursionId={id}
+              weatherSensitivity={weatherSensitivity}
+              firstStopCoords={stops[0]?.coords}
               currentStop={currentStop}
               currentIndex={currentIndex}
               currentSubStopIndex={currentSubStopIndex}
@@ -1867,6 +1874,8 @@ function UndoSkipPill({
 function BottomPanel({
   phase,
   excursionId,
+  weatherSensitivity,
+  firstStopCoords,
   currentStop,
   currentIndex,
   currentSubStopIndex,
@@ -1897,6 +1906,8 @@ function BottomPanel({
 }: {
   phase: Phase
   excursionId: string
+  weatherSensitivity: WeatherSensitivity
+  firstStopCoords?: LatLng
   currentStop?: ExcursionStop
   currentIndex: number
   currentSubStopIndex: number
@@ -1945,6 +1956,9 @@ function BottomPanel({
       )}
       {phase === 'preview' && !isFarFromRoute && (
         <PreviewPanel
+          excursionId={excursionId}
+          weatherSensitivity={weatherSensitivity}
+          firstStopCoords={firstStopCoords}
           total={totalStops}
           onStart={onStart}
           startFromStop={startFromStop}
@@ -2064,6 +2078,9 @@ function FarFromRouteWarning({
 }
 
 function PreviewPanel({
+  excursionId,
+  weatherSensitivity,
+  firstStopCoords,
   total,
   onStart,
   startFromStop,
@@ -2074,6 +2091,9 @@ function PreviewPanel({
   onDismissNearestPill,
   onOpenStartFromPicker,
 }: {
+  excursionId: string
+  weatherSensitivity: WeatherSensitivity
+  firstStopCoords?: LatLng
   total: number
   onStart: () => void
   // When provided, the "Starting from" chip is shown above the Start button.
@@ -2093,6 +2113,15 @@ function PreviewPanel({
 }) {
   const { t } = useTranslation()
   const pillVisible = nearestPillExpiresAt > Date.now()
+  // Default weather date to today (YYYY-MM-DD in local time). User can
+  // scrub 0..6 days ahead via the WeatherDatePicker. Only rendered when
+  // sensitivity !== 'indoor' — indoor excursions get neither the picker
+  // nor the banner.
+  const [weatherDate, setWeatherDate] = useState<string>(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
+  const showWeather = weatherSensitivity !== 'indoor' && !!firstStopCoords
   // Ported to PhaseCard shape (Session 1 of the ExcursionScreen redesign).
   // Same content as before, just wrapped in the shared header / body /
   // actions layout so every phase's card reads structurally the same.
@@ -2123,6 +2152,15 @@ function PreviewPanel({
             index={startFromIndex}
             isNearest={isStartFromNearest}
             onPress={onOpenStartFromPicker}
+          />
+        )}
+        {showWeather && (
+          <WeatherBanner
+            coords={firstStopCoords}
+            date={weatherDate}
+            onDateChange={setWeatherDate}
+            sensitivity={weatherSensitivity}
+            excursionId={excursionId}
           />
         )}
       </PhaseCardBody>

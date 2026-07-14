@@ -73,10 +73,15 @@ export type PublicCategoryItem = {
     subCategory?: string
     rating?: PublicRatingAggregate
     // Optional lat/lng of the underlying place. Feeds the "distance from
-    // me" client-side sort on CityDetailScreen. Excursion category items
-    // never populate this (an excursion is a route, not a point); place
-    // category items populate it whenever the source doc has coords.
+    // me" client-side sort on CityDetailScreen. Place items populate it
+    // whenever the source doc has coords. Excursion items populate it
+    // with their first-stop coord so a weather badge can render on the
+    // CityDetail excursion row without needing a separate fetch.
     coords?: PublicLatLng
+    // Only populated for excursion items — feeds the CityDetail weather
+    // badge. Absent on POI items (a restaurant doesn't have "sensitivity"
+    // to weather in the same sense).
+    weatherSensitivity?: WeatherSensitivity
 }
 
 // City detail exposes each POI category as its own optional list so the
@@ -98,6 +103,8 @@ export type PublicCityDetail = PublicCity & {
     locals?: PublicCategoryItem[]
     workshops?: PublicCategoryItem[]
     playareas?: PublicCategoryItem[]
+    petFriendly?: PublicCategoryItem[]
+    kidsFriendly?: PublicCategoryItem[]
 }
 
 export type PublicCityDetailResponse = {
@@ -157,6 +164,8 @@ export type PoiCategory =
     | 'local'
     | 'workshop'
     | 'playarea'
+    | 'petFriendly'
+    | 'kidsFriendly'
 
 // PublicPoi is now the resolved Place reference: the api dereferences
 // excursion.pois[].placeSlug into the full Place document so mobile gets
@@ -196,6 +205,18 @@ export type PublicExcursionOutro = {
     audioUrl?: string
 }
 
+// How exposed to the weather this excursion is. Drives the "check the
+// forecast before you go" recommendation on the mobile preview:
+//   outdoor — walking outside for most of the route (parks, viewpoints,
+//             open squares). Bad weather = strong "wait for a drier day".
+//   mixed   — some indoor stops (museums, cafes) but user still walks
+//             outside between them. Bad weather = "bring an umbrella"
+//             not "skip it".
+//   indoor  — mostly inside (a museum tour, a covered market). Weather
+//             warning is suppressed entirely.
+export const WEATHER_SENSITIVITIES = ['outdoor', 'mixed', 'indoor'] as const
+export type WeatherSensitivity = (typeof WEATHER_SENSITIVITIES)[number]
+
 export type PublicExcursion = {
     id: string
     name: string
@@ -206,6 +227,10 @@ export type PublicExcursion = {
     interestingFacts?: PublicInterestingFact[]
     outro?: PublicExcursionOutro
     rating?: PublicRatingAggregate
+    // Weather exposure — REQUIRED. Existing docs backfilled to 'outdoor'
+    // by scripts/backfill-weather-sensitivity.ts (see comment in the
+    // schema). All new authoring must pick a value.
+    weatherSensitivity: WeatherSensitivity
 }
 
 export type PublicExcursionResponse = {
@@ -305,6 +330,16 @@ export type PublicUsageStats = {
     countriesReached: number
     averageRating: number
     ratingsCount: number
+    // Count of `weather_checked` events. Fires once per (excursionId,
+    // date, result-classification) so it approximates "how often did a
+    // user consult the forecast before deciding to go?" Useful for
+    // gauging whether the feature is used, and eventually for
+    // correlating with excursion_started.
+    weatherChecks: number
+    // Count of `story_viewed` events. Fires once per story-detail-screen
+    // mount. Not de-duplicated per user or per session — this is a raw
+    // view counter. Populated by the Stories tab in the mobile app.
+    storyViews: number
 }
 
 export type PublicUsageStatsResponse = {
@@ -335,4 +370,173 @@ export type PublicPopularItem = {
 
 export type PublicPopularGalleryResponse = {
     items: PublicPopularItem[]
+}
+
+// Weather summary for one lat/lng at one date, backed by Open-Meteo via
+// the API's WeatherService. Values are the daily aggregates for the
+// requested date in the location's local timezone.
+//
+// Never trust `weatherCode` alone for logic — different providers use
+// different code sets. Use `precipitationMm` / `windKmh` / `tempMaxC` as
+// the primary signals; `weatherCode` is fine for icon selection but not
+// go/no-go decisions.
+export type PublicWeather = {
+    // ISO yyyy-mm-dd date this forecast applies to, in the location's
+    // local timezone (Open-Meteo does the conversion for us).
+    date: string
+    // Latitude/longitude the forecast was resolved for. Open-Meteo may
+    // snap to the nearest grid point (~1km); returned so the client can
+    // detect drift if needed.
+    resolvedLat: number
+    resolvedLng: number
+    // Daily max/min temperature in Celsius.
+    tempMaxC: number
+    tempMinC: number
+    // Total precipitation in millimeters over the day. > 2mm is "bring
+    // an umbrella"; > 10mm is "the trail will be muddy."
+    precipitationMm: number
+    // Max sustained wind in km/h. > 40 is "windy / bring layers"; > 60
+    // is "strongly consider postponing" for outdoor routes.
+    windKmh: number
+    // WMO weather code (0=clear, 1-3=partly cloudy, 45-48=fog, 51-67=rain,
+    // 71-77=snow, 80-82=showers, 85-86=snow showers, 95-99=thunder). Fine
+    // for picking an icon. Full mapping:
+    // https://open-meteo.com/en/docs#weathervariables
+    weatherCode: number
+}
+
+export type PublicWeatherResponse = {
+    weather: PublicWeather
+}
+
+// --- Blog / Stories ---
+
+// Fixed list of blog categories. Kept small on purpose — free-text tags
+// give better search but require admin-side taxonomy management. Add
+// entries here + to BlogCategoryLabels in the app when new categories
+// are needed. The mobile app treats an unknown category as 'news' at
+// the render layer.
+export const BLOG_CATEGORIES = [
+    'travel-tips',
+    'city-guide',
+    'food-drink',
+    'news',
+] as const
+export type BlogCategory = (typeof BLOG_CATEGORIES)[number]
+
+// Publish workflow: draft = admin-only preview, published = live on web
+// + app. Kept intentionally simple — scheduled/archived can be added later
+// without breaking clients (parse as 'draft' when unknown).
+export const BLOG_STATUSES = ['draft', 'published'] as const
+export type BlogStatus = (typeof BLOG_STATUSES)[number]
+
+// TipTap stores documents as a nested JSON tree of nodes. Rather than
+// modeling every node here (paragraph, heading, image, youtube, appLink,
+// etc.), we treat the doc as opaque JSON. The rich-text renderers on web
+// and mobile know how to walk it, and admin's TipTap editor produces it
+// directly.
+//
+// Shape at the top level is always `{ type: 'doc', content: [...] }`.
+// Consumers should defensively handle missing/malformed docs — the
+// renderers fall back to an empty state rather than crashing.
+export type TipTapDoc = {
+    type: 'doc'
+    content?: unknown[]
+}
+
+// Custom TipTap node inserted by admin to deep-link a blog post to a
+// specific city, place, or excursion in the app + on the marketing web
+// site. Renderers (web + mobile) know how to display it as a rich card.
+// This is the attrs shape only; the node itself lives inside content[].
+export const APP_LINK_KINDS = ['city', 'place', 'excursion'] as const
+export type AppLinkKind = (typeof APP_LINK_KINDS)[number]
+
+export type AppLinkAttrs = {
+    kind: AppLinkKind
+    // Slug of the referenced entity. Combined with `kind` to compute
+    // the web URL (once each kind has a public page) and the mobile
+    // deep-link route (/city/:id, /place/:id, /excursion/:id).
+    id: string
+    // Display label at insert time. Frozen at authoring — if the entity's
+    // name changes later, the card still shows the label the author chose.
+    // Renderers may choose to override with a live-fetched name if they
+    // wish, but the default is to show what the author wrote.
+    label: string
+    // Optional cover image URL captured at insert time. Same reasoning
+    // as label — snapshot to avoid renderers making N extra fetches per
+    // article to hydrate cards.
+    imageUrl?: string
+}
+
+// Editorial pick cards — inline callouts the author drops into a blog
+// body to highlight a tip or a piece of context. Two visual variants:
+//   - tip:       amber/yellow, lightbulb icon. "Practical suggestion".
+//   - highlight: blue,         info icon.       "Important context".
+//
+// Title + body are plain strings for now. If we ever need rich text
+// inside the card, upgrade `body` to a nested TipTapDoc — renderers
+// should already fall back gracefully on unexpected shapes.
+//
+// Cards are inserted per-locale, i.e. the author writes the EN card
+// while editing the EN body, and separately writes the DE card while
+// editing the DE body. This matches how the rest of the article is
+// localized (title, excerpt, and body are all per-locale).
+export const EDITOR_PICK_VARIANTS = ['tip', 'highlight'] as const
+export type EditorPickVariant = (typeof EDITOR_PICK_VARIANTS)[number]
+
+export type EditorPickAttrs = {
+    variant: EditorPickVariant
+    title: string
+    body: string
+}
+
+// Localized rich-text field. English required, other locales optional and
+// fall back to English at read time. Same pattern as LocalizedString but
+// wrapping a TipTap doc instead of a plain string.
+export type LocalizedRichText = {
+    en: TipTapDoc
+} & Partial<Record<Locale, TipTapDoc>>
+
+// Public-facing blog card as it appears in the /blog index (web) or the
+// Stories tab (mobile). Body is stripped intentionally — the list view
+// only needs enough to render a card + link to the detail view.
+export type PublicBlogSummary = {
+    slug: string
+    category: BlogCategory
+    // Optional city tie. When present, the story surfaces in the mobile
+    // CityDetail "Related stories" row + can be filtered on the Stories
+    // tab. Absent = general story, not tied to any city.
+    citySlug?: string
+    title: string
+    excerpt: string
+    coverImage: string
+    // ISO timestamp. Ordering is server-side (publishedAt DESC) so the
+    // client can render in-order without re-sorting.
+    publishedAt: string
+    // Optional reading-time hint in minutes, computed server-side from the
+    // TipTap doc. Renders as "· 4 min read" on cards when present.
+    readingMinutes?: number
+}
+
+// Full blog post as returned by the detail endpoint. `body` is the TipTap
+// JSON for the resolved locale. Meta fields are only populated when the
+// author set them; renderers should fall back to title/excerpt when unset.
+export type PublicBlogDetail = PublicBlogSummary & {
+    body: TipTapDoc
+    metaTitle?: string
+    metaDescription?: string
+    ogImage?: string
+}
+
+export type PublicBlogListResponse = {
+    posts: PublicBlogSummary[]
+    // Total match count across all pages. Enables "Page 2 of 5" pagination
+    // UI on the web index without a HEAD request.
+    total: number
+    locale: Locale
+}
+
+export type PublicBlogDetailResponse = {
+    post: PublicBlogDetail
+    locale: Locale
 }

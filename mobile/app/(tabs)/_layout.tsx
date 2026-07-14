@@ -47,6 +47,12 @@ export default function TabsLayout() {
         </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="heart.fill" md="favorite" selectedColor={c.primary} />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="stories">
+        <NativeTabs.Trigger.Label selectedStyle={selectedLabelStyle}>
+          {t('tabs.stories')}
+        </NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="book.fill" md="book" selectedColor={c.primary} />
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <NativeTabs.Trigger.Label selectedStyle={selectedLabelStyle}>
           {t('tabs.profile')}
