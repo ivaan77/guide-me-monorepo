@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,7 +13,11 @@ import type {
   TipTapDoc,
 } from '@guide-me-app/core'
 import { BLOG_CATEGORIES, BLOG_STATUSES } from '@guide-me-app/core'
-import { createBlogAction, updateBlogAction } from '@/actions/blogs'
+import {
+  createBlogAction,
+  regeneratePreviewTokenAction,
+  updateBlogAction,
+} from '@/actions/blogs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -69,6 +73,15 @@ const localizedRichRequired = z.object({
 const baseSchema = {
   status: z.enum(BLOG_STATUSES),
   category: z.enum(BLOG_CATEGORIES),
+  // Empty string = "General" (no city). Any non-empty must match the
+  // slug shape; the API also enforces this but we short-circuit on the
+  // client so the author sees the error in the form rather than a toast.
+  citySlug: z
+    .string()
+    .refine(
+      (v) => v === '' || SLUG_REGEX.test(v),
+      'Must be a valid city slug',
+    ),
   coverImage: z.string().url('Must be a valid URL'),
   ogImage: z.string().url().optional().or(z.literal('')),
   title: localizedRequired,
@@ -88,21 +101,34 @@ const updateSchema = z.object(baseSchema)
 type CreateValues = z.infer<typeof createSchema>
 type UpdateValues = z.infer<typeof updateSchema>
 
+// Compact shape passed by the page-level server components after
+// listCitiesAction() so the client form doesn't need to re-fetch or
+// hold the full AdminCity payload.
+export type BlogFormCity = { slug: string; name: string }
+
 type Props =
-  | { mode: 'create'; initialValues?: undefined }
-  | { mode: 'edit'; initialValues: AdminBlog }
+  | { mode: 'create'; initialValues?: undefined; cities: BlogFormCity[] }
+  | { mode: 'edit'; initialValues: AdminBlog; cities: BlogFormCity[] }
 
 const EMPTY_DOC: TipTapDoc = { type: 'doc', content: [] }
 
 export function BlogForm(props: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  // Local mirror of previewToken so a click on "Regenerate" updates the
+  // Preview button's URL immediately, without waiting for router.refresh
+  // to round-trip the whole page. In create mode this stays at '' — the
+  // Preview button isn't rendered.
+  const [previewToken, setPreviewToken] = useState<string>(
+    props.mode === 'edit' ? props.initialValues.previewToken : '',
+  )
 
   const defaults =
     props.mode === 'edit'
       ? {
           status: props.initialValues.status,
           category: props.initialValues.category,
+          citySlug: props.initialValues.citySlug ?? '',
           coverImage: props.initialValues.coverImage,
           ogImage: props.initialValues.ogImage ?? '',
           title: props.initialValues.title,
@@ -114,6 +140,7 @@ export function BlogForm(props: Props) {
       : {
           status: 'draft' as const,
           category: 'travel-tips' as BlogCategory,
+          citySlug: '',
           coverImage: '',
           ogImage: '',
           title: { en: '', de: '', hr: '' },
@@ -141,14 +168,21 @@ export function BlogForm(props: Props) {
     typeof useForm<CreateValues>
   >
 
-  // Auto-derive slug from English title while the user hasn't touched it.
-  // Once the slug field is edited manually, we stop syncing (opt-out via
-  // presence of a non-derived value).
+  // Live auto-slug: while the user is authoring the EN title in create
+  // mode, keep the slug field in sync with slugify(title). The slug input
+  // is read-only so there's no manual override — the field always tracks
+  // the title. Edit mode never touches the slug (it's the DB key + URL).
   const titleEn = watch('title.en' as never) as unknown as string | undefined
   const slug = watch('slug' as never) as unknown as string | undefined
   const suggestedSlug = slugify(titleEn ?? '')
-  const shouldAutoFillSlug =
-    props.mode === 'create' && !slug && !!suggestedSlug
+
+  useEffect(() => {
+    if (props.mode !== 'create') return
+    if (!suggestedSlug) return
+    // setValue with shouldValidate:false so we don't fire the zod slug
+    // regex check on every keystroke of the title.
+    setValue('slug' as never, suggestedSlug as never, { shouldValidate: false })
+  }, [suggestedSlug, setValue, props.mode])
 
   const onCreate = handleSubmit((values: CreateValues) => {
     startTransition(async () => {
@@ -156,6 +190,7 @@ export function BlogForm(props: Props) {
         slug: values.slug,
         status: values.status,
         category: values.category,
+        citySlug: values.citySlug || undefined,
         coverImage: values.coverImage,
         ogImage: values.ogImage || undefined,
         title: values.title,
@@ -180,6 +215,9 @@ export function BlogForm(props: Props) {
       const payload: AdminUpdateBlogRequest = {
         status: values.status,
         category: values.category,
+        // Empty string is meaningful on update — it signals "clear the
+        // city tie" to the API. Pass through as-is.
+        citySlug: values.citySlug,
         coverImage: values.coverImage,
         ogImage: values.ogImage || undefined,
         title: values.title,
@@ -215,18 +253,37 @@ export function BlogForm(props: Props) {
                 id="slug"
                 placeholder={suggestedSlug || 'top-5-zagreb-excursions'}
                 {...register('slug')}
-                onFocus={() => {
-                  if (shouldAutoFillSlug) setValue('slug', suggestedSlug)
-                }}
+                readOnly
               />
               <p className="text-xs text-[var(--color-muted-foreground)]">
                 URL segment: /blog/<code>{slug || suggestedSlug || 'slug'}</code>
+                {titleEn && (
+                  <span className="ml-2 text-[10px] uppercase tracking-wide">
+                    · auto from title
+                  </span>
+                )}
               </p>
               {formState.errors.slug && (
                 <p className="text-xs text-[var(--color-destructive)]">
                   {formState.errors.slug.message as string}
                 </p>
               )}
+            </div>
+          )}
+          {props.mode === 'edit' && (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="slug-locked">Slug (locked)</Label>
+              <Input
+                id="slug-locked"
+                value={props.initialValues.slug}
+                disabled
+                readOnly
+              />
+              <p className="text-xs text-[var(--color-muted-foreground)]">
+                URL segment: /blog/<code>{props.initialValues.slug}</code>{' '}
+                · changing this would break existing links + SEO. To rename,
+                delete this post and create a new one.
+              </p>
             </div>
           )}
 
@@ -265,6 +322,45 @@ export function BlogForm(props: Props) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="citySlug">Tied to city</Label>
+            <Select
+              // Radix Select rejects empty-string values, so we mirror the
+              // "no city" state to the sentinel __none and translate at the
+              // read/write boundary. Empty string ↔ __none.
+              value={
+                ((watch('citySlug' as never) as unknown as string) || '') ===
+                ''
+                  ? '__none'
+                  : ((watch('citySlug' as never) as unknown as string) ?? '__none')
+              }
+              onValueChange={(v) =>
+                setValue(
+                  'citySlug' as never,
+                  (v === '__none' ? '' : v) as never,
+                )
+              }
+            >
+              <SelectTrigger id="citySlug">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">
+                  General — not tied to any city
+                </SelectItem>
+                {props.cities.map((c) => (
+                  <SelectItem key={c.slug} value={c.slug}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-[var(--color-muted-foreground)]">
+              Tied posts surface in the Stories tab city filter and on the
+              city&apos;s detail screen in the mobile app.
+            </p>
           </div>
 
           <LocalizedInput
@@ -343,6 +439,49 @@ export function BlogForm(props: Props) {
       </Card>
 
       <div className="flex justify-end gap-2 pt-4">
+        {props.mode === 'edit' && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (
+                  !confirm(
+                    'Regenerate preview token? Any preview URLs you have already shared will stop working.',
+                  )
+                ) {
+                  return
+                }
+                startTransition(async () => {
+                  const res = await regeneratePreviewTokenAction(
+                    props.initialValues.slug,
+                  )
+                  if (!res.ok) {
+                    toast.error(res.error)
+                    return
+                  }
+                  setPreviewToken(res.data.previewToken)
+                  toast.success(
+                    'Preview token regenerated — old links no longer work',
+                  )
+                })
+              }}
+              disabled={isPending}
+            >
+              Regen token
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                openPreview(props.initialValues.slug, previewToken)
+              }
+              disabled={isPending || !previewToken}
+            >
+              Preview
+            </Button>
+          </>
+        )}
         <Button
           type="button"
           variant="outline"
@@ -357,6 +496,22 @@ export function BlogForm(props: Props) {
       </div>
     </form>
   )
+}
+
+// Opens the web preview URL in a new tab. NEXT_PUBLIC_WEB_URL is baked
+// at build time; missing env falls back to localhost:3000 so it works in
+// local dev without extra config. The preview URL includes the token so
+// unpublished drafts render; the token stays with the URL and doesn't
+// need to travel through a session or cookie. Called with the LIVE token
+// (may differ from initialValues.previewToken after a regen click) so
+// the newly-opened tab always uses the current token.
+function openPreview(slug: string, token: string): void {
+  if (!token) return
+  const base =
+    process.env.NEXT_PUBLIC_WEB_URL?.replace(/\/$/, '') ||
+    'http://localhost:3000'
+  const url = `${base}/blog/preview/${slug}?token=${encodeURIComponent(token)}`
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 // Normalizes an optional-locale form value into a LocalizedString (with

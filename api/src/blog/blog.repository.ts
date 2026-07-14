@@ -14,11 +14,13 @@ export class BlogRepository {
 
   async findPublished(opts: {
     category?: BlogCategory;
+    citySlug?: string;
     limit: number;
     skip: number;
   }): Promise<{ posts: BlogDocument[]; total: number }> {
     const filter: FilterQuery<Blog> = { status: 'published' };
     if (opts.category) filter.category = opts.category;
+    if (opts.citySlug) filter.citySlug = opts.citySlug;
     const [posts, total] = await Promise.all([
       this.blogModel
         .find(filter)
@@ -35,6 +37,23 @@ export class BlogRepository {
   findPublishedBySlug(slug: string): Promise<BlogDocument | null> {
     return this.blogModel
       .findOne({ slug, status: 'published' })
+      .lean<BlogDocument>()
+      .exec();
+  }
+
+  // Preview read: returns the post regardless of status when the caller
+  // supplies a token that matches the doc's previewToken. Used by the web
+  // preview URL so authors + reviewers can see unpublished drafts. Missing
+  // or mismatched token yields null — controller turns that into a 404 so
+  // token-guessers can't distinguish "post exists but wrong token" from
+  // "no such post."
+  findByPreviewToken(
+    slug: string,
+    token: string,
+  ): Promise<BlogDocument | null> {
+    if (!token) return Promise.resolve(null);
+    return this.blogModel
+      .findOne({ slug, previewToken: token })
       .lean<BlogDocument>()
       .exec();
   }

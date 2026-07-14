@@ -52,4 +52,11 @@ export class AdminBlogController {
   delete(@Param('slug') slug: string): Promise<void> {
     return this.service.delete(slug);
   }
+
+  @Post(AdminPath.Blog.previewTokenBySlug)
+  regeneratePreviewToken(
+    @Param('slug') slug: string,
+  ): Promise<AdminBlogResponse> {
+    return this.service.regeneratePreviewToken(slug);
+  }
 }

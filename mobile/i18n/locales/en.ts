@@ -8,6 +8,7 @@ export const en = {
   tabs: {
     discover: 'Discover',
     favorites: 'Favorites',
+    stories: 'Stories',
     profile: 'Profile',
   },
   discover: {
@@ -15,6 +16,31 @@ export const en = {
     noResultsTitle: 'No matches',
     noResultsBody: 'We couldn’t find any cities matching "{{query}}". Try a different name or country.',
     errorBody: 'We couldn’t load the city list right now.',
+  },
+  stories: {
+    title: 'Stories',
+    all: 'All',
+    allCities: 'All cities',
+    relatedTitle: 'Stories about this city',
+    emptyBody: 'No stories in this category yet. Check back soon.',
+    errorBody: 'We couldn’t load stories right now.',
+    readingMinutes_one: '{{count}} min read',
+    readingMinutes_other: '{{count}} min read',
+    category: {
+      'travel-tips': 'Travel tips',
+      'city-guide': 'City guide',
+      'food-drink': 'Food & drink',
+      news: 'News',
+    },
+    appLink: {
+      city: 'City',
+      place: 'Place',
+      excursion: 'Excursion',
+    },
+    editorPick: {
+      tip: 'Tip',
+      highlight: 'Highlight',
+    },
   },
   favorites: {
     emptyTitle: 'No favorites yet',

@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/forms/page-header'
 import { AssetsLineChart } from '@/components/stats/assets-line-chart'
 import { CumulativeLineChart } from '@/components/stats/cumulative-line-chart'
 import {
+  BookOpen,
   Building2,
   CheckCircle2,
   CloudSun,
@@ -217,6 +218,12 @@ export default async function StatsPage() {
                   label="Weather checks"
                   value={usageStats.weatherChecks}
                   sub="Excursion previews"
+                />
+                <StatTile
+                  icon={<BookOpen className="h-4 w-4" />}
+                  label="Stories read"
+                  value={usageStats.storyViews}
+                  sub="Article opens"
                 />
               </div>
             )}

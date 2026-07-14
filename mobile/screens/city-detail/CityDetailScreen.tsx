@@ -46,6 +46,7 @@ const LOGIN_HREF = '/login' as Href
 import { EmptyState } from '../discover/EmptyState'
 import { Accordion } from './Accordion'
 import { CategoryListItem } from './CategoryListItem'
+import { RelatedStories } from './RelatedStories'
 import { WeatherBadge } from './WeatherBadge'
 import { CityDetailSkeleton } from './CityDetailSkeleton'
 import { EditorsPickBanner } from './EditorsPickBanner'
@@ -385,6 +386,11 @@ export function CityDetailScreen({ id }: Props) {
             userLocation={userLocation}
           />
         </YStack>
+        {/* Related stories: renders nothing if the city has no tied
+            blog posts, so screens that don't have editorial coverage
+            stay uncluttered. Lives OUTSIDE the H_PADDING YStack so its
+            horizontal scroll can bleed to the screen edge. */}
+        <RelatedStories citySlug={city.id} />
       </ScrollView>
       <BackButton topInset={insets.top} onPress={goBack} />
       <YStack

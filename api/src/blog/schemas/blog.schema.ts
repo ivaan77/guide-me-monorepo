@@ -62,6 +62,16 @@ export class Blog {
   @Prop({ required: true })
   coverImage: string;
 
+  // Optional city tie. When set, the post appears in that city's
+  // CityDetailScreen "Related stories" section AND in the Stories tab
+  // filtered by that city. When absent, the post is "general" and only
+  // shows up in the unfiltered Stories list. The value is a DiscoverCity
+  // slug — no FK enforcement (soft link) so deleting the city doesn't
+  // cascade and break articles; the filter just silently returns no
+  // matches until the city returns or the author reassigns the post.
+  @Prop({ index: true })
+  citySlug?: string;
+
   @Prop()
   ogImage?: string;
 
@@ -85,6 +95,21 @@ export class Blog {
   // Compare `updatedAt` if you want to know when it was last touched.
   @Prop({ type: Date, index: true })
   publishedAt?: Date;
+
+  // Random 32-hex-char token that gates the /public/blogs/preview/:slug
+  // endpoint. Generated once on create; regenerate to invalidate any
+  // previously-shared preview URLs. Never leaked on PublicBlog projections
+  // — if it ends up on the mobile app payload, every draft is world-
+  // readable. AdminBlog projection includes it so admin can build the
+  // preview URL. The Mongoose default gives legacy docs a token on first
+  // save so nothing breaks if the field is missing on read.
+  @Prop({
+    required: true,
+    default: (): string =>
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('crypto').randomBytes(16).toString('hex'),
+  })
+  previewToken: string;
 }
 
 export type BlogDocument = HydratedDocument<Blog>;
@@ -93,3 +118,7 @@ export const BlogSchema = SchemaFactory.createForClass(Blog);
 // Compound index for the public list endpoint: filter by status+category,
 // order by publishedAt DESC.
 BlogSchema.index({ status: 1, category: 1, publishedAt: -1 });
+
+// Compound index for the "stories for city X" query used by the mobile
+// Stories tab city filter and the CityDetailScreen related-stories row.
+BlogSchema.index({ status: 1, citySlug: 1, publishedAt: -1 });

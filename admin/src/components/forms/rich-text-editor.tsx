@@ -5,10 +5,20 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Youtube from '@tiptap/extension-youtube'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import type { TipTapDoc } from '@guide-me-app/core'
+import type {
+  AppLinkAttrs,
+  EditorPickAttrs,
+  EditorPickVariant,
+  TipTapDoc,
+} from '@guide-me-app/core'
+import { AppLinkNode } from './tiptap-app-link-node'
+import { AppLinkPicker } from './app-link-picker'
+import { ImageGalleryPicker } from './image-gallery-picker'
+import { EditorPickNode } from './tiptap-editor-pick-node'
+import { EditorPickDialog } from './editor-pick-dialog'
 
 // Rich-text editor for blog post bodies. Emits TipTap JSON via onChange so
 // the parent (RHF Controller) stores it directly on the form. Supports:
@@ -32,6 +42,13 @@ type Props = {
 }
 
 export function RichTextEditor({ label, value, onChange, required, hint }: Props) {
+  const [appLinkOpen, setAppLinkOpen] = useState(false)
+  const [imagePickerOpen, setImagePickerOpen] = useState(false)
+  // Which editor-pick variant to author. null = dialog closed. Combined
+  // state (not two booleans) so we can't accidentally have both dialogs
+  // open at once and lose focus tracking between them.
+  const [editorPickVariant, setEditorPickVariant] =
+    useState<EditorPickVariant | null>(null)
   const editor = useEditor({
     extensions: [
       // StarterKit gives us paragraph, heading (all levels), bold, italic,
@@ -51,6 +68,14 @@ export function RichTextEditor({ label, value, onChange, required, hint }: Props
         controls: true,
         nocookie: true,
       }),
+      // Custom node for in-article deep links to cities/places/excursions.
+      // Picker (below) inserts these; both web + mobile renderers know how
+      // to render them as cards.
+      AppLinkNode,
+      // Custom node for inline "editor pick" cards (tip / highlight).
+      // Dialog (below) authors the plain-text title + body; renderers on
+      // web + mobile show them as colored callout cards.
+      EditorPickNode,
     ],
     // TipTap's Content type is intentionally loose; our TipTapDoc.content
     // is `unknown[]` because the shape is opaque at the boundary. The cast
@@ -139,13 +164,21 @@ export function RichTextEditor({ label, value, onChange, required, hint }: Props
           >
             &ldquo; Quote
           </ToolbarButton>
+          <ToolbarButton onClick={() => setImagePickerOpen(true)}>
+            + Image
+          </ToolbarButton>
           <ToolbarButton
             onClick={() => {
+              // Fallback for images NOT already in the gallery — the
+              // primary "+ Image" flow above opens the picker, this one
+              // is for pasting a fresh URL that hasn't been used
+              // anywhere yet. Once saved on any doc it will start
+              // appearing in the gallery.
               const url = promptForUrl('Image URL (Unsplash, CDN, etc.)')
               if (url) editor.chain().focus().setImage({ src: url }).run()
             }}
           >
-            + Image
+            + URL image
           </ToolbarButton>
           <ToolbarButton
             onClick={() => {
@@ -170,6 +203,15 @@ export function RichTextEditor({ label, value, onChange, required, hint }: Props
           >
             🔗 Link
           </ToolbarButton>
+          <ToolbarButton onClick={() => setAppLinkOpen(true)}>
+            + App link
+          </ToolbarButton>
+          <ToolbarButton onClick={() => setEditorPickVariant('tip')}>
+            💡 Tip
+          </ToolbarButton>
+          <ToolbarButton onClick={() => setEditorPickVariant('highlight')}>
+            ⭐ Highlight
+          </ToolbarButton>
         </div>
         <EditorContent
           editor={editor}
@@ -177,6 +219,30 @@ export function RichTextEditor({ label, value, onChange, required, hint }: Props
         />
       </div>
       {hint && <p className="text-xs text-[var(--color-muted-foreground)]">{hint}</p>}
+      <AppLinkPicker
+        open={appLinkOpen}
+        onClose={() => setAppLinkOpen(false)}
+        onPick={(attrs: AppLinkAttrs) => {
+          editor.chain().focus().insertAppLink(attrs).run()
+        }}
+      />
+      <ImageGalleryPicker
+        open={imagePickerOpen}
+        onClose={() => setImagePickerOpen(false)}
+        onPick={(url) => {
+          editor.chain().focus().setImage({ src: url }).run()
+        }}
+      />
+      <EditorPickDialog
+        open={editorPickVariant !== null}
+        // Never rendered with null variant (guarded by `open` above); the
+        // `?? 'tip'` is a defensive fallback for the type checker.
+        variant={editorPickVariant ?? 'tip'}
+        onClose={() => setEditorPickVariant(null)}
+        onSave={(attrs: EditorPickAttrs) => {
+          editor.chain().focus().insertEditorPick(attrs).run()
+        }}
+      />
     </div>
   )
 }

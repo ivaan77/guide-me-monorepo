@@ -24,7 +24,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "script:prune-orphan-favorites": "ts-node scripts/prune-orphan-favorites.ts",
     "script:backfill-audio-durations": "ts-node scripts/backfill-audio-durations.ts",
-    "script:backfill-weather-sensitivity": "ts-node scripts/backfill-weather-sensitivity.ts"
+    "script:backfill-weather-sensitivity": "ts-node scripts/backfill-weather-sensitivity.ts",
+    "script:seed-demo-blog": "ts-node scripts/seed-demo-blog.ts"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.11",

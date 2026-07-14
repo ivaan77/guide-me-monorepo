@@ -17,7 +17,19 @@ export const AdminPath = {
     Blog: {
         posts: '/admin/blogs',
         postBySlug: '/admin/blogs/:slug',
+        // Rotates the previewToken. POST (side-effectful, non-idempotent
+        // from the caller's perspective — each call yields a new token).
+        // Invalidates any previously-shared preview URLs for the post.
+        previewTokenBySlug: '/admin/blogs/:slug/preview-token',
         getPost: (slug: string): string => `/admin/blogs/${slug}`,
+        getPreviewToken: (slug: string): string =>
+            `/admin/blogs/${slug}/preview-token`,
+    },
+    ImageGallery: {
+        // Distinct image URLs already referenced by cities / places /
+        // excursions / blogs. Powers the "Pick from gallery" modal in
+        // every admin ImageInput.
+        list: '/admin/image-gallery',
     },
 }
 
@@ -58,7 +70,12 @@ export const PublicPath = {
     Blog: {
         list: '/public/blogs',
         postBySlug: '/public/blogs/:slug',
+        // Preview URL gated by a per-post random token. Returns the post
+        // regardless of status when slug + token match; 404 otherwise.
+        previewBySlug: '/public/blogs/preview/:slug',
         getPost: (slug: string): string => `/public/blogs/${slug}`,
+        getPreview: (slug: string, token: string): string =>
+            `/public/blogs/preview/${slug}?token=${encodeURIComponent(token)}`,
     },
 }
 

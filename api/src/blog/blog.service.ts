@@ -19,7 +19,12 @@ export class BlogService {
 
   async listPublished(
     locale: Locale,
-    opts: { category?: BlogCategory; limit: number; skip: number },
+    opts: {
+      category?: BlogCategory;
+      citySlug?: string;
+      limit: number;
+      skip: number;
+    },
   ): Promise<PublicBlogListResponse> {
     const { posts, total } = await this.repo.findPublished(opts);
     return {
@@ -35,6 +40,30 @@ export class BlogService {
   ): Promise<PublicBlogDetailResponse> {
     const doc = await this.repo.findPublishedBySlug(slug);
     if (!doc) throw new NotFoundException(`Blog post not found: ${slug}`);
+    return this.toDetailResponse(doc, locale);
+  }
+
+  // Preview endpoint bypasses the published filter and requires a
+  // per-post random token. Same response shape as the published path so
+  // the web renderer doesn't need to branch. 404 on any mismatch —
+  // doesn't distinguish "no such post" from "wrong token."
+  async getPreviewBySlug(
+    slug: string,
+    token: string,
+    locale: Locale,
+  ): Promise<PublicBlogDetailResponse> {
+    const doc = await this.repo.findByPreviewToken(slug, token);
+    if (!doc) throw new NotFoundException(`Blog post not found: ${slug}`);
+    return this.toDetailResponse(doc, locale);
+  }
+
+  // Shared projection so the published-only and preview endpoints return
+  // the exact same shape. Any renderer that works against
+  // PublicBlogDetailResponse works with both.
+  private toDetailResponse(
+    doc: BlogDocument,
+    locale: Locale,
+  ): PublicBlogDetailResponse {
     const body = pickLocalizedRichText(
       doc.body as unknown as LocalizedRichText,
       locale,
@@ -69,6 +98,7 @@ export class BlogService {
     return {
       slug: doc.slug,
       category: doc.category,
+      citySlug: doc.citySlug,
       title: pickLocalized(doc.title, locale),
       excerpt: pickLocalized(doc.excerpt, locale),
       coverImage: doc.coverImage,

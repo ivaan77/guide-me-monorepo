@@ -8,6 +8,7 @@ import 'dotenv/config';
 mongoose.set('strictQuery', true);
 import { AdminBlogModule } from './admin/blog/admin-blog.module';
 import { AdminDiscoverModule } from './admin/discover/admin-discover.module';
+import { AdminImageGalleryModule } from './admin/image-gallery/admin-image-gallery.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { BlogModule } from './blog/blog.module';
 import { CacheModule } from './cache/cache.module';
@@ -30,6 +31,7 @@ const dbUrl = process.env.MONGODB_URL;
     AnalyticsModule,
     BlogModule,
     AdminBlogModule,
+    AdminImageGalleryModule,
     RatingsModule,
     UsersModule,
     WeatherModule,

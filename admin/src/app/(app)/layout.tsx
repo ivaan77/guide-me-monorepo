@@ -6,6 +6,7 @@ import {
   Compass,
   Globe,
   HelpCircle,
+  Images,
   LogOut,
   MapPin,
   Newspaper,
@@ -54,6 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           label="Places & Events"
         />
         <NavLink href="/blogs" icon={<Newspaper className="h-4 w-4" />} label="Blog" />
+        <NavLink href="/media" icon={<Images className="h-4 w-4" />} label="Media" />
         <NavLink href="/stats" icon={<BarChart3 className="h-4 w-4" />} label="Stats" />
         <NavLink href="/web-content" icon={<Globe className="h-4 w-4" />} label="Web content" />
         <NavLink href="/help" icon={<HelpCircle className="h-4 w-4" />} label="Help" />

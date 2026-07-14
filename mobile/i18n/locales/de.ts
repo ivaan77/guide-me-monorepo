@@ -12,6 +12,7 @@ export const de = {
   tabs: {
     discover: 'Entdecken',
     favorites: 'Favoriten',
+    stories: 'Stories',
     profile: 'Profil',
   },
   discover: {
@@ -20,6 +21,31 @@ export const de = {
     noResultsBody:
       'Für „{{query}}" wurden keine Städte gefunden. Probiere einen anderen Namen oder ein anderes Land.',
     errorBody: 'Die Städteliste lässt sich gerade nicht laden.',
+  },
+  stories: {
+    title: 'Stories',
+    all: 'Alle',
+    allCities: 'Alle Städte',
+    relatedTitle: 'Stories über diese Stadt',
+    emptyBody: 'In dieser Kategorie gibt es noch keine Stories. Schau bald wieder vorbei.',
+    errorBody: 'Stories können gerade nicht geladen werden.',
+    readingMinutes_one: '{{count}} Min. Lesezeit',
+    readingMinutes_other: '{{count}} Min. Lesezeit',
+    category: {
+      'travel-tips': 'Reisetipps',
+      'city-guide': 'Stadtführer',
+      'food-drink': 'Essen & Trinken',
+      news: 'News',
+    },
+    appLink: {
+      city: 'Stadt',
+      place: 'Ort',
+      excursion: 'Ausflug',
+    },
+    editorPick: {
+      tip: 'Tipp',
+      highlight: 'Hinweis',
+    },
   },
   favorites: {
     emptyTitle: 'Noch keine Favoriten',

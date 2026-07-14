@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import {
   ConflictException,
   Injectable,
@@ -11,6 +12,12 @@ import type {
 import { BlogRepository } from '../../blog/blog.repository';
 import type { BlogDocument } from '../../blog/schemas/blog.schema';
 import { CreateBlogDto, UpdateBlogDto } from './dto/blog.dto';
+
+// 16 bytes = 32 hex chars. Enough entropy that guessing a valid token is
+// computationally infeasible; small enough to fit in a URL comfortably.
+function generatePreviewToken(): string {
+  return randomBytes(16).toString('hex');
+}
 
 @Injectable()
 export class AdminBlogService {
@@ -35,10 +42,20 @@ export class AdminBlogService {
     const status = dto.status ?? 'draft';
     // First-time-published: stamp publishedAt now. Otherwise leave undefined.
     const publishedAt = status === 'published' ? new Date() : undefined;
+    // Normalize empty-string citySlug → undefined. Admin form's Select
+    // component ships empty when the author picks "No city / general";
+    // storing empty string would poll positive on `citySlug !== undefined`
+    // checks downstream.
+    const citySlug =
+      dto.citySlug && dto.citySlug.trim().length > 0
+        ? dto.citySlug.trim()
+        : undefined;
+
     const doc = await this.repo.create({
       slug: dto.slug,
       status,
       category: dto.category,
+      citySlug,
       coverImage: dto.coverImage,
       ogImage: dto.ogImage,
       title: dto.title,
@@ -47,6 +64,7 @@ export class AdminBlogService {
       metaTitle: dto.metaTitle,
       metaDescription: dto.metaDescription,
       publishedAt,
+      previewToken: generatePreviewToken(),
     });
     return { post: this.toAdmin(doc) };
   }
@@ -57,6 +75,12 @@ export class AdminBlogService {
 
     const update: Partial<BlogDocument> = {};
     if (dto.category !== undefined) update.category = dto.category;
+    if (dto.citySlug !== undefined) {
+      // Empty string = author cleared the tie. Store undefined so filters
+      // that check `citySlug !== undefined` behave.
+      update.citySlug =
+        dto.citySlug.trim().length > 0 ? dto.citySlug.trim() : undefined;
+    }
     if (dto.coverImage !== undefined) update.coverImage = dto.coverImage;
     if (dto.ogImage !== undefined) update.ogImage = dto.ogImage;
     if (dto.title !== undefined) update.title = dto.title;
@@ -90,11 +114,24 @@ export class AdminBlogService {
     }
   }
 
+  // Rotate previewToken. Any previously-share  d preview URLs for this
+  // slug stop working immediately — that's the whole point. Returns the
+  // full updated post so the admin form can pick up the new token
+  // without a second round-trip.
+  async regeneratePreviewToken(slug: string): Promise<AdminBlogResponse> {
+    const updated = await this.repo.updateBySlug(slug, {
+      previewToken: generatePreviewToken(),
+    });
+    if (!updated) throw new NotFoundException(`Blog post not found: ${slug}`);
+    return { post: this.toAdmin(updated) };
+  }
+
   private toAdmin(doc: BlogDocument): AdminBlog {
     return {
       slug: doc.slug,
       status: doc.status,
       category: doc.category,
+      citySlug: doc.citySlug,
       coverImage: doc.coverImage,
       ogImage: doc.ogImage,
       title: doc.title,
@@ -103,6 +140,7 @@ export class AdminBlogService {
       metaTitle: doc.metaTitle,
       metaDescription: doc.metaDescription,
       publishedAt: doc.publishedAt?.toISOString(),
+      previewToken: doc.previewToken,
       // Mongoose `timestamps: true` adds these as Dates.
       createdAt: (
         doc as unknown as { createdAt: Date }

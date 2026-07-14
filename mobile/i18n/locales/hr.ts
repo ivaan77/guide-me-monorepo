@@ -12,6 +12,7 @@ export const hr = {
   tabs: {
     discover: 'Otkrij',
     favorites: 'Favoriti',
+    stories: 'Priče',
     profile: 'Profil',
   },
   discover: {
@@ -20,6 +21,32 @@ export const hr = {
     noResultsBody:
       'Nismo pronašli gradove koji odgovaraju „{{query}}". Pokušaj s drugim nazivom ili državom.',
     errorBody: 'Trenutno ne možemo učitati popis gradova.',
+  },
+  stories: {
+    title: 'Priče',
+    all: 'Sve',
+    allCities: 'Svi gradovi',
+    relatedTitle: 'Priče o ovom gradu',
+    emptyBody: 'Još nema priča u ovoj kategoriji. Provjeri kasnije.',
+    errorBody: 'Priče se trenutno ne mogu učitati.',
+    readingMinutes_one: '{{count}} min čitanja',
+    readingMinutes_few: '{{count}} min čitanja',
+    readingMinutes_other: '{{count}} min čitanja',
+    category: {
+      'travel-tips': 'Savjeti za putovanja',
+      'city-guide': 'Vodič kroz grad',
+      'food-drink': 'Hrana i piće',
+      news: 'Novosti',
+    },
+    appLink: {
+      city: 'Grad',
+      place: 'Mjesto',
+      excursion: 'Tura',
+    },
+    editorPick: {
+      tip: 'Savjet',
+      highlight: 'Izdvajamo',
+    },
   },
   favorites: {
     emptyTitle: 'Još nemaš favorite',

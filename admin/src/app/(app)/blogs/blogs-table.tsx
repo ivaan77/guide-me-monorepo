@@ -7,7 +7,13 @@ import type { AdminBlog, BlogCategory } from '@guide-me-app/core'
 import { deleteBlogAction, updateBlogAction } from '@/actions/blogs'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Pencil, Trash2 } from 'lucide-react'
+import { ExternalLink, Pencil, Trash2 } from 'lucide-react'
+
+// Public web base URL (NEXT_PUBLIC_ so it bakes into the client bundle).
+// Same env var the Preview button uses. localhost fallback lets local
+// dev work without extra config.
+const WEB_BASE =
+  process.env.NEXT_PUBLIC_WEB_URL?.replace(/\/$/, '') || 'http://localhost:3000'
 
 const CATEGORY_LABEL: Record<BlogCategory, string> = {
   'travel-tips': 'Travel tips',
@@ -87,6 +93,12 @@ export function BlogsTable({ posts }: { posts: AdminBlog[] }) {
               <span>{CATEGORY_LABEL[post.category]}</span>
               <span>·</span>
               <span>/blog/{post.slug}</span>
+              {post.citySlug && (
+                <>
+                  <span>·</span>
+                  <span>📍 {post.citySlug}</span>
+                </>
+              )}
               {post.publishedAt && (
                 <>
                   <span>·</span>
@@ -106,6 +118,20 @@ export function BlogsTable({ posts }: { posts: AdminBlog[] }) {
             >
               {post.status === 'published' ? 'Unpublish' : 'Publish'}
             </Button>
+            {post.status === 'published' && (
+              // rel=noopener because the live web is on a different origin
+              // in prod (different Vercel project). asChild lets Button
+              // render as a plain <a> so target=_blank works cleanly.
+              <Button asChild variant="outline" size="icon" title="View live">
+                <a
+                  href={`${WEB_BASE}/blog/${post.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            )}
             <Button asChild variant="outline" size="icon">
               <Link href={`/blogs/${post.slug}`}>
                 <Pencil className="h-4 w-4" />

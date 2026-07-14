@@ -336,6 +336,10 @@ export type PublicUsageStats = {
     // gauging whether the feature is used, and eventually for
     // correlating with excursion_started.
     weatherChecks: number
+    // Count of `story_viewed` events. Fires once per story-detail-screen
+    // mount. Not de-duplicated per user or per session — this is a raw
+    // view counter. Populated by the Stories tab in the mobile app.
+    storyViews: number
 }
 
 export type PublicUsageStatsResponse = {
@@ -440,6 +444,52 @@ export type TipTapDoc = {
     content?: unknown[]
 }
 
+// Custom TipTap node inserted by admin to deep-link a blog post to a
+// specific city, place, or excursion in the app + on the marketing web
+// site. Renderers (web + mobile) know how to display it as a rich card.
+// This is the attrs shape only; the node itself lives inside content[].
+export const APP_LINK_KINDS = ['city', 'place', 'excursion'] as const
+export type AppLinkKind = (typeof APP_LINK_KINDS)[number]
+
+export type AppLinkAttrs = {
+    kind: AppLinkKind
+    // Slug of the referenced entity. Combined with `kind` to compute
+    // the web URL (once each kind has a public page) and the mobile
+    // deep-link route (/city/:id, /place/:id, /excursion/:id).
+    id: string
+    // Display label at insert time. Frozen at authoring — if the entity's
+    // name changes later, the card still shows the label the author chose.
+    // Renderers may choose to override with a live-fetched name if they
+    // wish, but the default is to show what the author wrote.
+    label: string
+    // Optional cover image URL captured at insert time. Same reasoning
+    // as label — snapshot to avoid renderers making N extra fetches per
+    // article to hydrate cards.
+    imageUrl?: string
+}
+
+// Editorial pick cards — inline callouts the author drops into a blog
+// body to highlight a tip or a piece of context. Two visual variants:
+//   - tip:       amber/yellow, lightbulb icon. "Practical suggestion".
+//   - highlight: blue,         info icon.       "Important context".
+//
+// Title + body are plain strings for now. If we ever need rich text
+// inside the card, upgrade `body` to a nested TipTapDoc — renderers
+// should already fall back gracefully on unexpected shapes.
+//
+// Cards are inserted per-locale, i.e. the author writes the EN card
+// while editing the EN body, and separately writes the DE card while
+// editing the DE body. This matches how the rest of the article is
+// localized (title, excerpt, and body are all per-locale).
+export const EDITOR_PICK_VARIANTS = ['tip', 'highlight'] as const
+export type EditorPickVariant = (typeof EDITOR_PICK_VARIANTS)[number]
+
+export type EditorPickAttrs = {
+    variant: EditorPickVariant
+    title: string
+    body: string
+}
+
 // Localized rich-text field. English required, other locales optional and
 // fall back to English at read time. Same pattern as LocalizedString but
 // wrapping a TipTap doc instead of a plain string.
@@ -453,6 +503,10 @@ export type LocalizedRichText = {
 export type PublicBlogSummary = {
     slug: string
     category: BlogCategory
+    // Optional city tie. When present, the story surfaces in the mobile
+    // CityDetail "Related stories" row + can be filtered on the Stories
+    // tab. Absent = general story, not tied to any city.
+    citySlug?: string
     title: string
     excerpt: string
     coverImage: string
