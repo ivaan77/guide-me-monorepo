@@ -5,18 +5,17 @@ import type {
   ImageGalleryEntry,
   ImageGallerySource,
 } from '@guide-me-app/core'
+import type { MediaListResponse } from '@/app/api/media/list/route'
 import { listImageGalleryAction } from '@/actions/image-gallery'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-// Modal that lets the author pick from images already referenced
-// elsewhere in the content system. Fetches on open (not on mount) so
-// closed pickers cost nothing. Cached in a module-level ref for the
-// lifetime of the page so quickly re-opening the modal doesn't refetch.
-//
-// No new upload pipeline — this is a browse-only view over what's
-// already been used. Combined with the manual URL input the author
-// keeps, it covers "use an existing image" AND "add a new one".
+// Modal that lets the author pick any previously-uploaded image —
+// merging (a) images referenced by any content doc with (b) raw
+// bucket objects from the Media page's library. Fetches on open (not
+// on mount) so closed pickers cost nothing. Cached in a module-level
+// ref for the lifetime of the page so quickly re-opening the modal
+// doesn't refetch.
 
 type Props = {
   open: boolean
@@ -29,6 +28,7 @@ const SOURCE_LABEL: Record<ImageGallerySource, string> = {
   place: 'Place',
   excursion: 'Excursion',
   blog: 'Blog',
+  library: 'Library',
 }
 
 // Module-level cache so a single admin session reuses the same entries
@@ -49,10 +49,40 @@ export function ImageGalleryPicker({ open, onClose, onPick }: Props) {
     if (!open) return
     if (cachedEntries !== null) return
     setIsLoading(true)
-    listImageGalleryAction()
-      .then((res) => {
-        cachedEntries = res
-        setEntries(res)
+    // Merge two sources so freshly-uploaded (but unattached) library
+    // images show up alongside images already referenced by content:
+    //   1. gallery action → images referenced by any content doc
+    //      (carries meaningful source + label like "City · Zagreb")
+    //   2. /api/media/list → every object in the GCS bucket
+    //      (catches uploads from the Media page that aren't attached yet)
+    // Referenced entries win on URL collision — their labels are more
+    // useful than the raw filename we'd derive from a bucket object.
+    Promise.all([
+      listImageGalleryAction(),
+      fetch('/api/media/list')
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Media list failed (${res.status})`)
+          return (await res.json()) as MediaListResponse
+        })
+        .catch(() => ({ items: [] }) as MediaListResponse),
+    ])
+      .then(([referenced, mediaList]) => {
+        const byUrl = new Map<string, ImageGalleryEntry>()
+        for (const entry of referenced) {
+          byUrl.set(entry.url, entry)
+        }
+        for (const item of mediaList.items) {
+          if (byUrl.has(item.url)) continue
+          const shortName = item.name.split('/').pop() ?? item.name
+          byUrl.set(item.url, {
+            url: item.url,
+            source: 'library',
+            sourceLabel: shortName,
+          })
+        }
+        const merged = Array.from(byUrl.values())
+        cachedEntries = merged
+        setEntries(merged)
       })
       .catch(() => {
         setEntries([])
@@ -85,7 +115,8 @@ export function ImageGalleryPicker({ open, onClose, onPick }: Props) {
             <div>
               <h2 className="text-lg font-semibold">Pick from gallery</h2>
               <p className="text-xs text-[var(--color-muted-foreground)]">
-                Images already used somewhere in the content library.
+                Images from the Media library and anywhere already
+                referenced in content.
               </p>
             </div>
             <button
@@ -111,7 +142,7 @@ export function ImageGalleryPicker({ open, onClose, onPick }: Props) {
           ) : filtered.length === 0 ? (
             <p className="p-6 text-center text-sm text-[var(--color-muted-foreground)]">
               {entries.length === 0
-                ? 'No images yet. Save an image on any city / place / excursion / blog to populate the gallery.'
+                ? 'No images yet. Upload one on the Media page, or save an image on any city / place / excursion / blog.'
                 : 'No matches for your search.'}
             </p>
           ) : (

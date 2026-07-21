@@ -13,6 +13,10 @@ export type ImageGallerySource =
     | 'place'
     | 'excursion'
     | 'blog'
+    // Uploaded via the Media page but not yet attached to any content
+    // doc. Merged into the picker client-side from the GCS bucket list
+    // so freshly-uploaded assets are reusable immediately.
+    | 'library'
 
 export type ImageGalleryEntry = {
     url: string

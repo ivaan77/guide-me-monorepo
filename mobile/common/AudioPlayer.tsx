@@ -180,7 +180,7 @@ export function AudioPlayer({
       borderWidth={1}
       borderColor="$borderColor"
     >
-      <XStack items="center" gap="$3">
+      <XStack items="center" gap="$2.5">
         <YStack
           width={36}
           height={36}
@@ -191,22 +191,30 @@ export function AudioPlayer({
         >
           <Headphones size={16} color="$primary" />
         </YStack>
-        <YStack flex={1} gap="$0.5">
+        <YStack flex={1} flexShrink={1} gap="$0.5" minW={0}>
           <SizableText
             size="$3"
             color="$color"
             fontFamily="$body"
             fontWeight="600"
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {title}
           </SizableText>
-          <SizableText size="$2" color="$colorPress" fontFamily="$body">
+          <SizableText
+            size="$2"
+            color="$colorPress"
+            fontFamily="$body"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {isPlaying
               ? t((playingKey ?? 'excursion.stopSheet.audioPlaying') as never)
               : t((promptKey ?? 'excursion.stopSheet.audioPrompt') as never)}
           </SizableText>
         </YStack>
-        <XStack gap="$1.5" items="center">
+        <XStack gap="$1" items="center">
           <CircleButton
             icon={Rewind}
             onPress={handleSeekBack}

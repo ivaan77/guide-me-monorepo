@@ -46,11 +46,11 @@ export function CityCard({ city, width }: Props) {
             >
               {city.country}
             </SizableText>
-            {city.rating && city.rating.count > 0 && (
-              <XStack mt="$1.5" justify="center">
+            <XStack mt="$1.5" justify="center" minH={20}>
+              {city.rating && city.rating.count > 0 ? (
                 <RatingStars mode="display" aggregate={city.rating} compact />
-              </XStack>
-            )}
+              ) : null}
+            </XStack>
           </YStack>
         </YStack>
       </Pressable>
