@@ -470,6 +470,7 @@ function LocationPickerOrPrompt({
 
   return (
     <MapCoordsPicker
+      persistKey="place"
       latitude={validLat}
       longitude={validLng}
       onChange={onChange}

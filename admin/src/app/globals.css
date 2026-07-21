@@ -52,3 +52,10 @@ h1, h2, h3, h4 {
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
+
+/* Google Places Autocomplete drops its dropdown on document.body outside
+   our React tree; force it above modal/portal layers (radix-ui dialogs
+   default to z-50). */
+.pac-container {
+  z-index: 9999;
+}

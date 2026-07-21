@@ -1,112 +1,205 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import L, { type LatLngExpression, type Map as LeafletMap } from 'leaflet'
-import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
+import {
+  APIProvider,
+  Circle,
+  Map,
+  Marker,
+  useMapsLibrary,
+} from '@vis.gl/react-google-maps'
 import { Search, X } from 'lucide-react'
-import 'leaflet/dist/leaflet.css'
 
-// Leaflet's default marker icon references PNGs via relative URLs that
-// Webpack/Next can't resolve out of the box. Inline an SVG-based icon so
-// no external image bundling is required.
-const markerIcon = L.divIcon({
-  className: 'guideme-marker',
-  html: `
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
-      <path
-        d="M14 0C6.27 0 0 6.27 0 14c0 9.5 12.07 24.06 13.07 25.18a1.25 1.25 0 0 0 1.86 0C15.93 38.06 28 23.5 28 14 28 6.27 21.73 0 14 0z"
-        fill="#2A5BD7"
-      />
-      <circle cx="14" cy="14" r="5" fill="#FFFFFF" />
-    </svg>
-  `,
-  iconSize: [28, 40],
-  iconAnchor: [14, 40],
-})
+// Coordinate picker on the Google Maps JS API via @vis.gl/react-google-maps.
+// Renders a click-to-place map with zoom/pan/street/satellite controls and
+// a Places Autocomplete search box. Replaces the previous Leaflet + OSM
+// tiles + Nominatim search — motivation was uneven street-level detail on
+// Croatian roads and generally better POI data from Google.
+//
+// API key: NEXT_PUBLIC_GOOGLE_MAPS_KEY. Must be restricted to the admin's
+// domains (Vercel prod URL + localhost) in Google Cloud Console — that's
+// the actual security boundary; the key itself is client-side by design.
 
-const DEFAULT_CENTER: LatLngExpression = [38.736946, -9.142685] // Lisbon
+// Lisbon (matches the previous default); harmless — the map only opens
+// here when the form has no coords yet.
+const DEFAULT_CENTER = { lat: 38.736946, lng: -9.142685 }
+
+export type SiblingCircle = {
+  latitude: number
+  longitude: number
+  radiusMeters: number
+  label?: string
+}
 
 type Props = {
   latitude: number
   longitude: number
   onChange: (next: { latitude: number; longitude: number }) => void
+  // Optional: draw a translucent circle around the picked point at this
+  // radius (in meters). Used by stop / sub-stop / fact editors to visualise
+  // the geofence — updates live as the user types a new radius.
+  radiusMeters?: number
+  // Optional: additional circles drawn faintly for context. Used by the
+  // stop editor to show sibling stops so overlapping radii are visible
+  // before the user commits a change.
+  siblings?: SiblingCircle[]
+  // See MapCoordsPicker.Props for why this exists.
+  persistKey?: string
 }
 
-export default function MapCoordsPickerInner({
+// Module-level camera cache keyed by persistKey. Survives component
+// unmount/remount so the user's zoom + center are preserved even when
+// React tears the picker down on unrelated form changes. Cleared only
+// on hard page reload; that's fine — we don't need cross-navigation
+// persistence.
+// (globalThis prefix because we import `Map` from @vis.gl above.)
+const CAMERA_CACHE: globalThis.Map<
+  string,
+  { center: google.maps.LatLngLiteral; zoom: number }
+> = new globalThis.Map()
+
+export default function MapCoordsPickerInner(props: Props) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
+  if (!apiKey) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-muted)] px-4 text-center">
+        <p className="text-sm text-[var(--color-muted-foreground)]">
+          Set <code className="font-mono">NEXT_PUBLIC_GOOGLE_MAPS_KEY</code>{' '}
+          in <code className="font-mono">admin/.env.local</code> to enable the
+          map.
+        </p>
+      </div>
+    )
+  }
+  return (
+    <APIProvider apiKey={apiKey} libraries={['places']}>
+      <PickerBody {...props} />
+    </APIProvider>
+  )
+}
+
+function PickerBody({
   latitude,
   longitude,
   onChange,
+  radiusMeters,
+  siblings,
+  persistKey,
 }: Props) {
-  const mapRef = useRef<LeafletMap | null>(null)
   const hasCoords = latitude !== 0 || longitude !== 0
-  // initialCenter/initialZoom are read ONCE on mount; never re-applied. The
-  // map's runtime state is owned by Leaflet after that, so user pans and
-  // zooms persist.
-  const initialCenterRef = useRef<LatLngExpression>(
-    hasCoords ? [latitude, longitude] : DEFAULT_CENTER,
-  )
-  const initialZoomRef = useRef<number>(hasCoords ? 14 : 4)
+  const hasRadius =
+    radiusMeters != null && Number.isFinite(radiusMeters) && radiusMeters > 0
 
-  // Recenter only when the change came from outside (manual input). Clicks
-  // dispatched via setLastClickedRef are echoed back as new lat/lng props;
-  // we skip the flyTo for those so the user's current zoom is preserved.
-  const lastClickedRef = useRef<{ lat: number; lng: number } | null>(null)
+  // Fully controlled camera. We own `center` and `zoom` in state and feed
+  // them back to <Map>; `onCameraChanged` mirrors the user's pans and
+  // zooms back into state. Initial value is pulled from CAMERA_CACHE if
+  // this picker has been mounted before under the same persistKey — so
+  // that transient unmount/remount cycles don't reset zoom.
+  const [camera, setCamera] = useState<{
+    center: google.maps.LatLngLiteral
+    zoom: number
+  }>(() => {
+    const cached = persistKey ? CAMERA_CACHE.get(persistKey) : undefined
+    if (cached) return cached
+    return {
+      center: hasCoords ? { lat: latitude, lng: longitude } : DEFAULT_CENTER,
+      zoom: hasCoords ? 14 : 4,
+    }
+  })
+
+
+  // When coords arrive from outside the map (search pick, manual input,
+  // or the very first paint after coords load from the server), re-center
+  // WITHOUT changing zoom. Skip during click echo — the click already
+  // moved the marker; we don't want to move the camera too.
+  const clickEchoRef = useRef(false)
   useEffect(() => {
-    if (!hasCoords) return
-    const map = mapRef.current
-    if (!map) return
-    const fromClick = lastClickedRef.current
-    if (
-      fromClick &&
-      Math.abs(fromClick.lat - latitude) < 1e-9 &&
-      Math.abs(fromClick.lng - longitude) < 1e-9
-    ) {
-      lastClickedRef.current = null
+    if (latitude === 0 && longitude === 0) return
+    if (clickEchoRef.current) {
+      clickEchoRef.current = false
       return
     }
-    map.flyTo([latitude, longitude], map.getZoom(), { duration: 0.4 })
-  }, [latitude, longitude, hasCoords])
+    setCamera((prev) => {
+      if (
+        Math.abs(prev.center.lat - latitude) < 1e-9 &&
+        Math.abs(prev.center.lng - longitude) < 1e-9
+      ) {
+        return prev
+      }
+      return { center: { lat: latitude, lng: longitude }, zoom: prev.zoom }
+    })
+  }, [latitude, longitude])
 
   return (
     <div className="flex flex-col gap-2">
       <SearchBox
-        onPick={({ latitude, longitude }) => {
-          // External-style change so the map flies to the result.
-          onChange({ latitude, longitude })
+        onPick={(next) => {
+          onChange(next)
         }}
       />
       <div className="h-64 w-full overflow-hidden rounded-md border border-[var(--color-border)]">
-      <MapContainer
-        ref={mapRef}
-        center={initialCenterRef.current}
-        zoom={initialZoomRef.current}
-        scrollWheelZoom
-        doubleClickZoom
-        style={{ height: '100%', width: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {hasCoords && (
-          <Marker position={[latitude, longitude]} icon={markerIcon} />
-        )}
-        <ClickHandler
-          onChange={(next) => {
-            lastClickedRef.current = { lat: next.latitude, lng: next.longitude }
-            onChange(next)
+        <Map
+          center={camera.center}
+          zoom={camera.zoom}
+          gestureHandling="greedy"
+          disableDefaultUI={false}
+          mapTypeControl
+          streetViewControl
+          fullscreenControl
+          zoomControl
+          onCameraChanged={(ev) => {
+            const next = {
+              center: ev.detail.center,
+              zoom: ev.detail.zoom,
+            }
+            // Persist across unmount/remount cycles keyed by picker id.
+            if (persistKey) CAMERA_CACHE.set(persistKey, next)
+            setCamera(next)
           }}
-        />
-      </MapContainer>
+          onClick={(e) => {
+            const ll = e.detail.latLng
+            if (!ll) return
+            // Tell the external-recenter effect to skip its work on the
+            // next prop echo — we haven't moved the camera, only the pin.
+            clickEchoRef.current = true
+            onChange({ latitude: ll.lat, longitude: ll.lng })
+          }}
+          style={{ width: '100%', height: '100%' }}
+        >
+          {hasCoords && (
+            <Marker position={{ lat: latitude, lng: longitude }} />
+          )}
+          {hasCoords && hasRadius && (
+            <Circle
+              center={{ lat: latitude, lng: longitude }}
+              radius={radiusMeters}
+              strokeColor="#2A5BD7"
+              strokeOpacity={0.9}
+              strokeWeight={2}
+              fillColor="#2A5BD7"
+              fillOpacity={0.15}
+              clickable={false}
+            />
+          )}
+          {(siblings ?? []).map((s, i) => (
+            <Circle
+              // Include coords in the key so a coord edit re-mounts the
+              // circle rather than trying to interpolate — google's Circle
+              // lifecycle is happier with a fresh instance on big jumps.
+              key={`${i}:${s.latitude.toFixed(6)}:${s.longitude.toFixed(6)}`}
+              center={{ lat: s.latitude, lng: s.longitude }}
+              radius={s.radiusMeters}
+              strokeColor="#8B93A6"
+              strokeOpacity={0.7}
+              strokeWeight={1}
+              fillColor="#8B93A6"
+              fillOpacity={0.08}
+              clickable={false}
+            />
+          ))}
+        </Map>
       </div>
     </div>
   )
-}
-
-type NominatimResult = {
-  place_id: number
-  display_name: string
-  lat: string
-  lon: string
 }
 
 function SearchBox({
@@ -114,148 +207,63 @@ function SearchBox({
 }: {
   onPick: (next: { latitude: number; longitude: number }) => void
 }) {
+  const places = useMapsLibrary('places')
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [autocomplete, setAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<NominatimResult[]>([])
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
 
+  // Attach Google's Autocomplete to our own <input> once the Places
+  // library has loaded. Restricting `fields` keeps the response small
+  // and cheap — we only need coords + a label.
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (abortRef.current) abortRef.current.abort()
-    const q = query.trim()
-    if (q.length < 3) {
-      setResults([])
-      setOpen(false)
-      return
-    }
-    debounceRef.current = setTimeout(async () => {
-      const ctl = new AbortController()
-      abortRef.current = ctl
-      setLoading(true)
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6`
-        const res = await fetch(url, { signal: ctl.signal })
-        if (!res.ok) throw new Error(`Nominatim ${res.status}`)
-        const data = (await res.json()) as NominatimResult[]
-        setResults(data)
-        setOpen(true)
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          setResults([])
-        }
-      } finally {
-        setLoading(false)
-      }
-    }, 400)
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [query])
+    if (!places || !inputRef.current || autocomplete) return
+    const ac = new places.Autocomplete(inputRef.current, {
+      fields: ['geometry', 'formatted_address', 'name'],
+    })
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      const loc = place.geometry?.location
+      if (!loc) return
+      onPick({ latitude: loc.lat(), longitude: loc.lng() })
+      setQuery(place.formatted_address ?? place.name ?? '')
+    })
+    setAutocomplete(ac)
+  }, [places, autocomplete, onPick])
 
   return (
     <div className="relative">
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-[var(--color-muted-foreground)]" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => results.length > 0 && setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="Search a place or address…"
-          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-background)] pl-8 pr-8 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-ring)]"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery('')
-              setResults([])
-              setOpen(false)
-            }}
-            className="absolute right-2 top-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
-            aria-label="Clear"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-      {open && (loading || results.length > 0) && (
-        <ul className="absolute z-[1000] mt-1 max-h-64 w-full overflow-auto rounded-md border border-[var(--color-border)] bg-[var(--color-background)] shadow-lg">
-          {loading && (
-            <li className="px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
-              Searching…
-            </li>
-          )}
-          {!loading &&
-            results.map((r) => (
-              <li key={r.place_id}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    onPick({ latitude: parseFloat(r.lat), longitude: parseFloat(r.lon) })
-                    setQuery(r.display_name)
-                    setOpen(false)
-                  }}
-                  className="block w-full px-3 py-2 text-left text-xs hover:bg-[var(--color-muted)]"
-                >
-                  {r.display_name}
-                </button>
-              </li>
-            ))}
-        </ul>
+      <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-[var(--color-muted-foreground)]" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        // The picker is embedded in editor <form>s across the admin.
+        // Pressing Enter to select an autocomplete suggestion would
+        // otherwise submit the whole form. Block it — Google's
+        // `place_changed` listener still fires on click/tap select.
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.preventDefault()
+        }}
+        placeholder={
+          places ? 'Search a place or address…' : 'Loading Places…'
+        }
+        disabled={!places}
+        // The Google Autocomplete widget adds a `.pac-container` to the
+        // body — no need to render our own dropdown here.
+        className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-background)] pl-8 pr-8 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-ring)] disabled:opacity-60"
+      />
+      {query && (
+        <button
+          type="button"
+          onClick={() => setQuery('')}
+          className="absolute right-2 top-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+          aria-label="Clear"
+        >
+          <X className="h-4 w-4" />
+        </button>
       )}
     </div>
   )
-}
-
-// Window within which a second click is treated as a double-click. Slightly
-// longer than the OS default to feel forgiving on touchpads.
-const DBL_CLICK_MS = 300
-
-function ClickHandler({
-  onChange,
-}: {
-  onChange: (next: { latitude: number; longitude: number }) => void
-}) {
-  const draggedRef = useRef(false)
-  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
-    }
-  }, [])
-
-  useMapEvents({
-    // Leaflet fires `click` at the end of a drag if the pointer barely
-    // moved. Track movement between mousedown and the click to filter that.
-    mousedown() {
-      draggedRef.current = false
-    },
-    movestart() {
-      draggedRef.current = true
-    },
-    click(e) {
-      if (draggedRef.current) return
-      // Wait DBL_CLICK_MS before placing the marker; if a dblclick fires
-      // in that window we cancel and let the zoom happen instead.
-      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
-      const latlng = e.latlng
-      pendingTimerRef.current = setTimeout(() => {
-        onChange({ latitude: latlng.lat, longitude: latlng.lng })
-        pendingTimerRef.current = null
-      }, DBL_CLICK_MS)
-    },
-    dblclick() {
-      if (pendingTimerRef.current) {
-        clearTimeout(pendingTimerRef.current)
-        pendingTimerRef.current = null
-      }
-    },
-  })
-  return null
 }

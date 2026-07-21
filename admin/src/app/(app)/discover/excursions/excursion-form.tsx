@@ -39,6 +39,12 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
 
+// Mirrors the mobile-side fallback for both stop arrival and geocoded facts
+// (see mobile/screens/excursion/ExcursionScreen.tsx and FloatingFactBanner.tsx).
+// Used only for the visual radius circle in the picker — the stored form
+// value can still be empty, which triggers this same default at runtime.
+const DEFAULT_TRIGGER_RADIUS_M = 30
+
 const localizedSchema = z.object({
   en: z.string().min(1, 'English is required'),
   de: z.string().optional(),
@@ -466,8 +472,35 @@ export function ExcursionForm(props: Props) {
                   </div>
                 </div>
                 <MapCoordsPicker
+                  persistKey={`excursion-stop-${idx}`}
                   latitude={form.watch(`stops.${idx}.coords.latitude`) ?? 0}
                   longitude={form.watch(`stops.${idx}.coords.longitude`) ?? 0}
+                  radiusMeters={
+                    form.watch(`stops.${idx}.triggerRadius`) ||
+                    DEFAULT_TRIGGER_RADIUS_M
+                  }
+                  siblings={stops.fields
+                    .map((_, sIdx) => {
+                      if (sIdx === idx) return null
+                      const lat = form.watch(
+                        `stops.${sIdx}.coords.latitude`,
+                      )
+                      const lng = form.watch(
+                        `stops.${sIdx}.coords.longitude`,
+                      )
+                      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                        return null
+                      }
+                      if (lat === 0 && lng === 0) return null
+                      return {
+                        latitude: lat as number,
+                        longitude: lng as number,
+                        radiusMeters:
+                          form.watch(`stops.${sIdx}.triggerRadius`) ||
+                          DEFAULT_TRIGGER_RADIUS_M,
+                      }
+                    })
+                    .filter((s): s is NonNullable<typeof s> => s !== null)}
                   onChange={({ latitude, longitude }) => {
                     form.setValue(`stops.${idx}.coords.latitude`, latitude, {
                       shouldDirty: true,
@@ -708,6 +741,7 @@ export function ExcursionForm(props: Props) {
                     </div>
                   </div>
                   <MapCoordsPicker
+                    persistKey={`excursion-fact-${idx}`}
                     latitude={
                       form.watch(
                         `interestingFacts.${idx}.coords.latitude`,
@@ -717,6 +751,10 @@ export function ExcursionForm(props: Props) {
                       form.watch(
                         `interestingFacts.${idx}.coords.longitude`,
                       ) ?? 0
+                    }
+                    radiusMeters={
+                      form.watch(`interestingFacts.${idx}.triggerRadius`) ||
+                      DEFAULT_TRIGGER_RADIUS_M
                     }
                     onChange={({ latitude, longitude }) => {
                       form.setValue(
@@ -1090,12 +1128,32 @@ function SubStopsEditor({
               </div>
             </div>
             <MapCoordsPicker
+              persistKey={`excursion-substop-${stopIdx}-${i}`}
               latitude={
                 form.watch(`stops.${stopIdx}.subStops.${i}.coords.latitude`) ?? 0
               }
               longitude={
                 form.watch(`stops.${stopIdx}.subStops.${i}.coords.longitude`) ?? 0
               }
+              // Sub-stops don't have their own geofence — the parent stop's
+              // arrival radius (at the parent's coords) is what actually
+              // fires. Render that circle here as a sibling so editors can
+              // see whether the sub-stop pin falls inside the arrival zone.
+              siblings={(() => {
+                const pLat = form.watch(`stops.${stopIdx}.coords.latitude`)
+                const pLng = form.watch(`stops.${stopIdx}.coords.longitude`)
+                if (!Number.isFinite(pLat) || !Number.isFinite(pLng)) return []
+                if (pLat === 0 && pLng === 0) return []
+                return [
+                  {
+                    latitude: pLat as number,
+                    longitude: pLng as number,
+                    radiusMeters:
+                      form.watch(`stops.${stopIdx}.triggerRadius`) ||
+                      DEFAULT_TRIGGER_RADIUS_M,
+                  },
+                ]
+              })()}
               onChange={({ latitude, longitude }) => {
                 form.setValue(
                   `stops.${stopIdx}.subStops.${i}.coords.latitude`,
