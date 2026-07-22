@@ -41,6 +41,7 @@ import { useLayout } from '../../hooks/useLayout'
 import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
 import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { clearAuthChoice } from '../../providers/AuthChoice'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 const LOGIN_HREF = '/login' as Href
 import { EmptyState } from '../discover/EmptyState'
@@ -122,6 +123,7 @@ export function CityDetailScreen({ id }: Props) {
   const ratingPrompt = useDwellRatingPrompt('city', id, { enabled: !!city })
   const userLocation = useCoarseUserLocation()
   const { isTablet } = useLayout()
+  const { c } = useAppTheme()
   // On tablets, cap the working content width so the hero image doesn't
   // stretch to 1024pt+ (unreadably large) and body text lines stay in the
   // 60-80 char comfort zone. `width` is the clamp used for downstream
@@ -147,7 +149,7 @@ export function CityDetailScreen({ id }: Props) {
 
   if (isPending) {
     return (
-      <YStack flex={1} bg="$background">
+      <YStack flex={1} bg={c.background as any}>
         <CityDetailSkeleton />
         <BackButton topInset={insets.top} onPress={goBack} />
       </YStack>
@@ -156,7 +158,7 @@ export function CityDetailScreen({ id }: Props) {
 
   if (isError || !city) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top + 56}>
+      <YStack flex={1} bg={c.background as any} pt={insets.top + 56}>
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
@@ -171,7 +173,7 @@ export function CityDetailScreen({ id }: Props) {
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 24
 
   return (
-    <YStack flex={1} bg="$background">
+    <YStack flex={1} bg={c.background as any}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -212,7 +214,7 @@ export function CityDetailScreen({ id }: Props) {
               fontWeight="800"
               fontSize={44}
               lineHeight={48}
-              color="$onMedia"
+              color={c.onMedia as any}
               numberOfLines={2}
               style={{ letterSpacing: -1 }}
             >
@@ -222,7 +224,7 @@ export function CityDetailScreen({ id }: Props) {
               <SizableText
                 size="$3"
                 fontFamily="$body"
-                color="$onMediaMuted"
+                color={c.onMediaMuted as any}
                 style={{ textTransform: 'uppercase', letterSpacing: 1 }}
                 numberOfLines={1}
               >
@@ -494,6 +496,7 @@ function CategorySection({
   renderTrailingBadge?: (item: PublicCategoryItem) => React.ReactNode
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const [sortMode, setSortMode] = useState<SortMode>('editorial')
   const [showAll, setShowAll] = useState(false)
 
@@ -597,7 +600,7 @@ function CategorySection({
                     size="$2"
                     fontFamily="$body"
                     fontWeight="600"
-                    color="$colorPress"
+                    color={c.textMuted as any}
                     style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
                   >
                     {group.label}
@@ -621,12 +624,12 @@ function CategorySection({
           ))}
       {overCap && (
         <Pressable onPress={() => setShowAll((prev) => !prev)} hitSlop={6}>
-          <YStack items="center" py="$3" borderTopWidth={1} borderColor="$borderColor">
+          <YStack items="center" py="$3" borderTopWidth={1} borderColor={c.border as any}>
             <SizableText
               size="$3"
               fontFamily="$body"
               fontWeight="600"
-              color="$primary"
+              color={c.primary as any}
             >
               {showAll
                 ? t('city.browseCollapse', { defaultValue: 'Show fewer' })
@@ -651,6 +654,7 @@ function SortChip({
   active: boolean
   onPress: () => void
 }) {
+  const { c } = useAppTheme()
   return (
     <Pressable onPress={onPress} hitSlop={4}>
       <YStack
@@ -658,14 +662,14 @@ function SortChip({
         py="$1"
         rounded="$10"
         borderWidth={1}
-        borderColor={active ? '$primary' : '$borderColor'}
-        bg={active ? '$primary' : 'transparent'}
+        borderColor={(active ? c.primary : c.border) as any}
+        bg={active ? (c.primary as any) : 'transparent'}
       >
         <SizableText
           size="$2"
           fontFamily="$body"
           fontWeight="600"
-          color={active ? '$colorOnBrand' : '$colorPress'}
+          color={(active ? c.onBrand : c.textMuted) as any}
         >
           {label}
         </SizableText>
@@ -681,6 +685,7 @@ function BackButton({
   topInset: number
   onPress: () => void
 }) {
+  const { c } = useAppTheme()
   return (
     <Pressable
       onPress={onPress}
@@ -698,9 +703,9 @@ function BackButton({
         rounded={20}
         items="center"
         justify="center"
-        bg="$chromeOverlay"
+        bg={c.chromeOverlay as any}
       >
-        <ChevronLeft size={22} color="$onMedia" />
+        <ChevronLeft size={22} color={c.onMedia as any} />
       </YStack>
     </Pressable>
   )

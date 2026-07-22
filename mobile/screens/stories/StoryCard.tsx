@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { SizableText, XStack, YStack } from 'tamagui'
 import type { BlogCategory, PublicBlogSummary } from '@guide-me-app/core'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 type Props = {
   post: PublicBlogSummary
@@ -14,6 +15,7 @@ type Props = {
 // target to /story/[slug].
 export function StoryCard({ post }: Props) {
   const { t, i18n } = useTranslation()
+  const { c } = useAppTheme()
   const dateFmt = new Intl.DateTimeFormat(i18n.language, {
     day: 'numeric',
     month: 'short',
@@ -24,11 +26,11 @@ export function StoryCard({ post }: Props) {
     <Link href={`/story/${post.slug}`} asChild>
       <Pressable>
         <YStack
-          bg="$surface"
+          bg={c.surface as any}
           rounded="$6"
           overflow="hidden"
           borderWidth={1}
-          borderColor="$borderColor"
+          borderColor={c.border as any}
           style={SHADOW.card}
         >
           <Image
@@ -42,16 +44,16 @@ export function StoryCard({ post }: Props) {
                 size="$1"
                 fontFamily="$body"
                 fontWeight="700"
-                color="$primary"
+                color={c.primary as any}
                 style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
               >
                 {t(`stories.category.${post.category}` as const)}
               </SizableText>
-              <SizableText size="$2" fontFamily="$body" color="$colorPress">
+              <SizableText size="$2" fontFamily="$body" color={c.textMuted as any}>
                 · {dateFmt}
               </SizableText>
               {post.readingMinutes && (
-                <SizableText size="$2" fontFamily="$body" color="$colorPress">
+                <SizableText size="$2" fontFamily="$body" color={c.textMuted as any}>
                   · {t('stories.readingMinutes', { count: post.readingMinutes })}
                 </SizableText>
               )}
@@ -60,7 +62,7 @@ export function StoryCard({ post }: Props) {
               size="$6"
               fontFamily="$body"
               fontWeight="700"
-              color="$color"
+              color={c.text as any}
               numberOfLines={2}
             >
               {post.title}
@@ -68,7 +70,7 @@ export function StoryCard({ post }: Props) {
             <SizableText
               size="$3"
               fontFamily="$body"
-              color="$colorPress"
+              color={c.textMuted as any}
               numberOfLines={2}
             >
               {post.excerpt}

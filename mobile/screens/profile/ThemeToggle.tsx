@@ -16,14 +16,14 @@ const OPTIONS: {
 
 export function ThemeToggle() {
   const { t } = useTranslation()
-  const { mode, setMode } = useAppTheme()
+  const { mode, setMode, c } = useAppTheme()
 
   return (
     <XStack
-      bg="$surfaceMuted"
+      bg={c.surfaceMuted as any}
       rounded="$5"
       borderWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
       p="$1"
       gap="$1"
     >
@@ -42,16 +42,16 @@ export function ThemeToggle() {
               gap="$2"
               py="$2.5"
               rounded="$4"
-              bg={active ? '$surface' : 'transparent'}
+              bg={(active ? c.surface : 'transparent') as any}
               borderWidth={active ? 1 : 0}
-              borderColor="$borderColor"
+              borderColor={c.border as any}
             >
-              <Icon size={16} color={active ? '$primary' : '$colorPress'} />
+              <Icon size={16} color={(active ? c.primary : c.textMuted) as any} />
               <SizableText
                 size="$3"
                 fontFamily="$body"
                 fontWeight={active ? '600' : '500'}
-                color={active ? '$color' : '$colorPress'}
+                color={(active ? c.text : c.textMuted) as any}
               >
                 {t(labelKey)}
               </SizableText>

@@ -12,7 +12,7 @@ const TABS_HREF = '/(tabs)' as Href
 
 export default function LoginScreen() {
   const { t } = useTranslation()
-  const { resolved } = useAppTheme()
+  const { resolved, c } = useAppTheme()
   const router = useRouter()
 
   const goToApp = useCallback(() => router.replace(TABS_HREF), [router])
@@ -21,11 +21,11 @@ export default function LoginScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <YStack flex={1} bg="$background" px="$6" pt="$12" pb="$8" justify="space-between">
+      <YStack flex={1} bg={c.background as any} px="$6" pt="$12" pb="$8" justify="space-between">
         <YStack gap="$5" items="center" mt="$10">
           <Mark size={88} stroke={stroke} />
           <SizableText
-            color="$color"
+            color={c.text as any}
             fontFamily="$heading"
             fontWeight="800"
             size="$10"
@@ -34,7 +34,7 @@ export default function LoginScreen() {
           >
             {t('auth.titleA')}{' '}
             <SizableText
-              color="$primary"
+              color={c.primary as any}
               fontFamily="$heading"
               fontWeight="800"
               size="$10"
@@ -42,7 +42,7 @@ export default function LoginScreen() {
               {t('auth.titleB')}
             </SizableText>
           </SizableText>
-          <Paragraph color="$colorPress" text="center" size="$4" max-width={320}>
+          <Paragraph color={c.textMuted as any} text="center" size="$4" max-width={320}>
             {t('auth.subtitle')}
           </Paragraph>
         </YStack>
@@ -50,11 +50,11 @@ export default function LoginScreen() {
         <YStack gap="$4">
           <SocialAuthButtons onSignedIn={goToApp} onSkip={goToApp} />
           <XStack justify="center" flexWrap="wrap" gap="$1">
-            <SizableText color="$colorPress" size="$2" fontFamily="$body">
+            <SizableText color={c.textMuted as any} size="$2" fontFamily="$body">
               {t('auth.legalNoticeBefore')}{' '}
             </SizableText>
             <SizableText
-              color="$primary"
+              color={c.primary as any}
               size="$2"
               fontFamily="$body"
               fontWeight="600"
@@ -62,11 +62,11 @@ export default function LoginScreen() {
             >
               {t('profile.terms')}
             </SizableText>
-            <SizableText color="$colorPress" size="$2" fontFamily="$body">
+            <SizableText color={c.textMuted as any} size="$2" fontFamily="$body">
               {' '}{t('auth.legalNoticeAnd')}{' '}
             </SizableText>
             <SizableText
-              color="$primary"
+              color={c.primary as any}
               size="$2"
               fontFamily="$body"
               fontWeight="600"
@@ -74,7 +74,7 @@ export default function LoginScreen() {
             >
               {t('profile.privacy')}
             </SizableText>
-            <SizableText color="$colorPress" size="$2" fontFamily="$body">.</SizableText>
+            <SizableText color={c.textMuted as any} size="$2" fontFamily="$body">.</SizableText>
           </XStack>
         </YStack>
       </YStack>

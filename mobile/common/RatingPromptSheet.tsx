@@ -14,6 +14,7 @@ import { useRateTarget } from '../hooks/useRateTarget'
 import { UnauthorizedError } from '../lib/authedApi'
 import { clearAuthChoice } from '../providers/AuthChoice'
 import { palette } from '../constants/Colors'
+import { useAppTheme } from '../providers/ThemeContext'
 
 const LOGIN_HREF = '/login' as Href
 const STAR_VALUES: RatingValue[] = [1, 2, 3, 4, 5]
@@ -53,6 +54,7 @@ export function RatingPromptSheet({
   const posthog = usePostHog()
   const { isSignedIn } = useAuth()
   const { submit } = useRateTarget()
+  const { c } = useAppTheme()
   const getMyRating = useMyRating()
   const existingRating = getMyRating(targetType, targetId)
   const isUpdating = existingRating !== null
@@ -179,11 +181,11 @@ export function RatingPromptSheet({
     <BottomSheet visible={visible} onClose={onClose} heightRatio={0.42}>
       <YStack px="$5" py="$4" gap="$4" flex={1}>
         <YStack gap="$2">
-          <H2 color="$color" fontFamily="$heading" fontWeight="700" fontSize="$7">
+          <H2 color={c.text as any} fontFamily="$heading" fontWeight="700" fontSize="$7">
             {title}
           </H2>
           <Paragraph
-            color="$colorPress"
+            color={c.textMuted as any}
             fontFamily="$body"
             size="$3"
             lineHeight="$5"
@@ -218,7 +220,7 @@ export function RatingPromptSheet({
 
         <Animated.View style={{ opacity: thanksOpacity, alignItems: 'center' }}>
           <SizableText
-            color="$primary"
+            color={c.primary as any}
             fontFamily="$body"
             fontWeight="600"
             size="$4"
@@ -232,7 +234,7 @@ export function RatingPromptSheet({
         {phase === 'idle' && (
           <Pressable onPress={onClose}>
             <YStack items="center" py="$2">
-              <SizableText color="$colorPress" fontFamily="$body" fontWeight="500">
+              <SizableText color={c.textMuted as any} fontFamily="$body" fontWeight="500">
                 {isUpdating
                   ? t('ratings.prompt.cancel')
                   : t('ratings.prompt.skip')}

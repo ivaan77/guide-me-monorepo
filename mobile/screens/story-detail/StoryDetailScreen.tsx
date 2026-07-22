@@ -18,6 +18,7 @@ import { SizableText, XStack, YStack } from 'tamagui'
 import { useStory } from '../../hooks/useStories'
 import { TipTapRenderer } from './TipTapRenderer'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 const H_PADDING = 20
 
@@ -31,6 +32,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
   const { height: winH } = useWindowDimensions()
   const posthog = usePostHog()
   const { data: post, isLoading, isError } = useStory(slug)
+  const { c } = useAppTheme()
 
   // Scroll-to-top FAB. Threshold: user has scrolled past ~60% of screen
   // height. Animated.Value on the opacity means we fade in/out instead
@@ -79,7 +81,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
 
   if (isLoading) {
     return (
-      <YStack flex={1} bg="$background" items="center" justify="center">
+      <YStack flex={1} bg={c.background as any} items="center" justify="center">
         <ActivityIndicator />
       </YStack>
     )
@@ -89,12 +91,12 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
     return (
       <YStack
         flex={1}
-        bg="$background"
+        bg={c.background as any}
         items="center"
         justify="center"
         px={H_PADDING}
       >
-        <SizableText size="$4" fontFamily="$body" color="$colorPress" text="center">
+        <SizableText size="$4" fontFamily="$body" color={c.textMuted as any} text="center">
           {t('stories.errorBody')}
         </SizableText>
       </YStack>
@@ -108,7 +110,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
   }).format(new Date(post.publishedAt))
 
   return (
-    <YStack flex={1} bg="$background">
+    <YStack flex={1} bg={c.background as any}>
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
@@ -129,16 +131,16 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
               size="$1"
               fontFamily="$body"
               fontWeight="700"
-              color="$primary"
+              color={c.primary as any}
               style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
             >
               {t(`stories.category.${post.category}` as const)}
             </SizableText>
-            <SizableText size="$2" fontFamily="$body" color="$colorPress">
+            <SizableText size="$2" fontFamily="$body" color={c.textMuted as any}>
               · {dateFmt}
             </SizableText>
             {post.readingMinutes && (
-              <SizableText size="$2" fontFamily="$body" color="$colorPress">
+              <SizableText size="$2" fontFamily="$body" color={c.textMuted as any}>
                 · {t('stories.readingMinutes', { count: post.readingMinutes })}
               </SizableText>
             )}
@@ -151,7 +153,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
             size="$8"
             fontFamily="$heading"
             fontWeight="800"
-            color="$color"
+            color={c.text as any}
             style={{ lineHeight: 34 }}
           >
             {post.title}
@@ -159,7 +161,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
           <SizableText
             size="$5"
             fontFamily="$body"
-            color="$colorPress"
+            color={c.textMuted as any}
             style={{ lineHeight: 26, marginBottom: 8 }}
           >
             {post.excerpt}
@@ -210,13 +212,13 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
             width: 48,
             height: 48,
             borderRadius: 24,
-            backgroundColor: '#0B1F3A',
+            backgroundColor: c.primary,
             alignItems: 'center',
             justifyContent: 'center',
             ...SHADOW.card,
           }}
         >
-          <ArrowUp size={22} color="#FFFFFF" />
+          <ArrowUp size={22} color={c.onBrand as any} />
         </Pressable>
       </Animated.View>
     </YStack>

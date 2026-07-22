@@ -8,6 +8,7 @@ import type {
   PublicSubStop,
 } from '@guide-me-app/core'
 import { BottomSheet } from '../../common/BottomSheet'
+import { useAppTheme } from '../../providers/ThemeContext'
 import { StopsList } from './StopsList'
 
 // Full-height sheet wrapping the existing StopsList. Replaces the previous
@@ -43,6 +44,7 @@ export function StopsSheet({
   onSubStopPress,
 }: Props) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   // Wrap the item-tap handlers so tapping a row also closes the sheet.
   // This preserves the pre-refactor behavior where the list was always
   // visible: tap → lightbox/detail → back to map. Now: tap → sheet
@@ -63,7 +65,7 @@ export function StopsSheet({
             size="$6"
             fontFamily="$heading"
             fontWeight="700"
-            color="$color"
+            color={c.text as any}
           >
             {t('excursion.stopsSheet.title', {
               count: stops.length,
@@ -75,11 +77,11 @@ export function StopsSheet({
               width={32}
               height={32}
               rounded={16}
-              bg="$surfaceMuted"
+              bg={c.surfaceMuted as any}
               items="center"
               justify="center"
             >
-              <X size={16} color="$color" />
+              <X size={16} color={c.text as any} />
             </YStack>
           </Pressable>
         </XStack>

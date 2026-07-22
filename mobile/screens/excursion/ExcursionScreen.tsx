@@ -44,10 +44,10 @@ import {
   SizableText,
   XStack,
   YStack,
-  useTheme,
 } from 'tamagui'
 import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { RatingPromptSheet } from '../../common/RatingPromptSheet'
@@ -115,7 +115,7 @@ const H_PADDING = 20
 export function ExcursionScreen({ id }: Props) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const theme = useTheme()
+  const { c } = useAppTheme()
   const { t } = useTranslation()
   const mapRef = useRef<MapView>(null)
   const { data: excursion, isPending, isError, refetch } = useExcursion(id)
@@ -127,7 +127,7 @@ export function ExcursionScreen({ id }: Props) {
 
   if (isPending) {
     return (
-      <YStack flex={1} bg="$background">
+      <YStack flex={1} bg={c.background as any}>
         <ExcursionSkeleton />
         <BackButton topInset={insets.top} onPress={goBack} />
       </YStack>
@@ -136,7 +136,7 @@ export function ExcursionScreen({ id }: Props) {
 
   if (isError || !excursion) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top + 56}>
+      <YStack flex={1} bg={c.background as any} pt={insets.top + 56}>
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
@@ -160,7 +160,7 @@ export function ExcursionScreen({ id }: Props) {
       bottomInset={insets.bottom}
       mapRef={mapRef}
       goBack={goBack}
-      primary={theme.primary.val}
+      primary={c.primary}
     />
   )
 }
@@ -196,6 +196,7 @@ function ExcursionBody({
   const ratingPrompt = useRatingPrompt('excursion', id)
   const posthog = usePostHog()
   const { t } = useTranslation()
+  const { c } = useAppTheme()
 
   // Fire the rating prompt shortly after the user hits 'complete' so the
   // CompletePanel renders first and the sheet feels like a follow-up, not
@@ -1123,7 +1124,7 @@ function ExcursionBody({
   })
 
   return (
-    <YStack flex={1} bg="$background">
+    <YStack flex={1} bg={c.background as any}>
       <Animated.View style={{ width: '100%', height: mapHeightAnim }}>
       <MapView
         ref={mapRef}
@@ -1349,7 +1350,9 @@ function ExcursionBody({
             width: 48,
             height: 48,
             borderRadius: 24,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: c.surface,
+            borderWidth: 1,
+            borderColor: c.border,
             alignItems: 'center',
             justifyContent: 'center',
             ...SHADOW.card,
@@ -1378,7 +1381,9 @@ function ExcursionBody({
             height: 48,
             paddingHorizontal: 14,
             borderRadius: 24,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: c.surface,
+            borderWidth: 1,
+            borderColor: c.border,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
@@ -1391,7 +1396,7 @@ function ExcursionBody({
             size="$3"
             fontFamily="$body"
             fontWeight="700"
-            color="$color"
+            color={c.text as any}
             style={{ letterSpacing: 0.2 }}
           >
             {t('excursion.stopsSheet.chip', { defaultValue: 'Stops' })} · {stops.length}
@@ -1451,7 +1456,7 @@ function ExcursionBody({
             height={28}
             {...snapPanResponder.panHandlers}
           >
-            <YStack width={56} height={5} rounded={3} bg="$borderColor" />
+            <YStack width={56} height={5} rounded={3} bg={c.border as any} />
           </YStack>
           <YStack
             onLayout={(e) =>
@@ -1630,8 +1635,8 @@ function ExcursionBody({
 
 function WaitingForGpsToast({ topInset }: { topInset: number }) {
   const { t } = useTranslation()
-  const theme = useTheme()
-  const iconColor = theme.color1?.val ?? '#FFFFFF'
+  const { c } = useAppTheme()
+  const iconColor = c.background
   return (
     <YStack
       position="absolute"
@@ -1643,7 +1648,7 @@ function WaitingForGpsToast({ topInset }: { topInset: number }) {
       pointerEvents="none"
     >
       <XStack
-        bg="$color12"
+        bg={c.text as any}
         rounded="$6"
         px="$3.5"
         py="$2"
@@ -1654,7 +1659,7 @@ function WaitingForGpsToast({ topInset }: { topInset: number }) {
         <LocateFixed size={14} color={iconColor as any} />
         <SizableText
           size="$2"
-          color="$color1"
+          color={c.background as any}
           fontFamily="$body"
           fontWeight="600"
         >
@@ -1669,6 +1674,7 @@ function WaitingForGpsToast({ topInset }: { topInset: number }) {
 
 function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   return (
     <YStack
       position="absolute"
@@ -1683,7 +1689,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
       z={50}
     >
       <YStack
-        bg="$surface"
+        bg={c.surface as any}
         rounded="$6"
         p="$5"
         gap="$3"
@@ -1702,17 +1708,17 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
           width={56}
           height={56}
           rounded={28}
-          bg="$surfaceMuted"
+          bg={c.surfaceMuted as any}
           items="center"
           justify="center"
         >
-          <MapPinOff size={28} color="$primary" />
+          <MapPinOff size={28} color={c.primary as any} />
         </YStack>
         <SizableText
           size="$5"
           fontWeight="700"
           fontFamily="$body"
-          color="$color"
+          color={c.text as any}
           text="center"
         >
           {t('excursion.locationDenied.title', {
@@ -1721,7 +1727,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
         </SizableText>
         <SizableText
           size="$2"
-          color="$colorPress"
+          color={c.textMuted as any}
           fontFamily="$body"
           text="center"
           style={{ lineHeight: 18 }}
@@ -1737,7 +1743,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
           style={{ marginTop: 4, width: '100%' }}
         >
           <YStack
-            bg="$primary"
+            bg={c.primary as any}
             rounded="$5"
             py="$2.5"
             px="$5"
@@ -1746,7 +1752,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
           >
             <SizableText
               size="$3"
-              color="$colorOnBrand"
+              color={c.onBrand as any}
               fontFamily="$body"
               fontWeight="700"
             >
@@ -1764,7 +1770,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
           <YStack py="$2" items="center" justify="center">
             <SizableText
               size="$3"
-              color="$colorPress"
+              color={c.textMuted as any}
               fontFamily="$body"
               fontWeight="600"
             >
@@ -1789,11 +1795,11 @@ function UndoSkipPill({
   onPress: () => void
 }) {
   const { t } = useTranslation()
-  const theme = useTheme()
-  // $color1 is the inverse-contrast step — light in dark theme, dark in light
-  // theme — so it pairs with $color12 backgrounds for icons and translucent
-  // overlays that need to read as "the foreground tint."
-  const fg = theme.color1?.val ?? '#FFFFFF'
+  const { c } = useAppTheme()
+  // Inverse-contrast foreground — pairs with the dark text-colored background
+  // for icons and translucent overlays that need to read as "the foreground
+  // tint" against a very dark chip.
+  const fg = c.background
   // Countdown bar: animate width from 1 → 0 over the remaining lifetime of
   // this pill. The bar makes it obvious the pill is dismiss-on-timeout and
   // shows how much time is left to tap. Driven by Animated so the timing is
@@ -1815,7 +1821,7 @@ function UndoSkipPill({
   return (
     <Pressable onPress={onPress} hitSlop={8}>
       <YStack
-        bg="$color12"
+        bg={c.text as any}
         rounded="$6"
         style={{
           overflow: 'hidden',
@@ -1829,14 +1835,14 @@ function UndoSkipPill({
             rounded={14}
             items="center"
             justify="center"
-            bg="$color11"
+            bg={c.textMuted as any}
           >
             <Undo2 size={16} color={fg as any} />
           </YStack>
           <YStack flex={1}>
             <SizableText
               size="$1"
-              color="$color1"
+              color={c.background as any}
               fontFamily="$body"
               fontWeight="700"
               style={{
@@ -1849,7 +1855,7 @@ function UndoSkipPill({
             </SizableText>
             <SizableText
               size="$3"
-              color="$color1"
+              color={c.background as any}
               fontFamily="$body"
               fontWeight="600"
               numberOfLines={1}
@@ -1937,11 +1943,12 @@ function BottomPanel({
   onFinish: () => void
   onMoreInfo: () => void
 }) {
+  const { c } = useAppTheme()
   return (
     <YStack
-      bg="$surface"
+      bg={c.surface as any}
       borderTopWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
       px={H_PADDING}
       pt="$4"
       pb={Math.max(bottomInset, 16)}
@@ -2018,6 +2025,7 @@ function FarFromRouteWarning({
   onStartAnyway: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const km = (meters / 1000).toFixed(meters < 10000 ? 1 : 0)
   return (
     <YStack gap="$2">
@@ -2026,16 +2034,16 @@ function FarFromRouteWarning({
           width={36}
           height={36}
           rounded={18}
-          bg="$surfaceMuted"
+          bg={c.surfaceMuted as any}
           items="center"
           justify="center"
         >
-          <MapPinOff size={18} color="$primary" />
+          <MapPinOff size={18} color={c.primary as any} />
         </YStack>
         <YStack flex={1} gap="$0.5">
           <SizableText
             size="$4"
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             fontWeight="700"
           >
@@ -2043,7 +2051,7 @@ function FarFromRouteWarning({
               defaultValue: "You're far from this excursion",
             })}
           </SizableText>
-          <SizableText size="$2" color="$colorPress" fontFamily="$body">
+          <SizableText size="$2" color={c.textMuted as any} fontFamily="$body">
             {t('excursion.farFromRoute.body', {
               km,
               defaultValue: `Nearest stop is about ${km} km away.`,
@@ -2055,15 +2063,15 @@ function FarFromRouteWarning({
         <YStack
           py="$2.5"
           rounded="$5"
-          bg="$surfaceMuted"
+          bg={c.surfaceMuted as any}
           borderWidth={1}
-          borderColor="$borderColor"
+          borderColor={c.border as any}
           items="center"
           justify="center"
         >
           <SizableText
             size="$3"
-            color="$colorPress"
+            color={c.textMuted as any}
             fontFamily="$body"
             fontWeight="600"
           >
@@ -2112,6 +2120,7 @@ function PreviewPanel({
   onOpenStartFromPicker: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const pillVisible = nearestPillExpiresAt > Date.now()
   // Default weather date to today (YYYY-MM-DD in local time). User can
   // scrub 0..6 days ahead via the WeatherDatePicker. Only rendered when
@@ -2136,7 +2145,7 @@ function PreviewPanel({
         title={t('excursion.preview.title')}
       />
       <PhaseCardBody>
-        <Paragraph color="$colorPress" fontFamily="$body" size="$3">
+        <Paragraph color={c.textMuted as any} fontFamily="$body" size="$3">
           {t('excursion.preview.subtitle', { count: total })}
         </Paragraph>
         {pillVisible && nearestStopName && (
@@ -2168,7 +2177,7 @@ function PreviewPanel({
         primary={{
           label: t('excursion.preview.start'),
           onPress: onStart,
-          icon: <Play size={18} color="$colorOnBrand" />,
+          icon: <Play size={18} color={c.onBrand as any} />,
         }}
       />
     </PhaseCard>
@@ -2194,6 +2203,7 @@ function NearestStopInlinePill({
   onPress: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const progressAnim = useRef(new Animated.Value(1)).current
   useEffect(() => {
     const remaining = Math.max(0, expiresAt - Date.now())
@@ -2231,14 +2241,14 @@ function NearestStopInlinePill({
             rounded={12}
             items="center"
             justify="center"
-            bg="$accent"
+            bg={c.accent as any}
           >
             <MapPin size={12} color={palette.navy as any} />
           </YStack>
           <YStack flex={1}>
             <SizableText
               size="$1"
-              color="$colorPress"
+              color={c.textMuted as any}
               fontFamily="$body"
               fontWeight="700"
               style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
@@ -2249,7 +2259,7 @@ function NearestStopInlinePill({
             </SizableText>
             <SizableText
               size="$3"
-              color="$color"
+              color={c.text as any}
               fontFamily="$body"
               fontWeight="600"
               numberOfLines={1}
@@ -2268,7 +2278,7 @@ function NearestStopInlinePill({
           style={{
             height: 3,
             width: progressWidth,
-            backgroundColor: '#F59E0B',
+            backgroundColor: palette.amber,
           }}
         />
       </YStack>
@@ -2291,6 +2301,7 @@ function StartFromChip({
   onPress: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   return (
     <Pressable onPress={onPress} hitSlop={6}>
       <XStack
@@ -2299,21 +2310,21 @@ function StartFromChip({
         px="$3"
         py="$2"
         rounded="$5"
-        bg="$surfaceMuted"
+        bg={c.surfaceMuted as any}
         borderWidth={1}
-        borderColor="$borderColor"
+        borderColor={c.border as any}
       >
         <YStack
           width={28}
           height={28}
           rounded={14}
-          bg="$primary"
+          bg={c.primary as any}
           items="center"
           justify="center"
         >
           <SizableText
             size="$1"
-            color="$colorOnBrand"
+            color={c.onBrand as any}
             fontFamily="$body"
             fontWeight="800"
           >
@@ -2326,7 +2337,7 @@ function StartFromChip({
         <YStack flex={1} gap="$0.5" style={{ minWidth: 0 }}>
           <SizableText
             size="$1"
-            color="$colorPress"
+            color={c.textMuted as any}
             fontFamily="$body"
             fontWeight="700"
             style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
@@ -2335,7 +2346,7 @@ function StartFromChip({
           </SizableText>
           <SizableText
             size="$3"
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
             numberOfLines={1}
@@ -2348,11 +2359,11 @@ function StartFromChip({
             px="$2"
             py="$0.5"
             rounded="$2"
-            bg="$primary"
+            bg={c.primary as any}
           >
             <SizableText
               size="$1"
-              color="$colorOnBrand"
+              color={c.onBrand as any}
               fontFamily="$body"
               fontWeight="800"
               style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
@@ -2363,7 +2374,7 @@ function StartFromChip({
             </SizableText>
           </YStack>
         )}
-        <ChevronDown size={18} color="$colorPress" />
+        <ChevronDown size={18} color={c.textMuted as any} />
       </XStack>
     </Pressable>
   )
@@ -2389,6 +2400,7 @@ function NavigatingPanel({
   onRecalculate: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const straightLineMeters = userLocation
     ? haversineMeters(userLocation, stop.coords)
     : null
@@ -2416,11 +2428,11 @@ function NavigatingPanel({
       width={40}
       height={40}
       rounded={20}
-      bg="$primary"
+      bg={c.primary as any}
       items="center"
       justify="center"
     >
-      <Navigation size={20} color="$colorOnBrand" />
+      <Navigation size={20} color={c.onBrand as any} />
     </YStack>
   )
   return (
@@ -2444,8 +2456,8 @@ function NavigatingPanel({
               py="$2"
               rounded="$4"
               borderWidth={1}
-              borderColor="$primary"
-              bg="$surfaceMuted"
+              borderColor={c.primary as any}
+              bg={c.surfaceMuted as any}
               style={SHADOW.subtle}
             >
               <YStack
@@ -2454,14 +2466,14 @@ function NavigatingPanel({
                 rounded={12}
                 items="center"
                 justify="center"
-                bg="$primary"
+                bg={c.primary as any}
               >
-                <Navigation size={12} color="$colorOnBrand" />
+                <Navigation size={12} color={c.onBrand as any} />
               </YStack>
               <YStack flex={1}>
                 <SizableText
                   size="$3"
-                  color="$color"
+                  color={c.text as any}
                   fontFamily="$body"
                   fontWeight="600"
                 >
@@ -2469,7 +2481,7 @@ function NavigatingPanel({
                     defaultValue: "You're off the route",
                   })}
                 </SizableText>
-                <SizableText size="$2" color="$colorPress" fontFamily="$body">
+                <SizableText size="$2" color={c.textMuted as any} fontFamily="$body">
                   {t('excursion.offRoute.cta', {
                     defaultValue: 'Tap to recalculate',
                   })}
@@ -2480,7 +2492,7 @@ function NavigatingPanel({
         )}
         <SizableText
           size="$3"
-          color="$colorPress"
+          color={c.textMuted as any}
           fontFamily="$body"
           style={{ fontVariant: ['tabular-nums'] }}
         >
@@ -2521,6 +2533,7 @@ function ArrivedPanel({
   onMoreInfo: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const isLast = index + 1 === total
   const subStops = stop.subStops ?? []
   const isBundle = subStops.length > 0
@@ -2593,9 +2606,9 @@ function ArrivedPanel({
         : onAdvanceSubStop
     const primaryIcon =
       isLastSubStop && isLast ? (
-        <MapPin size={18} color="$colorOnBrand" />
+        <MapPin size={18} color={c.onBrand as any} />
       ) : (
-        <Navigation size={18} color="$colorOnBrand" />
+        <Navigation size={18} color={c.onBrand as any} />
       )
     return (
       <PhaseCard>
@@ -2613,7 +2626,7 @@ function ArrivedPanel({
             onJump={onJumpToSubStop}
           />
           <Paragraph
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             size="$3"
             lineHeight="$3"
@@ -2679,7 +2692,7 @@ function ArrivedPanel({
       />
       <PhaseCardBody>
         <Paragraph
-          color="$color"
+          color={c.text as any}
           fontFamily="$body"
           size="$3"
           lineHeight="$3"
@@ -2699,9 +2712,9 @@ function ArrivedPanel({
             : t('excursion.arrived.continue'),
           onPress: onContinue,
           icon: isLast ? (
-            <MapPin size={18} color="$colorOnBrand" />
+            <MapPin size={18} color={c.onBrand as any} />
           ) : (
-            <Navigation size={18} color="$colorOnBrand" />
+            <Navigation size={18} color={c.onBrand as any} />
           ),
         }}
       />
@@ -2723,6 +2736,7 @@ function OutroPanel({
   onFinish: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   // Outro card — coral phase tint. Hero image sits in the body as a full-
   // width banner (this phase intentionally leans on the image as the
   // emotional close); audio + description below it. Same PhaseCard shape
@@ -2748,7 +2762,7 @@ function OutroPanel({
           analyticsSourceId={excursionId}
         />
         <Paragraph
-          color="$color"
+          color={c.text as any}
           fontFamily="$body"
           size="$3"
           lineHeight="$5"
@@ -2760,7 +2774,7 @@ function OutroPanel({
         primary={{
           label: t('excursion.outro.finish', { defaultValue: 'Finish' }),
           onPress: onFinish,
-          icon: <MapPin size={18} color="$colorOnBrand" />,
+          icon: <MapPin size={18} color={c.onBrand as any} />,
         }}
       />
     </PhaseCard>
@@ -2775,6 +2789,7 @@ function CompletePanel({
   onFinish: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   // Complete card — success-green phase tint. Deliberately spare: just a
   // congratulatory badge, the title, the body copy, and Done. The rating
   // prompt sheet fires 1.2s after this phase (see phase effect above) so
@@ -2787,7 +2802,7 @@ function CompletePanel({
         title={t('excursion.complete.title')}
       />
       <PhaseCardBody>
-        <Paragraph color="$colorPress" fontFamily="$body" size="$3">
+        <Paragraph color={c.textMuted as any} fontFamily="$body" size="$3">
           {t('excursion.complete.body', { count: total })}
         </Paragraph>
       </PhaseCardBody>
@@ -2795,7 +2810,7 @@ function CompletePanel({
         primary={{
           label: t('excursion.complete.done'),
           onPress: onFinish,
-          icon: <MapPin size={18} color="$colorOnBrand" />,
+          icon: <MapPin size={18} color={c.onBrand as any} />,
         }}
       />
     </PhaseCard>
@@ -2804,6 +2819,7 @@ function CompletePanel({
 
 
 function HeaderTitle({ topInset, title }: { topInset: number; title: string }) {
+  const { c } = useAppTheme()
   return (
     <YStack
       position="absolute"
@@ -2813,7 +2829,7 @@ function HeaderTitle({ topInset, title }: { topInset: number; title: string }) {
       style={{ pointerEvents: 'none' }}
     >
       <YStack
-        bg="$chromeOverlay"
+        bg={c.chromeOverlay as any}
         rounded={20}
         px="$3"
         py="$2"
@@ -2821,7 +2837,7 @@ function HeaderTitle({ topInset, title }: { topInset: number; title: string }) {
       >
         <SizableText
           size="$3"
-          color="$onMedia"
+          color={c.onMedia as any}
           fontFamily="$body"
           fontWeight="600"
           numberOfLines={1}
@@ -2840,6 +2856,7 @@ function BackButton({
   topInset: number
   onPress: () => void
 }) {
+  const { c } = useAppTheme()
   return (
     <Pressable
       onPress={onPress}
@@ -2857,9 +2874,9 @@ function BackButton({
         rounded={20}
         items="center"
         justify="center"
-        bg="$chromeOverlay"
+        bg={c.chromeOverlay as any}
       >
-        <ChevronLeft size={22} color="$onMedia" />
+        <ChevronLeft size={22} color={c.onMedia as any} />
       </YStack>
     </Pressable>
   )

@@ -143,7 +143,7 @@ export function BottomSheet({
           }}
         >
           <YStack
-            bg="$surface"
+            bg={c.surface as any}
             flex={1}
             style={{
               borderTopLeftRadius: 24,
@@ -153,7 +153,7 @@ export function BottomSheet({
           >
             <View {...panResponder.panHandlers}>
               <YStack items="center" pt="$2.5" pb="$1">
-                <YStack width={44} height={4} rounded={2} bg="$borderColor" />
+                <YStack width={44} height={4} rounded={2} bg={c.border as any} />
               </YStack>
               {header}
             </View>

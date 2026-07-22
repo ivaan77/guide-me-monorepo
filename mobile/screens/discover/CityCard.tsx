@@ -3,6 +3,7 @@ import { Link } from 'expo-router'
 import type { PublicCity } from '@guide-me-app/core'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { RatingStars } from '../../common/RatingStars'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 type Props = {
   city: PublicCity
@@ -10,15 +11,16 @@ type Props = {
 }
 
 export function CityCard({ city, width }: Props) {
+  const { c } = useAppTheme()
   return (
     <Link href={`/city/${city.id}`} asChild>
       <Pressable style={{ width }}>
         <YStack
-          bg="$surface"
+          bg={c.surface as any}
           rounded="$6"
           overflow="hidden"
           borderWidth={1}
-          borderColor="$borderColor"
+          borderColor={c.border as any}
         >
           <Image
             source={{ uri: city.image }}
@@ -30,7 +32,7 @@ export function CityCard({ city, width }: Props) {
               size="$5"
               fontFamily="$body"
               fontWeight="600"
-              color="$color"
+              color={c.text as any}
               text="center"
               numberOfLines={1}
             >
@@ -39,7 +41,7 @@ export function CityCard({ city, width }: Props) {
             <SizableText
               size="$2"
               fontFamily="$body"
-              color="$colorPress"
+              color={c.textMuted as any}
               text="center"
               mt="$0.5"
               numberOfLines={1}

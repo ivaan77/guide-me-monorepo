@@ -12,6 +12,7 @@ import { H3, Paragraph, XStack, YStack } from 'tamagui'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { BottomSheet } from '../../common/BottomSheet'
 import { FavoriteButton } from '../../common/FavoriteButton'
+import { useAppTheme } from '../../providers/ThemeContext'
 import type { PublicSubStop } from '@guide-me-app/core'
 
 const H_PADDING = 20
@@ -30,13 +31,18 @@ type Props = {
 // layout (image carousel + audio + description) so sub-stops feel like
 // first-class destinations rather than nested afterthoughts. Opened by
 // tapping a sub-stop row in the stops list or a sub-stop dot on the map.
-export function SubStopDetailSheet({
+export function SubStopDetailSheet(props: Props) {
+  return <SubStopDetailSheetInner {...props} />
+}
+
+function SubStopDetailSheetInner({
   visible,
   sub,
   excursionId,
   stopId,
   onClose,
 }: Props) {
+  const { c } = useAppTheme()
   if (!sub) return null
   return (
     <BottomSheet
@@ -45,7 +51,7 @@ export function SubStopDetailSheet({
       heightRatio={0.88}
       header={
         <XStack px={H_PADDING} pt="$2" pb="$3" items="center">
-          <H3 fontFamily="$body" fontWeight="700" color="$color" flex={1}>
+          <H3 fontFamily="$body" fontWeight="700" color={c.text as any} flex={1}>
             {sub.name}
           </H3>
         </XStack>
@@ -68,6 +74,7 @@ function SubStopBody({
   const { width: screenWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const { t } = useTranslation()
+  const { c } = useAppTheme()
 
   const images = sub.images?.length ? sub.images : [sub.image]
   const [carouselIndex, setCarouselIndex] = useState(0)
@@ -145,7 +152,7 @@ function SubStopBody({
             analyticsSourceType="sub_stop"
             analyticsSourceId={sub.id}
           />
-          <Paragraph color="$color" fontFamily="$body" size="$4" lineHeight="$6">
+          <Paragraph color={c.text as any} fontFamily="$body" size="$4" lineHeight="$6">
             {sub.description}
           </Paragraph>
         </YStack>

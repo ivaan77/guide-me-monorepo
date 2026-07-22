@@ -13,6 +13,7 @@ import { AudioPlayer } from '../../common/AudioPlayer'
 import { BottomSheet } from '../../common/BottomSheet'
 import type { PublicExcursionStop as ExcursionStop } from '@guide-me-app/core'
 import { BUNDLE_ACCENT } from './StopBundlePin'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 const H_PADDING = 20
 
@@ -23,6 +24,11 @@ type Props = {
 }
 
 export function StopDetailSheet({ visible, stop, onClose }: Props) {
+  return <StopDetailSheetInner visible={visible} stop={stop} onClose={onClose} />
+}
+
+function StopDetailSheetInner({ visible, stop, onClose }: Props) {
+  const { c } = useAppTheme()
   if (!stop) return null
 
   return (
@@ -32,7 +38,7 @@ export function StopDetailSheet({ visible, stop, onClose }: Props) {
       heightRatio={0.88}
       header={
         <XStack px={H_PADDING} pt="$2" pb="$3" items="center">
-          <H3 fontFamily="$body" fontWeight="700" color="$color" flex={1}>
+          <H3 fontFamily="$body" fontWeight="700" color={c.text as any} flex={1}>
             {stop.name}
           </H3>
         </XStack>
@@ -47,6 +53,7 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
   const { width: screenWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const { t } = useTranslation()
+  const { c } = useAppTheme()
 
   const images = stop.images?.length ? stop.images : [stop.image]
   const [carouselIndex, setCarouselIndex] = useState(0)
@@ -140,7 +147,7 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
             analyticsSourceId={stop.id}
           />
           <Paragraph
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             size="$4"
             lineHeight="$6"

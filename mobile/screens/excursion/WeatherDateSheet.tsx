@@ -5,6 +5,7 @@ import { X } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
 import { palette } from '../../constants/Colors'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 // BottomSheet-based date picker for the WeatherBanner. Replaces the
 // original inline chip strip (which ate ~90pt of vertical space above
@@ -21,6 +22,7 @@ type Props = {
 
 export function WeatherDateSheet({ visible, onClose, value, onChange }: Props) {
   const { t, i18n } = useTranslation()
+  const { c } = useAppTheme()
 
   // Precompute the 7 date strings + display labels. Locale-aware short
   // weekday so hr/de get "Sub"/"Mo" instead of "Sat"/"Mon".
@@ -58,7 +60,7 @@ export function WeatherDateSheet({ visible, onClose, value, onChange }: Props) {
             size="$6"
             fontFamily="$heading"
             fontWeight="700"
-            color="$color"
+            color={c.text as any}
           >
             {t('excursion.weather.pickDate', {
               defaultValue: 'When are you going?',
@@ -69,11 +71,11 @@ export function WeatherDateSheet({ visible, onClose, value, onChange }: Props) {
               width={32}
               height={32}
               rounded={16}
-              bg="$surfaceMuted"
+              bg={c.surfaceMuted as any}
               items="center"
               justify="center"
             >
-              <X size={16} color="$color" />
+              <X size={16} color={c.text as any} />
             </YStack>
           </Pressable>
         </XStack>
@@ -101,12 +103,8 @@ export function WeatherDateSheet({ visible, onClose, value, onChange }: Props) {
                   rounded="$5"
                   borderWidth={1}
                   style={{
-                    backgroundColor: isSelected
-                      ? palette.primary
-                      : 'transparent',
-                    borderColor: isSelected
-                      ? palette.primary
-                      : 'rgba(148, 163, 184, 0.4)',
+                    backgroundColor: isSelected ? c.primary : 'transparent',
+                    borderColor: isSelected ? c.primary : c.border,
                   }}
                 >
                   <SizableText
@@ -114,7 +112,7 @@ export function WeatherDateSheet({ visible, onClose, value, onChange }: Props) {
                     fontFamily="$body"
                     fontWeight="700"
                     style={{
-                      color: isSelected ? '#FFFFFF' : palette.navy,
+                      color: isSelected ? c.onBrand : c.text,
                     }}
                   >
                     {opt.label}
@@ -126,7 +124,7 @@ export function WeatherDateSheet({ visible, onClose, value, onChange }: Props) {
                     style={{
                       color: isSelected
                         ? 'rgba(255,255,255,0.85)'
-                        : 'rgba(107,114,128,0.9)',
+                        : c.textMuted,
                     }}
                   >
                     {opt.sub}
@@ -151,7 +149,7 @@ export function WeatherDateSheet({ visible, onClose, value, onChange }: Props) {
             <SizableText
               size="$1"
               fontFamily="$body"
-              color="$colorPress"
+              color={c.textMuted as any}
               style={{ letterSpacing: 0.4 }}
             >
               {t('excursion.weather.attribution', {

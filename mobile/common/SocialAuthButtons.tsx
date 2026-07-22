@@ -8,6 +8,7 @@ import { Button, Spinner, YStack } from 'tamagui'
 import Svg, { Path } from 'react-native-svg'
 import { useTranslation } from 'react-i18next'
 import { writeAuthChoice } from '../providers/AuthChoice'
+import { useAppTheme } from '../providers/ThemeContext'
 
 type Props = {
   // Called after Clerk session is set. The /login full-screen passes a
@@ -22,6 +23,7 @@ type Props = {
 export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
   const { t } = useTranslation()
   const posthog = usePostHog()
+  const { c } = useAppTheme()
   const { startSSOFlow } = useSSO()
   const { startAppleAuthenticationFlow } = useSignInWithApple()
   const [appleAvailable, setAppleAvailable] = useState(false)
@@ -109,13 +111,13 @@ export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
     <YStack gap="$3">
       <Button
         size="$5"
-        bg="$primary"
-        color="$background"
+        bg={c.primary as any}
+        color={c.onBrand as any}
         fontFamily="$heading"
         fontWeight="700"
         disabled={!!pending}
         onPress={onGoogle}
-        icon={pending === 'google' ? <Spinner color="$background" /> : <GoogleG />}
+        icon={pending === 'google' ? <Spinner color={c.onBrand as any} /> : <GoogleG />}
       >
         {t('auth.continueWithGoogle')}
       </Button>
@@ -123,13 +125,13 @@ export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
       {appleAvailable && (
         <Button
           size="$5"
-          bg="$color"
-          color="$background"
+          bg={c.text as any}
+          color={c.background as any}
           fontFamily="$heading"
           fontWeight="700"
           disabled={!!pending}
           onPress={onApple}
-          icon={pending === 'apple' ? <Spinner color="$background" /> : <Apple size={20} color="$background" />}
+          icon={pending === 'apple' ? <Spinner color={c.background as any} /> : <Apple size={20} color={c.background as any} />}
         >
           {t('auth.continueWithApple')}
         </Button>
@@ -139,7 +141,7 @@ export function SocialAuthButtons({ onSignedIn, onSkip }: Props) {
         <Button
           size="$5"
           chromeless
-          color="$colorPress"
+          color={c.textMuted as any}
           fontFamily="$body"
           fontWeight="500"
           disabled={!!pending}

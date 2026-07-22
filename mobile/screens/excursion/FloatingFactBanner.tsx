@@ -16,6 +16,7 @@ import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
 import { haversineMeters } from '../../lib/directions'
 import { playFactFeedback } from '../../lib/feedback'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 // Navy renders well on amber; not a registered Tamagui color token, so we
 // pull it from the palette to avoid the validator warning.
@@ -72,6 +73,7 @@ export function FloatingFactBanner({
   onDismiss,
 }: Props) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   if (!visible || !fact) return null
 
   return (
@@ -95,7 +97,7 @@ export function FloatingFactBanner({
           px="$3"
           py="$2.5"
           rounded="$6"
-          bg="$accent"
+          bg={c.accent as any}
           style={SHADOW.amberFloating}
         >
           <YStack

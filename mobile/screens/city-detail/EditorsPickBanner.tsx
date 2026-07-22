@@ -3,6 +3,7 @@ import { SizableText, XStack, YStack } from 'tamagui'
 import type { PublicEditorPick } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 // Navy renders well as on-amber text; not a Tamagui-registered color token,
 // so we pull it directly from the palette to avoid the validator warning.
@@ -13,6 +14,7 @@ type Props = {
 }
 
 export function EditorsPickBanner({ pick }: Props) {
+  const { c } = useAppTheme()
   return (
     <XStack
       items="center"
@@ -20,7 +22,7 @@ export function EditorsPickBanner({ pick }: Props) {
       px="$4"
       py="$3.5"
       rounded="$6"
-      bg="$accent"
+      bg={c.accent as any}
       // Soft amber-tinted shadow lifts the card off the hero image without a
       // hard ring. Elevation kept low on Android to avoid a clipped halo.
       style={SHADOW.amberCard}

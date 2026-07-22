@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
+import { useAppTheme } from '../../providers/ThemeContext'
 import type { PoiCategory, PublicPoi as Poi } from '@guide-me-app/core'
 
 const H_PADDING = 20
@@ -38,8 +39,13 @@ type Props = {
   onClose: () => void
 }
 
-export function PoiDetailSheet({ visible, poi, onClose }: Props) {
+export function PoiDetailSheet(props: Props) {
+  return <PoiDetailSheetInner {...props} />
+}
+
+function PoiDetailSheetInner({ visible, poi, onClose }: Props) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   if (!poi) return null
 
   return (
@@ -53,7 +59,7 @@ export function PoiDetailSheet({ visible, poi, onClose }: Props) {
             <SizableText size="$4">{CATEGORY_EMOJI[poi.category]}</SizableText>
             <SizableText
               size="$2"
-              color="$primary"
+              color={c.primary as any}
               fontFamily="$body"
               fontWeight="700"
               style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
@@ -61,7 +67,7 @@ export function PoiDetailSheet({ visible, poi, onClose }: Props) {
               {t(`place.category.${poi.category}` as const)}
             </SizableText>
           </XStack>
-          <H3 fontFamily="$body" fontWeight="700" color="$color">
+          <H3 fontFamily="$body" fontWeight="700" color={c.text as any}>
             {poi.name}
           </H3>
         </YStack>
@@ -75,6 +81,7 @@ export function PoiDetailSheet({ visible, poi, onClose }: Props) {
 function PoiBody({ poi }: { poi: Poi }) {
   const { width: screenWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
+  const { c } = useAppTheme()
 
   const images = poi.images?.length ? poi.images : [poi.image]
   const [carouselIndex, setCarouselIndex] = useState(0)
@@ -139,7 +146,7 @@ function PoiBody({ poi }: { poi: Poi }) {
         showsVerticalScrollIndicator={false}
       >
         <YStack px={H_PADDING} pt="$4" gap="$3">
-          <Paragraph color="$color" fontFamily="$body" size="$4" lineHeight="$6">
+          <Paragraph color={c.text as any} fontFamily="$body" size="$4" lineHeight="$6">
             {poi.description}
           </Paragraph>
         </YStack>

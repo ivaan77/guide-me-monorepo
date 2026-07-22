@@ -8,6 +8,7 @@ import {
   useAudioPlayerStatus,
 } from 'expo-audio'
 import { useAudioPlaybackTracker } from '../hooks/useAudioPlaybackTracker'
+import { useAppTheme } from '../providers/ThemeContext'
 import {
   Headphones,
   Pause,
@@ -16,7 +17,7 @@ import {
   FastForward,
   Square,
 } from '@tamagui/lucide-icons'
-import { SizableText, XStack, YStack, useTheme } from 'tamagui'
+import { SizableText, XStack, YStack } from 'tamagui'
 import Svg, { Circle as SvgCircle } from 'react-native-svg'
 import Animated, {
   Easing,
@@ -60,6 +61,7 @@ export function AudioPlayer({
   analyticsSourceId,
 }: Props) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
 
   // useAudioPlayer accepts null to lazily allocate. We pass null when no URL
   // is supplied so we don't open a native audio session for a stub card.
@@ -135,29 +137,29 @@ export function AudioPlayer({
     return (
       <XStack
         items="center"
-        bg="$surfaceMuted"
+        bg={c.surfaceMuted as any}
         rounded="$5"
         px="$3"
         py="$3"
         gap="$3"
         borderWidth={1}
-        borderColor="$borderColor"
+        borderColor={c.border as any}
       >
         <YStack
           width={36}
           height={36}
           rounded={18}
-          bg="$background"
+          bg={c.background as any}
           items="center"
           justify="center"
         >
-          <Headphones size={16} color="$colorPress" />
+          <Headphones size={16} color={c.textMuted as any} />
         </YStack>
         <YStack flex={1}>
-          <SizableText size="$3" color="$color" fontFamily="$body" fontWeight="600">
+          <SizableText size="$3" color={c.text as any} fontFamily="$body" fontWeight="600">
             {title}
           </SizableText>
-          <SizableText size="$2" color="$colorPress" fontFamily="$body">
+          <SizableText size="$2" color={c.textMuted as any} fontFamily="$body">
             {t((missingKey ?? 'excursion.stopSheet.audioMissing') as never)}
           </SizableText>
         </YStack>
@@ -165,36 +167,35 @@ export function AudioPlayer({
     )
   }
 
-  const theme = useTheme()
-  const sliderActive = theme.primary?.val ?? '#2A5BD7'
-  const sliderTrack = theme.colorPress?.val ?? '#9CA3AF'
+  const sliderActive = c.primary
+  const sliderTrack = c.textMuted
   const hasStarted = progress > 0 || pendingSeek != null
 
   return (
     <YStack
-      bg="$surfaceMuted"
+      bg={c.surfaceMuted as any}
       rounded="$5"
       px="$3"
       py="$3"
       gap="$3"
       borderWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
     >
       <XStack items="center" gap="$2.5">
         <YStack
           width={36}
           height={36}
           rounded={18}
-          bg="$background"
+          bg={c.background as any}
           items="center"
           justify="center"
         >
-          <Headphones size={16} color="$primary" />
+          <Headphones size={16} color={c.primary as any} />
         </YStack>
-        <YStack flex={1} flexShrink={1} gap="$0.5" minW={0}>
+        <YStack flex={1} gap="$0.5" minW={0} style={{ flexShrink: 1 }}>
           <SizableText
             size="$3"
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
             numberOfLines={1}
@@ -204,7 +205,7 @@ export function AudioPlayer({
           </SizableText>
           <SizableText
             size="$2"
-            color="$colorPress"
+            color={c.textMuted as any}
             fontFamily="$body"
             numberOfLines={1}
             ellipsizeMode="tail"
@@ -258,7 +259,7 @@ export function AudioPlayer({
           />
           <SizableText
             size="$1"
-            color="$colorPress"
+            color={c.textMuted as any}
             fontFamily="$body"
             style={{ fontVariant: ['tabular-nums'] }}
           >
@@ -286,20 +287,21 @@ function CircleButton({
   onPress: () => void
   disabled?: boolean
 }) {
+  const { c } = useAppTheme()
   return (
     <Pressable onPress={onPress} disabled={disabled} hitSlop={6}>
       <YStack
         width={40}
         height={40}
         rounded={20}
-        bg="$background"
+        bg={c.background as any}
         borderWidth={1}
-        borderColor="$borderColor"
+        borderColor={c.border as any}
         items="center"
         justify="center"
         opacity={disabled ? 0.4 : 1}
       >
-        <Icon size={16} color="$color" />
+        <Icon size={16} color={c.text as any} />
       </YStack>
     </Pressable>
   )
@@ -317,11 +319,11 @@ export function PlayButtonWithRing({
   playing?: boolean
   onPress: () => void
 }) {
-  const theme = useTheme()
+  const { c } = useAppTheme()
   // Use the muted text color for the dashed track — borderColor is too
   // subtle to read against the sheet's surface, especially in light mode.
-  const trackColor = theme.colorPress.val
-  const progressColor = theme.primary.val
+  const trackColor = c.textMuted
+  const progressColor = c.primary
 
   const SIZE = 48
   const PROGRESS_STROKE = 3
@@ -399,14 +401,14 @@ export function PlayButtonWithRing({
           width={40}
           height={40}
           rounded={20}
-          bg="$primary"
+          bg={c.primary as any}
           items="center"
           justify="center"
         >
           {playing ? (
-            <Pause size={16} color="$colorOnBrand" />
+            <Pause size={16} color={c.onBrand as any} />
           ) : (
-            <Play size={16} color="$colorOnBrand" />
+            <Play size={16} color={c.onBrand as any} />
           )}
         </YStack>
       </YStack>

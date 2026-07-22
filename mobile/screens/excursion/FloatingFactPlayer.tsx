@@ -13,6 +13,7 @@ import type { PublicInterestingFact } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
 import { useAudioPlaybackTracker } from '../../hooks/useAudioPlaybackTracker'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 const ON_AMBER = palette.navy
 
@@ -66,6 +67,7 @@ function PlayerCard({
   onDismiss: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const player = useAudioPlayer(fact.audioUrl ?? null)
   const status: AudioStatus | null = useAudioPlayerStatus(player)
   const isPlaying = status?.playing ?? false
@@ -121,7 +123,7 @@ function PlayerCard({
 
   return (
     <YStack
-      bg="$accent"
+      bg={c.accent as any}
       rounded="$6"
       style={{
         overflow: 'hidden',
