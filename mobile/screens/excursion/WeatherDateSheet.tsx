@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { X } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
-import { palette } from '../../constants/Colors'
 import { useAppTheme } from '../../providers/ThemeContext'
 
 // BottomSheet-based date picker for the WeatherBanner. Replaces the
