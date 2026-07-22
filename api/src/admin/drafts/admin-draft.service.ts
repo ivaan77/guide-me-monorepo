@@ -80,9 +80,7 @@ export class AdminDraftService {
   // Mongoose docs have `updatedAt` from the `timestamps: true` option but
   // it isn't in the Prop-decorated class shape. Cast to a small shape
   // rather than pulling in the full HydratedDocument type here.
-  private toEntry(
-    doc: AdminDraft & { updatedAt?: Date },
-  ): AdminDraftEntry {
+  private toEntry(doc: AdminDraft & { updatedAt?: Date }): AdminDraftEntry {
     return {
       entityType: doc.entityType,
       slug: doc.slug,
