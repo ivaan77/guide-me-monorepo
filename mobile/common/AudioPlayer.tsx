@@ -47,7 +47,14 @@ type Props = {
   // Analytics metadata — attached to the `audio_played` event on unmount.
   // Callers pass their source shape (a stop slug on an excursion, a place
   // slug on the place screen, etc). Unset falls back to 'other'.
-  analyticsSourceType?: 'stop' | 'sub_stop' | 'fact' | 'place' | 'city' | 'outro'
+  analyticsSourceType?:
+    | 'stop'
+    | 'sub_stop'
+    | 'fact'
+    | 'place'
+    | 'city'
+    | 'intro'
+    | 'outro'
   analyticsSourceId?: string | null
 }
 

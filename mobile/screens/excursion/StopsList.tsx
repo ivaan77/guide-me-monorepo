@@ -18,7 +18,7 @@ type Props = {
   stops: ExcursionStop[]
   pois: Poi[]
   currentIndex: number
-  phase: 'preview' | 'navigating' | 'arrived' | 'outro' | 'complete'
+  phase: 'preview' | 'intro' | 'navigating' | 'arrived' | 'outro' | 'complete'
   onPoiPress: (poi: Poi) => void
   // Optional: tap a stop row to enlarge its image in a lightbox. Excursion
   // screen passes this to drive its <ImageLightbox>. List works fine without

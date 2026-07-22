@@ -70,6 +70,18 @@ export function collectExcursionAudioSlots(
     }
   }
 
+  // ---- Intro (singleton, so no key needed) ----
+  if (draft.intro) {
+    const prevIntro = existing?.intro;
+    slots.push({
+      urls: draft.intro.audioUrl,
+      prevDurations: prevIntro?.audioDurationMs,
+      write: (next) => {
+        if (draft.intro) draft.intro.audioDurationMs = next;
+      },
+    });
+  }
+
   // ---- Outro (singleton, so no key needed) ----
   if (draft.outro) {
     const prevOutro = existing?.outro;

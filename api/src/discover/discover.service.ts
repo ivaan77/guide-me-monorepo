@@ -10,6 +10,7 @@ import {
   PublicCityDetailResponse,
   PublicEditorPick,
   PublicExcursion,
+  PublicExcursionIntro,
   PublicExcursionOutro,
   PublicExcursionResponse,
   PublicExcursionStop,
@@ -179,6 +180,16 @@ export class DiscoverService {
       })
       .filter((f): f is PublicInterestingFact => f !== null);
 
+    const intro: PublicExcursionIntro | undefined = excursion.intro
+      ? {
+          title: pickLocalized(excursion.intro.title, locale),
+          description: pickLocalized(excursion.intro.description, locale),
+          image: excursion.intro.image,
+          images: excursion.intro.images,
+          audioUrl: resolveAudio(excursion.intro.audioUrl, locale),
+        }
+      : undefined;
+
     const outro: PublicExcursionOutro | undefined = excursion.outro
       ? {
           title: pickLocalized(excursion.outro.title, locale),
@@ -199,6 +210,7 @@ export class DiscoverService {
         .map((stop) => this.toPublicStop(stop, locale)),
       pois: resolvedPois.length > 0 ? resolvedPois : undefined,
       interestingFacts: resolvedFacts.length > 0 ? resolvedFacts : undefined,
+      intro,
       outro,
       rating: toRatingAggregate(excursion),
       // Same 'outdoor' fallback as the admin path — belt-and-suspenders.
@@ -460,6 +472,7 @@ function sumAudioDuration({
     for (const f of e.interestingFacts ?? []) {
       add(f.audioUrl, f.audioDurationMs);
     }
+    if (e.intro) add(e.intro.audioUrl, e.intro.audioDurationMs);
     if (e.outro) add(e.outro.audioUrl, e.outro.audioDurationMs);
   }
   return total;

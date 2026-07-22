@@ -152,6 +152,32 @@ class OutroSub {
 
 const OutroSubSchema = SchemaFactory.createForClass(OutroSub);
 
+// Optional welcome card shown on the excursion preview screen before
+// the user taps Start. Mirrors OutroSub's shape exactly — the mobile
+// intro card and outro card share renderer logic, and shared shape
+// keeps admin editing symmetric ("intro on top, outro on bottom, same
+// fields"). Not tied to coordinates; plays as ambient framing before
+// GPS navigation begins.
+@Schema({ _id: false })
+class IntroSub {
+  @Prop({ type: LocalizedStringSubSchema, required: true })
+  title: LocalizedStringSub;
+
+  @Prop({ type: LocalizedStringSubSchema, required: true })
+  description: LocalizedStringSub;
+
+  @Prop({ required: true }) image: string;
+  @Prop([String]) images?: string[];
+
+  @Prop({ type: LocalizedAudioSubSchema })
+  audioUrl?: LocalizedAudioSub;
+
+  @Prop({ type: LocalizedAudioDurationSubSchema, default: {} })
+  audioDurationMs?: LocalizedAudioDurationSub;
+}
+
+const IntroSubSchema = SchemaFactory.createForClass(IntroSub);
+
 @Schema({ collection: 'excursions', timestamps: true })
 export class DiscoverExcursion {
   @Prop({ required: true, unique: true, index: true })
@@ -177,6 +203,10 @@ export class DiscoverExcursion {
 
   @Prop({ type: [InterestingFactSubSchema], default: [] })
   interestingFacts: InterestingFactSub[];
+
+  // Optional intro card shown on the preview screen. See IntroSub above.
+  @Prop({ type: IntroSubSchema })
+  intro?: IntroSub;
 
   // Optional outro card shown after the last stop. See OutroSub above.
   @Prop({ type: OutroSubSchema })

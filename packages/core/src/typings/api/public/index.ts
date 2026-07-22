@@ -195,6 +195,17 @@ export type PublicInterestingFact = {
     triggerRadius?: number
 }
 
+// Optional welcome card shown on the preview screen before the user
+// starts. Same rendered shape as PublicExcursionOutro. Not tied to
+// coordinates — plays as ambient framing at the top of the preview.
+export type PublicExcursionIntro = {
+    title: string
+    description: string
+    image: string
+    images?: string[]
+    audioUrl?: string
+}
+
 // Optional sign-off shown after the user finishes (or skips) the last
 // stop. Authored in admin; resolves localized strings + audio.
 export type PublicExcursionOutro = {
@@ -225,6 +236,7 @@ export type PublicExcursion = {
     stops: PublicExcursionStop[]
     pois?: PublicPoi[]
     interestingFacts?: PublicInterestingFact[]
+    intro?: PublicExcursionIntro
     outro?: PublicExcursionOutro
     rating?: PublicRatingAggregate
     // Weather exposure — REQUIRED. Existing docs backfilled to 'outdoor'

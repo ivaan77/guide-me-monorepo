@@ -6,7 +6,14 @@ import { usePostHog } from 'posthog-react-native'
 // tap shouldn't ping analytics.
 const MIN_EMIT_MS = 2_000
 
-type SourceType = 'stop' | 'sub_stop' | 'fact' | 'place' | 'city' | 'outro'
+type SourceType =
+  | 'stop'
+  | 'sub_stop'
+  | 'fact'
+  | 'place'
+  | 'city'
+  | 'intro'
+  | 'outro'
 
 type Options = {
   isPlaying: boolean

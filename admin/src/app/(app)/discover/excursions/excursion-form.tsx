@@ -148,6 +148,16 @@ const interestingFactSchema = z.object({
   triggerRadius: optionalPositiveInt,
 })
 
+// Optional welcome card shown on the excursion preview screen before
+// the user starts. Same field shape as the outro; toggled independently.
+const introSchema = z.object({
+  title: localizedSchema,
+  description: localizedSchema,
+  image: z.string().url(),
+  images: z.array(z.string().url()).optional(),
+  audioUrl: localizedAudioSchema.optional(),
+})
+
 // Optional sign-off card shown after the last stop. Required fields
 // (title, description, image) become required only when the editor has
 // enabled the outro — handled by the enabled flag check inside the
@@ -168,6 +178,9 @@ const baseSchema = {
   stops: z.array(stopSchema),
   pois: z.array(poiRefSchema).optional(),
   interestingFacts: z.array(interestingFactSchema).optional(),
+  intro: introSchema.optional(),
+  // Same form-only pattern as outroEnabled — see below.
+  introEnabled: z.boolean(),
   outro: outroSchema.optional(),
   // Companion flag for the form only — toggles whether the outro is
   // submitted. Stripped from the payload in normalizePayload. Lets editors
@@ -241,6 +254,8 @@ export function ExcursionForm(props: Props) {
           (a, b) => a.order - b.order,
         ),
         interestingFacts: props.initialValues.interestingFacts ?? [],
+        intro: props.initialValues.intro,
+        introEnabled: !!props.initialValues.intro,
         outro: props.initialValues.outro,
         outroEnabled: !!props.initialValues.outro,
         isEnabled: props.initialValues.isEnabled,
@@ -257,6 +272,8 @@ export function ExcursionForm(props: Props) {
         stops: [],
         pois: [],
         interestingFacts: [],
+        intro: undefined,
+        introEnabled: false,
         outro: undefined,
         outroEnabled: false,
         isEnabled: true,
@@ -508,6 +525,64 @@ export function ExcursionForm(props: Props) {
             required
             hint="Short line under the excursion name. Conventionally duration + price (e.g. '3h · €35')."
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">Intro</p>
+              <FieldHint text="A welcome card shown on the excursion preview screen before the user starts. Use it to set the scene and play a short narration. No GPS — visible on preview above the stops list." />
+            </div>
+            <Switch
+              checked={!!form.watch('introEnabled')}
+              onCheckedChange={(v) =>
+                form.setValue('introEnabled', v, { shouldDirty: true })
+              }
+            />
+          </div>
+          {form.watch('introEnabled') && (
+            <div className="flex flex-col gap-3">
+              <SingleImageInput
+                control={form.control}
+                name="intro.image"
+                label="Hero image"
+                required
+                hint="Image at the top of the intro card."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/intro`}
+              />
+              <LocalizedInput
+                control={form.control}
+                name="intro.title"
+                label="Title"
+                required
+                hint="Short heading at the top of the intro. e.g. 'Welcome to Baixa'."
+              />
+              <LocalizedInput
+                control={form.control}
+                name="intro.description"
+                label="Description"
+                required
+                multiline
+                hint="Long-form intro copy shown alongside the audio."
+              />
+              <ImageListInput
+                control={form.control}
+                name="intro.images"
+                label="Gallery images"
+                hint="Optional swipeable carousel for the intro."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/intro/gallery`}
+              />
+              <AudioInput
+                control={form.control}
+                name="intro.audioUrl"
+                label="Audio narration"
+                hint="Plays in the intro card. Optional."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/intro`}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1034,12 +1109,15 @@ export function ExcursionForm(props: Props) {
 }
 
 function normalizePayload(raw: CreateValues): CreateValues {
-  // Strip the form-only outroEnabled flag and drop outro entirely when
-  // disabled. The api treats absence as "no outro" rather than an empty
-  // shell.
+  // Strip the form-only intro/outroEnabled flags and drop the sub-doc
+  // entirely when its toggle is off. The api treats absence as "no
+  // intro/outro" rather than an empty shell.
+  const introEnabled = (raw as Record<string, unknown>).introEnabled === true
   const outroEnabled = (raw as Record<string, unknown>).outroEnabled === true
   const cloned = { ...raw } as Record<string, unknown>
+  delete cloned.introEnabled
   delete cloned.outroEnabled
+  if (!introEnabled) delete cloned.intro
   if (!outroEnabled) delete cloned.outro
   const out = stripEmpties(cloned) as Record<string, unknown>
 

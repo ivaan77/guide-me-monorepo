@@ -26,7 +26,7 @@ type Props = {
   stops: ExcursionStop[]
   pois: Poi[]
   currentIndex: number
-  phase: 'preview' | 'navigating' | 'arrived' | 'outro' | 'complete'
+  phase: 'preview' | 'intro' | 'navigating' | 'arrived' | 'outro' | 'complete'
   onPoiPress: (poi: Poi) => void
   onStopPress?: (stop: ExcursionStop) => void
   onSubStopPress?: (sub: PublicSubStop, parent: ExcursionStop) => void

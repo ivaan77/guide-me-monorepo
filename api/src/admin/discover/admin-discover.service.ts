@@ -175,6 +175,7 @@ export class AdminDiscoverService {
     if (
       dto.stops !== undefined ||
       dto.interestingFacts !== undefined ||
+      dto.intro !== undefined ||
       dto.outro !== undefined
     ) {
       const existing = await this.repo.findExcursionBySlugAdmin(slug);
@@ -470,6 +471,7 @@ export class AdminDiscoverService {
       pois: (doc.pois ?? []) as AdminExcursion['pois'],
       interestingFacts: (doc.interestingFacts ??
         []) as AdminExcursion['interestingFacts'],
+      intro: doc.intro as AdminExcursion['intro'],
       outro: doc.outro as AdminExcursion['outro'],
       isEnabled: doc.isEnabled,
       // Fallback to 'outdoor' defensively — the backfill script sets this
@@ -682,6 +684,10 @@ function countExcursionImages(e: DiscoverExcursionDocument): number {
       total += sub.images?.length ?? 0;
     }
   }
+  if (e.intro) {
+    total += e.intro.image ? 1 : 0;
+    total += e.intro.images?.length ?? 0;
+  }
   if (e.outro) {
     total += e.outro.image ? 1 : 0;
     total += e.outro.images?.length ?? 0;
@@ -724,6 +730,7 @@ function sumExcursionAudioDurationMs(e: DiscoverExcursionDocument): number {
   for (const f of e.interestingFacts ?? []) {
     total += sumSlot(f.audioUrl, f.audioDurationMs);
   }
+  if (e.intro) total += sumSlot(e.intro.audioUrl, e.intro.audioDurationMs);
   if (e.outro) total += sumSlot(e.outro.audioUrl, e.outro.audioDurationMs);
   return total;
 }

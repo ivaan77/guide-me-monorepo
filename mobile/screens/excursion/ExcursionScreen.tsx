@@ -31,6 +31,7 @@ import {
   Undo2,
 } from '@tamagui/lucide-icons'
 import type {
+  PublicExcursionIntro,
   PublicExcursionOutro,
   PublicExcursionStop,
   PublicInterestingFact,
@@ -104,7 +105,13 @@ type Props = {
   id: string
 }
 
-type Phase = 'preview' | 'navigating' | 'arrived' | 'outro' | 'complete'
+type Phase =
+  | 'preview'
+  | 'intro'
+  | 'navigating'
+  | 'arrived'
+  | 'outro'
+  | 'complete'
 
 // Default arrival geofence. Per-stop overrides come from `stop.triggerRadius`
 // (set in admin). Increase for stops in dense urban areas where GPS jitters;
@@ -153,6 +160,7 @@ export function ExcursionScreen({ id }: Props) {
       stops={excursion.stops}
       pois={excursion.pois ?? []}
       facts={excursion.interestingFacts ?? []}
+      intro={excursion.intro}
       outro={excursion.outro}
       title={excursion.name}
       weatherSensitivity={excursion.weatherSensitivity}
@@ -170,6 +178,7 @@ function ExcursionBody({
   stops,
   pois,
   facts,
+  intro,
   outro,
   title,
   weatherSensitivity,
@@ -183,6 +192,7 @@ function ExcursionBody({
   stops: ExcursionStop[]
   pois: Poi[]
   facts: Fact[]
+  intro?: PublicExcursionIntro
   outro?: PublicExcursionOutro
   title: string
   weatherSensitivity: WeatherSensitivity
@@ -780,18 +790,30 @@ function ExcursionBody({
     }
   }, [userLocation, heading])
 
+  // "Start" tap flow:
+  //  - If the excursion has an intro, park in the 'intro' phase first so
+  //    the user can read/listen (or Skip). Selecting starting stop still
+  //    happens here so the intro's Continue can go straight to navigating.
+  //  - Otherwise jump straight to 'navigating' as before.
   const start = () => {
     const startIdx = Math.max(
       0,
       Math.min(stops.length - 1, startFromIndex),
     )
-    setPhase('navigating')
     currentIndexRef.current = startIdx
     setCurrentIndex(startIdx)
     currentSubStopIndexRef.current = -1
     setCurrentSubStopIndex(-1)
     setRoutePolyline([])
     setRouteMeta(null)
+    setPhase(intro ? 'intro' : 'navigating')
+  }
+
+  // Called from the intro card's Continue/Skip buttons. Both transition
+  // to navigating; the difference is analytics/UX intent (one implies the
+  // user watched/listened, the other skipped).
+  const dismissIntro = () => {
+    setPhase('navigating')
   }
 
   // Helper: advance to the next top-level stop. Used by both Continue and
@@ -1472,6 +1494,7 @@ function ExcursionBody({
               currentIndex={currentIndex}
               currentSubStopIndex={currentSubStopIndex}
               totalStops={stops.length}
+              intro={intro}
               outro={outro}
               userLocation={userLocation}
               permissionDenied={permissionDenied}
@@ -1495,6 +1518,7 @@ function ExcursionBody({
               onDismissNearestPill={() => setNearestPillExpiresAt(0)}
               onOpenStartFromPicker={() => setStartFromPickerOpen(true)}
               onStart={start}
+              onDismissIntro={dismissIntro}
               onContinue={continueNext}
               onSkip={skip}
               onAdvanceSubStop={advanceSubStop}
@@ -1886,6 +1910,7 @@ function BottomPanel({
   currentIndex,
   currentSubStopIndex,
   totalStops,
+  intro,
   outro,
   userLocation,
   liveRouteInfo,
@@ -1901,6 +1926,7 @@ function BottomPanel({
   onDismissNearestPill,
   onOpenStartFromPicker,
   onStart,
+  onDismissIntro,
   onContinue,
   onSkip,
   onAdvanceSubStop,
@@ -1918,6 +1944,7 @@ function BottomPanel({
   currentIndex: number
   currentSubStopIndex: number
   totalStops: number
+  intro?: PublicExcursionIntro
   outro?: PublicExcursionOutro
   userLocation: LatLng | null
   permissionDenied: boolean
@@ -1934,6 +1961,7 @@ function BottomPanel({
   onDismissNearestPill: () => void
   onOpenStartFromPicker: () => void
   onStart: () => void
+  onDismissIntro: () => void
   onContinue: () => void
   onSkip: () => void
   onAdvanceSubStop: () => void
@@ -1975,6 +2003,15 @@ function BottomPanel({
           nearestPillExpiresAt={nearestPillExpiresAt}
           onDismissNearestPill={onDismissNearestPill}
           onOpenStartFromPicker={onOpenStartFromPicker}
+        />
+      )}
+
+      {phase === 'intro' && intro && (
+        <IntroPanel
+          intro={intro}
+          excursionId={excursionId}
+          onContinue={onDismissIntro}
+          onSkip={onDismissIntro}
         />
       )}
 
@@ -2716,6 +2753,66 @@ function ArrivedPanel({
           ) : (
             <Navigation size={18} color={c.onBrand as any} />
           ),
+        }}
+      />
+    </PhaseCard>
+  )
+}
+
+// Welcome card shown after the user taps Start, when the excursion has
+// an intro authored. Two actions: Skip (secondary) and Continue (primary)
+// — both advance to 'navigating'. Structurally mirrors OutroPanel so the
+// two book-end cards read consistently in the app.
+function IntroPanel({
+  intro,
+  excursionId,
+  onContinue,
+  onSkip,
+}: {
+  intro: PublicExcursionIntro
+  excursionId: string
+  onContinue: () => void
+  onSkip: () => void
+}) {
+  const { t } = useTranslation()
+  const { c } = useAppTheme()
+  return (
+    <PhaseCard>
+      <PhaseCardHeader
+        accent="preview"
+        badge={t('excursion.intro.badge', { defaultValue: 'Welcome' })}
+        title={intro.title}
+      />
+      <PhaseCardBody>
+        <Image
+          source={{ uri: intro.image }}
+          style={{ width: '100%', height: 160, borderRadius: 12 }}
+          resizeMode="cover"
+        />
+        <AudioPlayer
+          audioUrl={intro.audioUrl}
+          title={t('excursion.stopSheet.audioTitle')}
+          analyticsSourceType="intro"
+          analyticsSourceId={excursionId}
+        />
+        <Paragraph
+          color={c.text as any}
+          fontFamily="$body"
+          size="$3"
+          lineHeight="$5"
+        >
+          {intro.description}
+        </Paragraph>
+      </PhaseCardBody>
+      <PhaseCardActions
+        primary={{
+          label: t('excursion.intro.continue', { defaultValue: 'Continue' }),
+          onPress: onContinue,
+          icon: <Play size={18} color={c.onBrand as any} />,
+        }}
+        secondary={{
+          label: t('excursion.intro.skip', { defaultValue: 'Skip' }),
+          onPress: onSkip,
         }}
       />
     </PhaseCard>

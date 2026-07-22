@@ -177,7 +177,7 @@ export function FloatingFactBanner({
 //     "20% travelled" trigger.
 export function useFactBannerSchedule(params: {
   allFacts: PublicInterestingFact[]
-  phase: 'preview' | 'navigating' | 'arrived' | 'outro' | 'complete'
+  phase: 'preview' | 'intro' | 'navigating' | 'arrived' | 'outro' | 'complete'
   currentIndex: number
   legDistanceMeters: number | null
   legDurationSeconds: number | null
