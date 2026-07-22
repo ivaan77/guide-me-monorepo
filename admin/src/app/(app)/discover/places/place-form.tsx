@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -7,10 +7,14 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import type {
   AdminCreatePlaceRequest,
+  AdminDraftEntry,
   AdminPlace,
   AdminUpdatePlaceRequest,
 } from '@guide-me-app/core'
 import { createPlaceAction, updatePlaceAction } from '@/actions/places'
+import { deleteDraftAction } from '@/actions/drafts'
+import { DraftBadge } from '@/components/forms/draft-badge'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -123,17 +127,24 @@ type Props =
       // the api's 409.
       existingSlugs?: string[]
       initialValues?: undefined
+      initialDraft?: AdminDraftEntry | null
     }
   | {
       mode: 'edit'
       cities: { slug: string; name: string }[]
       initialValues: AdminPlace
+      initialDraft?: AdminDraftEntry | null
     }
 
 export function PlaceForm(props: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const isEdit = props.mode === 'edit'
+
+  const createDraftPayload =
+    !isEdit && props.initialDraft
+      ? (props.initialDraft.payload as CreateValues | undefined)
+      : undefined
 
   const defaultValues: CreateValues = isEdit
     ? {
@@ -150,7 +161,7 @@ export function PlaceForm(props: Props) {
         audioUrl: props.initialValues.audioUrl,
         isEnabled: props.initialValues.isEnabled,
       }
-    : {
+    : createDraftPayload ?? {
         slug: '',
         citySlug: props.cities[0]?.slug ?? '',
         category: 'restaurant',
@@ -169,6 +180,38 @@ export function PlaceForm(props: Props) {
     resolver: zodResolver(isEdit ? updateSchema : createSchema) as never,
     defaultValues,
   })
+
+  const draftSlug = isEdit
+    ? props.initialValues.slug
+    : (form.watch('slug') ?? '')
+  const {
+    status: draftStatus,
+    clearDraft,
+    markSaved: markDraftSaved,
+  } = useDraftAutosave<CreateValues>({
+    entityType: 'place',
+    slug: draftSlug,
+    isNew: !isEdit,
+    form,
+  })
+
+  const [editDraftBannerState, setEditDraftBannerState] = useState<
+    'visible' | 'dismissed'
+  >(isEdit && props.initialDraft ? 'visible' : 'dismissed')
+  const restoreEditDraft = () => {
+    if (!props.initialDraft) return
+    const payload = props.initialDraft.payload as CreateValues
+    form.reset(payload, { keepDirty: true })
+    setEditDraftBannerState('dismissed')
+    markDraftSaved(payload)
+    void clearDraft()
+    toast.success('Draft restored')
+  }
+  const discardEditDraft = async () => {
+    setEditDraftBannerState('dismissed')
+    await clearDraft()
+    toast.success('Draft discarded')
+  }
 
   // Auto-derive the slug from name.en on the create form. Skipped in edit
   // mode because slugs are immutable.
@@ -194,6 +237,14 @@ export function PlaceForm(props: Props) {
         toast.error('Save failed', { description: res.error })
         return
       }
+      const finalSlug = isEdit ? props.initialValues!.slug : raw.slug
+      if (finalSlug) {
+        try {
+          await deleteDraftAction('place', finalSlug)
+        } catch {
+          // non-fatal
+        }
+      }
       toast.success(isEdit ? 'Place updated' : 'Place created')
       router.push('/discover/places')
     })
@@ -204,6 +255,33 @@ export function PlaceForm(props: Props) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-2xl">
+      {isEdit && editDraftBannerState === 'visible' && props.initialDraft && (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+          <p className="flex-1 min-w-[16rem] text-sm text-amber-900">
+            You have unsaved changes from{' '}
+            <time
+              dateTime={props.initialDraft.updatedAt}
+              className="font-medium"
+            >
+              {new Date(props.initialDraft.updatedAt).toLocaleString()}
+            </time>
+            . Restore them or keep working from the saved version.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void discardEditDraft()}
+            >
+              Discard draft
+            </Button>
+            <Button type="button" size="sm" onClick={restoreEditDraft}>
+              Load draft
+            </Button>
+          </div>
+        </div>
+      )}
       {!isEdit && (
         <Card>
           <CardContent className="pt-6 flex flex-col gap-2">
@@ -380,18 +458,21 @@ export function PlaceForm(props: Props) {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push('/discover/places')}
-          disabled={isPending}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Create place'}
-        </Button>
+      <div className="flex flex-wrap justify-end items-center gap-3">
+        <DraftBadge status={draftStatus} />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/discover/places')}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Create place'}
+          </Button>
+        </div>
       </div>
     </form>
   )
@@ -470,6 +551,7 @@ function LocationPickerOrPrompt({
 
   return (
     <MapCoordsPicker
+      persistKey="place"
       latitude={validLat}
       longitude={validLng}
       onChange={onChange}

@@ -26,6 +26,7 @@ import { usePlace } from '../../hooks/usePlace'
 import { useLayout } from '../../hooks/useLayout'
 import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
 import { clearAuthChoice } from '../../providers/AuthChoice'
+import { useAppTheme } from '../../providers/ThemeContext'
 import { EmptyState } from '../discover/EmptyState'
 import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 
@@ -50,6 +51,7 @@ export function PlaceDetailScreen({ id }: Props) {
   const ratingPrompt = useDwellRatingPrompt('place', id, { enabled: !!place })
   const posthog = usePostHog()
   const { isTablet } = useLayout()
+  const { c } = useAppTheme()
   // Same tablet cap as CityDetailScreen — see comment there.
   const width = isTablet ? Math.min(rawWidth, TABLET_MAX_CONTENT_WIDTH) : rawWidth
   const sideMargin = isTablet
@@ -104,7 +106,7 @@ export function PlaceDetailScreen({ id }: Props) {
 
   if (isPending) {
     return (
-      <YStack flex={1} bg="$background">
+      <YStack flex={1} bg={c.background as any}>
         <PlaceDetailSkeleton />
         <BackButton topInset={insets.top} onPress={goBack} />
       </YStack>
@@ -113,7 +115,7 @@ export function PlaceDetailScreen({ id }: Props) {
 
   if (isError || !place) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top + 56}>
+      <YStack flex={1} bg={c.background as any} pt={insets.top + 56}>
         <BackButton topInset={insets.top} onPress={goBack} />
         <EmptyState
           variant="error"
@@ -128,7 +130,7 @@ export function PlaceDetailScreen({ id }: Props) {
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 24
 
   return (
-    <YStack flex={1} bg="$background">
+    <YStack flex={1} bg={c.background as any}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -149,7 +151,7 @@ export function PlaceDetailScreen({ id }: Props) {
           <XStack justify="space-between" items="center">
             <SizableText
               size="$2"
-              color="$colorPress"
+              color={c.textMuted as any}
               fontFamily="$body"
               fontWeight="600"
               style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
@@ -174,7 +176,7 @@ export function PlaceDetailScreen({ id }: Props) {
             />
           )}
           <Paragraph
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             size="$4"
             lineHeight="$6"
@@ -188,7 +190,7 @@ export function PlaceDetailScreen({ id }: Props) {
                 rounded="$5"
                 overflow="hidden"
                 borderWidth={1}
-                borderColor="$borderColor"
+                borderColor={c.border as any}
               >
                 <MapView
                   // Google Maps on both platforms so customMapStyle applies
@@ -224,14 +226,14 @@ export function PlaceDetailScreen({ id }: Props) {
                   gap="$2"
                   px="$3"
                   py="$2.5"
-                  bg="$surfaceMuted"
+                  bg={c.surfaceMuted as any}
                   borderTopWidth={1}
-                  borderColor="$borderColor"
+                  borderColor={c.border as any}
                 >
-                  <Navigation size={16} color="$primary" />
+                  <Navigation size={16} color={c.primary as any} />
                   <SizableText
                     size="$3"
-                    color="$color"
+                    color={c.text as any}
                     fontFamily="$body"
                     fontWeight="600"
                   >
@@ -276,6 +278,7 @@ function HeroCarousel({
   heroHeight: number
   categoryLabel: (c: PoiCategory) => string
 }) {
+  const { c } = useAppTheme()
   // Same carousel pattern as StopDetailSheet / PoiDetailSheet. Falls back to
   // [image] when no gallery so we always have at least one slide.
   const images = place.images?.length ? place.images : [place.image]
@@ -363,7 +366,7 @@ function HeroCarousel({
           fontWeight="800"
           fontSize={44}
           lineHeight={48}
-          color="$onMedia"
+          color={c.onMedia as any}
           numberOfLines={2}
           style={{ letterSpacing: -1 }}
         >
@@ -372,7 +375,7 @@ function HeroCarousel({
         <SizableText
           size="$3"
           fontFamily="$body"
-          color="$onMediaMuted"
+          color={c.onMediaMuted as any}
           style={{ textTransform: 'uppercase', letterSpacing: 1 }}
           numberOfLines={1}
         >
@@ -390,6 +393,7 @@ function BackButton({
   topInset: number
   onPress: () => void
 }) {
+  const { c } = useAppTheme()
   return (
     <Pressable
       onPress={onPress}
@@ -407,9 +411,9 @@ function BackButton({
         rounded={20}
         items="center"
         justify="center"
-        bg="$chromeOverlay"
+        bg={c.chromeOverlay as any}
       >
-        <ChevronLeft size={22} color="$onMedia" />
+        <ChevronLeft size={22} color={c.onMedia as any} />
       </YStack>
     </Pressable>
   )

@@ -21,6 +21,7 @@ import { usePlace } from '../../hooks/usePlace'
 import { useLayout } from '../../hooks/useLayout'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
 import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 import { EmptyState } from '../discover/EmptyState'
 
 const LOGIN_HREF = '/login' as Href
@@ -33,6 +34,7 @@ export function FavoritesScreen() {
   const { isSignedIn } = useAuth()
   const { data: me, isPending, isError, refetch } = useMe()
   const { isTablet } = useLayout()
+  const { c } = useAppTheme()
 
   const onSignIn = useCallback(async () => {
     await clearAuthChoice()
@@ -49,11 +51,11 @@ export function FavoritesScreen() {
 
   if (!isSignedIn) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top + 8}>
+      <YStack flex={1} bg={c.background as any} pt={insets.top + 8}>
         <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
-          <Heart size={48} color="$primary" />
+          <Heart size={48} color={c.primary as any} />
           <H2
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
             fontSize="$8"
@@ -62,7 +64,7 @@ export function FavoritesScreen() {
             {t('favorites.signInRequiredTitle')}
           </H2>
           <Paragraph
-            color="$colorPress"
+            color={c.textMuted as any}
             text="center"
             fontFamily="$body"
             size="$4"
@@ -73,8 +75,8 @@ export function FavoritesScreen() {
           <Button
             size="$4"
             mt="$3"
-            bg="$primary"
-            color="$background"
+            bg={c.primary as any}
+            color={c.onBrand as any}
             fontFamily="$heading"
             fontWeight="700"
             onPress={onSignIn}
@@ -88,7 +90,7 @@ export function FavoritesScreen() {
 
   if (isPending) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top + 8}>
+      <YStack flex={1} bg={c.background as any} pt={insets.top + 8}>
         <YStack
           gap="$2"
           px={H_PADDING}
@@ -104,7 +106,7 @@ export function FavoritesScreen() {
 
   if (isError) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top + 8}>
+      <YStack flex={1} bg={c.background as any} pt={insets.top + 8}>
         <EmptyState
           variant="error"
           message={t('favorites.errorBody')}
@@ -116,11 +118,11 @@ export function FavoritesScreen() {
 
   if (!me || me.favorites.length === 0) {
     return (
-      <YStack flex={1} bg="$background" pt={insets.top + 8}>
+      <YStack flex={1} bg={c.background as any} pt={insets.top + 8}>
         <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
-          <Heart size={48} color="$primary" />
+          <Heart size={48} color={c.primary as any} />
           <H2
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
             fontSize="$8"
@@ -128,7 +130,7 @@ export function FavoritesScreen() {
           >
             {t('favorites.emptyTitle')}
           </H2>
-          <Paragraph color="$colorPress" text="center" fontFamily="$body" size="$4">
+          <Paragraph color={c.textMuted as any} text="center" fontFamily="$body" size="$4">
             {t('favorites.emptyBody')}
           </Paragraph>
         </YStack>
@@ -137,7 +139,7 @@ export function FavoritesScreen() {
   }
 
   return (
-    <YStack flex={1} bg="$background" pt={insets.top}>
+    <YStack flex={1} bg={c.background as any} pt={insets.top}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -200,13 +202,14 @@ function Section({
   icon: typeof MapPin
   children: React.ReactNode
 }) {
+  const { c } = useAppTheme()
   return (
     <YStack gap="$2">
       <XStack items="center" gap="$2">
-        <Icon size={16} color="$colorPress" />
+        <Icon size={16} color={c.textMuted as any} />
         <SizableText
           size="$2"
-          color="$colorPress"
+          color={c.textMuted as any}
           fontFamily="$body"
           fontWeight="600"
           style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
@@ -272,6 +275,7 @@ function Row({
   image: string
   onPress: () => void
 }) {
+  const { c } = useAppTheme()
   return (
     <Pressable onPress={onPress}>
       <XStack
@@ -279,9 +283,9 @@ function Row({
         gap="$3"
         p="$2"
         rounded="$4"
-        bg="$surface"
+        bg={c.surface as any}
         borderWidth={1}
-        borderColor="$borderColor"
+        borderColor={c.border as any}
       >
         <Image
           source={{ uri: image }}
@@ -290,7 +294,7 @@ function Row({
         />
         <YStack flex={1} gap="$0.5">
           <H3
-            color="$color"
+            color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
             fontSize="$5"
@@ -300,35 +304,36 @@ function Row({
           </H3>
           <SizableText
             size="$3"
-            color="$colorPress"
+            color={c.textMuted as any}
             fontFamily="$body"
             numberOfLines={1}
           >
             {subtitle}
           </SizableText>
         </YStack>
-        <ChevronRight size={18} color="$colorPress" />
+        <ChevronRight size={18} color={c.textMuted as any} />
       </XStack>
     </Pressable>
   )
 }
 
 function RowSkeleton() {
+  const { c } = useAppTheme()
   return (
     <XStack
       items="center"
       gap="$3"
       p="$2"
       rounded="$4"
-      bg="$surface"
+      bg={c.surface as any}
       borderWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
       opacity={0.5}
     >
-      <YStack width={56} height={56} rounded={10} bg="$surfaceMuted" />
+      <YStack width={56} height={56} rounded={10} bg={c.surfaceMuted as any} />
       <YStack flex={1} gap="$2">
-        <YStack height={14} width="60%" rounded={4} bg="$surfaceMuted" />
-        <YStack height={12} width="40%" rounded={4} bg="$surfaceMuted" />
+        <YStack height={14} width="60%" rounded={4} bg={c.surfaceMuted as any} />
+        <YStack height={12} width="40%" rounded={4} bg={c.surfaceMuted as any} />
       </YStack>
     </XStack>
   )

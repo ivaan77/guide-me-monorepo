@@ -15,6 +15,7 @@ import { useRateTarget } from '../hooks/useRateTarget'
 import { UnauthorizedError } from '../lib/authedApi'
 import { clearAuthChoice } from '../providers/AuthChoice'
 import { palette } from '../constants/Colors'
+import { useAppTheme } from '../providers/ThemeContext'
 
 const LOGIN_HREF = '/login' as Href
 const STAR_VALUES: RatingValue[] = [1, 2, 3, 4, 5]
@@ -125,6 +126,7 @@ function DisplayStars({
   showEmptyState = false,
 }: Omit<DisplayProps, 'mode'>) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   const isEmpty = !aggregate || aggregate.count === 0
 
   // Empty aggregate: render "No ratings yet" only when the caller opted in
@@ -138,7 +140,7 @@ function DisplayStars({
         color={STAR_OUTLINE as any}
         fill="transparent"
       />
-      <SizableText color="$colorPress" fontFamily="$body" size="$2">
+      <SizableText color={c.textMuted as any} fontFamily="$body" size="$2">
         {t('ratings.noRatingsYet')}
       </SizableText>
     </XStack>
@@ -146,7 +148,7 @@ function DisplayStars({
     <XStack gap="$1.5" items="center">
       <Star size={size} color={STAR_FILLED as any} fill={STAR_FILLED as any} />
       <SizableText
-        color="$color"
+        color={c.text as any}
         fontFamily="$body"
         fontWeight="600"
         size="$2"
@@ -154,7 +156,7 @@ function DisplayStars({
         {aggregate!.avg.toFixed(1)}
       </SizableText>
       {!compact && (
-        <SizableText color="$colorPress" fontFamily="$body" size="$2">
+        <SizableText color={c.textMuted as any} fontFamily="$body" size="$2">
           · {aggregate!.count}
         </SizableText>
       )}

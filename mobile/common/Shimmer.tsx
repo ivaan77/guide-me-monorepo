@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { YStack } from 'tamagui'
+import { useAppTheme } from '../providers/ThemeContext'
 
 const STRIPE_WIDTH_RATIO = 0.6
 
@@ -37,6 +38,7 @@ type Props = {
 
 export function Shimmer({ width, height, radius, progress }: Props) {
   const ownProgress = useShimmerProgress()
+  const { c } = useAppTheme()
   const p = progress ?? ownProgress
   const stripeWidth = width * STRIPE_WIDTH_RATIO
 
@@ -50,7 +52,7 @@ export function Shimmer({ width, height, radius, progress }: Props) {
     <YStack
       width={width}
       height={height}
-      bg="$surfaceMuted"
+      bg={c.surfaceMuted as any}
       overflow="hidden"
       rounded={radius as never}
     >

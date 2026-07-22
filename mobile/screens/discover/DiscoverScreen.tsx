@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { FlatList, ScrollView, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { usePostHog } from 'posthog-react-native'
-import { XStack, YStack, useTheme } from 'tamagui'
+import { XStack, YStack } from 'tamagui'
 import type { PublicCity } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -10,6 +10,7 @@ import { useFuzzySearch } from '../../hooks/useFuzzySearch'
 import { useLayout } from '../../hooks/useLayout'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
 import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 import { CityCard } from './CityCard'
 import { CityCardSkeleton } from './CityCardSkeleton'
 import { EmptyState } from './EmptyState'
@@ -26,7 +27,7 @@ const SEARCH_KEYS: (keyof PublicCity & string)[] = ['name', 'country']
 
 export function DiscoverScreen() {
   const { width } = useWindowDimensions()
-  const theme = useTheme()
+  const { c } = useAppTheme()
   const insets = useSafeAreaInsets()
   const { isTablet } = useLayout()
   // On tablets clamp the effective grid width so cards stay a sensible
@@ -68,7 +69,7 @@ export function DiscoverScreen() {
     })
   }, [debouncedQuery, filtered.length, isPending, isError, posthog])
 
-  const bg = theme.background.val
+  const bg = c.background
 
   const header = (
     <SearchBar
@@ -80,7 +81,7 @@ export function DiscoverScreen() {
   )
 
   return (
-    <YStack flex={1} bg="$background" pt={insets.top + 8}>
+    <YStack flex={1} bg={c.background as any} pt={insets.top + 8}>
       {renderBody()}
     </YStack>
   )
@@ -192,8 +193,9 @@ function NonScrollableState({
   header: React.ReactNode
   children: React.ReactNode
 }) {
+  const { c } = useAppTheme()
   return (
-    <YStack flex={1} bg="$background">
+    <YStack flex={1} bg={c.background as any}>
       <YStack px={H_PADDING}>{header}</YStack>
       <YStack flex={1} px={H_PADDING}>
         {children}

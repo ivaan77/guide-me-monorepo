@@ -6,6 +6,7 @@ import {
   type LanguageMode,
   useAppLanguage,
 } from '../../providers/LanguageContext'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 type Option = {
   value: LanguageMode
@@ -23,13 +24,14 @@ const OPTIONS: Option[] = [
 export function LanguageToggle() {
   const { t } = useTranslation()
   const { mode, setMode } = useAppLanguage()
+  const { c } = useAppTheme()
 
   return (
     <XStack
-      bg="$surfaceMuted"
+      bg={c.surfaceMuted as any}
       rounded="$5"
       borderWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
       p="$1"
       gap="$1"
     >
@@ -49,12 +51,12 @@ export function LanguageToggle() {
               gap="$1.5"
               py="$2.5"
               rounded="$4"
-              bg={active ? '$surface' : 'transparent'}
+              bg={(active ? c.surface : 'transparent') as any}
               borderWidth={active ? 1 : 0}
-              borderColor="$borderColor"
+              borderColor={c.border as any}
             >
               {isSystem ? (
-                <Globe size={16} color={active ? '$primary' : '$colorPress'} />
+                <Globe size={16} color={(active ? c.primary : c.textMuted) as any} />
               ) : (
                 <SizableText size="$4">{opt.flag}</SizableText>
               )}
@@ -62,7 +64,7 @@ export function LanguageToggle() {
                 size="$3"
                 fontFamily="$body"
                 fontWeight={active ? '600' : '500'}
-                color={active ? '$color' : '$colorPress'}
+                color={(active ? c.text : c.textMuted) as any}
               >
                 {isSystem ? t('profile.languageSystem') : opt.shortLabel}
               </SizableText>

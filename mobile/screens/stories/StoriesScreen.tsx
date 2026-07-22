@@ -7,6 +7,7 @@ import { BLOG_CATEGORIES, type BlogCategory } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
 import { useStories } from '../../hooks/useStories'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { useAppTheme } from '../../providers/ThemeContext'
 import { StoryCard } from './StoryCard'
 
 const H_PADDING = 20
@@ -19,6 +20,7 @@ export function StoriesScreen() {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
   const tabPad = useTabBarPadding()
+  const { c } = useAppTheme()
   const [category, setCategory] = useState<BlogCategory | undefined>(undefined)
   const [citySlug, setCitySlug] = useState<string | undefined>(undefined)
   const { data: cities } = useCities()
@@ -29,13 +31,13 @@ export function StoriesScreen() {
   } = useStories({ category, citySlug })
 
   return (
-    <YStack flex={1} bg="$background" pt={insets.top}>
+    <YStack flex={1} bg={c.background as any} pt={insets.top}>
       <YStack px={H_PADDING} pt="$4" pb="$3">
         <SizableText
           size="$9"
           fontFamily="$heading"
           fontWeight="800"
-          color="$color"
+          color={c.text as any}
         >
           {t('stories.title')}
         </SizableText>
@@ -64,7 +66,7 @@ export function StoriesScreen() {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={[undefined, ...cities.map((c) => c.id)] as (string | undefined)[]}
+          data={[undefined, ...cities.map((city) => city.id)] as (string | undefined)[]}
           keyExtractor={(item) => item ?? '__all-cities'}
           contentContainerStyle={{ paddingHorizontal: H_PADDING, gap: 8 }}
           style={{ flexGrow: 0, marginBottom: 12 }}
@@ -72,7 +74,7 @@ export function StoriesScreen() {
             <Chip
               label={
                 item
-                  ? cities.find((c) => c.id === item)?.name ?? item
+                  ? cities.find((city) => city.id === item)?.name ?? item
                   : t('stories.allCities')
               }
               active={citySlug === item}
@@ -87,13 +89,13 @@ export function StoriesScreen() {
         </YStack>
       ) : isError || !posts ? (
         <YStack flex={1} items="center" justify="center" px={H_PADDING}>
-          <SizableText size="$3" fontFamily="$body" color="$colorPress" text="center">
+          <SizableText size="$3" fontFamily="$body" color={c.textMuted as any} text="center">
             {t('stories.errorBody')}
           </SizableText>
         </YStack>
       ) : posts.length === 0 ? (
         <YStack flex={1} items="center" justify="center" px={H_PADDING}>
-          <SizableText size="$3" fontFamily="$body" color="$colorPress" text="center">
+          <SizableText size="$3" fontFamily="$body" color={c.textMuted as any} text="center">
             {t('stories.emptyBody')}
           </SizableText>
         </YStack>
@@ -122,19 +124,20 @@ function Chip({
   active: boolean
   onPress: () => void
 }) {
+  const { c } = useAppTheme()
   return (
     <Pressable onPress={onPress}>
       <XStack
         px="$3"
         py="$1.5"
         rounded={9999}
-        bg={active ? '$primary' : '$surfaceMuted'}
+        bg={(active ? c.primary : c.surfaceMuted) as any}
       >
         <SizableText
           size="$2"
           fontFamily="$body"
           fontWeight="700"
-          color={active ? '#FFFFFF' : '$color'}
+          color={(active ? c.onBrand : c.text) as any}
         >
           {label}
         </SizableText>

@@ -69,8 +69,17 @@ export class AdminImageGalleryService {
           }
         }
       }
+      if (excursion.intro?.image) {
+        push(excursion.intro.image, 'excursion', label);
+      }
+      for (const extra of excursion.intro?.images ?? []) {
+        push(extra, 'excursion', label);
+      }
       if (excursion.outro?.image) {
         push(excursion.outro.image, 'excursion', label);
+      }
+      for (const extra of excursion.outro?.images ?? []) {
+        push(extra, 'excursion', label);
       }
       for (const fact of excursion.interestingFacts ?? []) {
         // Fact image is optional; keeps this defensive against future

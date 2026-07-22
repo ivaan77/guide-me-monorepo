@@ -31,6 +31,16 @@ export const AdminPath = {
         // every admin ImageInput.
         list: '/admin/image-gallery',
     },
+    Drafts: {
+        // Autosaved form drafts keyed by (entityType, slug, authorId).
+        // See packages/core/src/typings/api/admin/draft.ts for the flow.
+        listByType: '/admin/drafts/:entityType',
+        one: '/admin/drafts/:entityType/:slug',
+        getList: (entityType: string): string =>
+            `/admin/drafts/${entityType}`,
+        getOne: (entityType: string, slug: string): string =>
+            `/admin/drafts/${entityType}/${slug}`,
+    },
 }
 
 export const MePath = {

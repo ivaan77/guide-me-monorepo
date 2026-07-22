@@ -19,6 +19,7 @@ import type {
 import { useWeather } from '../../hooks/useWeather'
 import { SHADOW } from '../../constants/Sizes'
 import { palette } from '../../constants/Colors'
+import { useAppTheme } from '../../providers/ThemeContext'
 import { WeatherDateSheet } from './WeatherDateSheet'
 
 // ---- Recommendation decision matrix --------------------------------------
@@ -135,34 +136,44 @@ function pickRecommendation(
   }
 }
 
-const TONE_STYLE: Record<
+// Tone styles for the banner. The tint (`bg` + `border`) stays constant
+// across themes — a soft green/blue/amber/red overlay reads the same on
+// light or dark backgrounds. But `ink` (headline text color) must adapt:
+// neutral/caution headlines read on the user's current text color;
+// positive/warning keep their semantic ink (green/red) because those
+// tones are the whole signal.
+function makeToneStyles(c: {
+  text: string
+}): Record<
   Tone,
   { bg: string; border: string; icon: string; ink: string }
-> = {
-  positive: {
-    bg: 'rgba(31, 169, 113, 0.10)',
-    border: 'rgba(31, 169, 113, 0.35)',
-    icon: palette.success,
-    ink: palette.success,
-  },
-  neutral: {
-    bg: 'rgba(74, 139, 245, 0.08)',
-    border: 'rgba(74, 139, 245, 0.28)',
-    icon: palette.bright,
-    ink: palette.navy,
-  },
-  caution: {
-    bg: 'rgba(255, 178, 63, 0.14)',
-    border: 'rgba(255, 178, 63, 0.40)',
-    icon: palette.amber,
-    ink: palette.navy,
-  },
-  warning: {
-    bg: 'rgba(229, 72, 77, 0.10)',
-    border: 'rgba(229, 72, 77, 0.35)',
-    icon: palette.danger,
-    ink: palette.danger,
-  },
+> {
+  return {
+    positive: {
+      bg: 'rgba(31, 169, 113, 0.10)',
+      border: 'rgba(31, 169, 113, 0.35)',
+      icon: palette.success,
+      ink: palette.success,
+    },
+    neutral: {
+      bg: 'rgba(74, 139, 245, 0.08)',
+      border: 'rgba(74, 139, 245, 0.28)',
+      icon: palette.bright,
+      ink: c.text,
+    },
+    caution: {
+      bg: 'rgba(255, 178, 63, 0.14)',
+      border: 'rgba(255, 178, 63, 0.40)',
+      icon: palette.amber,
+      ink: c.text,
+    },
+    warning: {
+      bg: 'rgba(229, 72, 77, 0.10)',
+      border: 'rgba(229, 72, 77, 0.35)',
+      icon: palette.danger,
+      ink: palette.danger,
+    },
+  }
 }
 
 type Props = {
@@ -196,6 +207,7 @@ export function WeatherBanner({
 }: Props) {
   const { t, i18n } = useTranslation()
   const posthog = usePostHog()
+  const { c } = useAppTheme()
   const [sheetOpen, setSheetOpen] = useState(false)
   const { data: weather, isError } = useWeather(coords, date)
 
@@ -228,7 +240,7 @@ export function WeatherBanner({
 
   const state = classifyWeather(weather)
   const rec = pickRecommendation(state, sensitivity)
-  const style = TONE_STYLE[rec.tone]
+  const style = makeToneStyles(c)[rec.tone]
   const Icon = rec.icon
   // Compact "Fri, Jul 12" affordance rendered on the right.
   const dateFmt = new Intl.DateTimeFormat(i18n.language, {
@@ -258,7 +270,7 @@ export function WeatherBanner({
             rounded={20}
             items="center"
             justify="center"
-            style={{ backgroundColor: '#FFFFFF' }}
+            style={{ backgroundColor: c.surface }}
           >
             <Icon size={22} color={style.icon} />
           </YStack>
@@ -279,7 +291,7 @@ export function WeatherBanner({
               <SizableText
                 size="$3"
                 fontFamily="$body"
-                color="$colorPress"
+                color={c.textMuted as any}
                 numberOfLines={2}
               >
                 {t(`excursion.weather.${rec.subKey}`, {
@@ -302,7 +314,7 @@ export function WeatherBanner({
             >
               {Math.round(weather.tempMaxC)}°
             </SizableText>
-            <ChevronRight size={16} color="$colorPress" />
+            <ChevronRight size={16} color={c.textMuted as any} />
           </YStack>
         </XStack>
       </Pressable>

@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { YStack } from 'tamagui'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 type Props = {
   width: number
@@ -17,6 +18,7 @@ type Props = {
 const STRIPE_WIDTH_RATIO = 0.6
 
 export function CityCardSkeleton({ width }: Props) {
+  const { c } = useAppTheme()
   const imageHeight = width * 1.15
   const progress = useSharedValue(-1)
 
@@ -32,11 +34,11 @@ export function CityCardSkeleton({ width }: Props) {
   return (
     <YStack
       width={width}
-      bg="$surface"
+      bg={c.surface as any}
       rounded="$6"
       overflow="hidden"
       borderWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
     >
       <ShimmerBlock width={width} height={imageHeight} progress={progress} />
       <YStack py="$3" px="$3" gap="$2" items="center">
@@ -58,6 +60,7 @@ function ShimmerBlock({
   progress: SharedValue<number>
   rounded?: boolean
 }) {
+  const { c } = useAppTheme()
   const stripeWidth = width * STRIPE_WIDTH_RATIO
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -72,7 +75,7 @@ function ShimmerBlock({
     <YStack
       width={width}
       height={height}
-      bg="$surfaceMuted"
+      bg={c.surfaceMuted as any}
       overflow="hidden"
       rounded={rounded ? '$2' : 0}
     >

@@ -5,6 +5,7 @@ import { SizableText, XStack, YStack } from 'tamagui'
 import type { PublicLatLng } from '@guide-me-app/core'
 import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 // Navy text reads cleanly on the bright accent — same pairing used by the
 // FloatingFactBanner / FloatingFactPlayer.
@@ -22,6 +23,7 @@ type Props = {
 // stop pin since the anchor is offset above it.
 export function NearestStopCallout({ coords }: Props) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   return (
     <Marker
       coordinate={coords}
@@ -37,7 +39,7 @@ export function NearestStopCallout({ coords }: Props) {
           px="$2"
           py="$1"
           rounded="$10"
-          bg="$accent"
+          bg={c.accent as any}
           style={SHADOW.amberPill}
         >
           <MapPin size={11} color={ON_ACCENT as any} />

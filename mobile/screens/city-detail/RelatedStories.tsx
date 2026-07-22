@@ -5,6 +5,7 @@ import { BookOpen } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { useStories } from '../../hooks/useStories'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 const H_PADDING = 20
 const GUTTER = 12
@@ -17,6 +18,7 @@ const CARD_WIDTH = 260
 // dilute the CityDetail screen with an empty-looking section.
 export function RelatedStories({ citySlug }: { citySlug: string }) {
   const { t, i18n } = useTranslation()
+  const { c } = useAppTheme()
   const { data: posts, isError } = useStories({ citySlug })
 
   // Silent-null: no city slug (shouldn't happen — caller enforces),
@@ -29,8 +31,8 @@ export function RelatedStories({ citySlug }: { citySlug: string }) {
   return (
     <YStack gap="$3" pt="$4">
       <XStack items="center" gap="$2" px={H_PADDING}>
-        <BookOpen size={18} color="$color" />
-        <SizableText size="$6" fontFamily="$body" fontWeight="700" color="$color">
+        <BookOpen size={18} color={c.text as any} />
+        <SizableText size="$6" fontFamily="$body" fontWeight="700" color={c.text as any}>
           {t('stories.relatedTitle')}
         </SizableText>
       </XStack>
@@ -55,11 +57,11 @@ export function RelatedStories({ citySlug }: { citySlug: string }) {
               <Link key={post.slug} href={`/story/${post.slug}`} asChild>
                 <Pressable style={{ width: CARD_WIDTH }}>
                   <YStack
-                    bg="$surface"
+                    bg={c.surface as any}
                     rounded="$5"
                     overflow="hidden"
                     borderWidth={1}
-                    borderColor="$borderColor"
+                    borderColor={c.border as any}
                     style={SHADOW.card}
                   >
                     <Image
@@ -72,7 +74,7 @@ export function RelatedStories({ citySlug }: { citySlug: string }) {
                         size="$1"
                         fontFamily="$body"
                         fontWeight="700"
-                        color="$primary"
+                        color={c.primary as any}
                         style={{
                           textTransform: 'uppercase',
                           letterSpacing: 0.5,
@@ -85,7 +87,7 @@ export function RelatedStories({ citySlug }: { citySlug: string }) {
                         size="$4"
                         fontFamily="$body"
                         fontWeight="700"
-                        color="$color"
+                        color={c.text as any}
                         numberOfLines={2}
                       >
                         {post.title}
@@ -93,7 +95,7 @@ export function RelatedStories({ citySlug }: { citySlug: string }) {
                       <SizableText
                         size="$2"
                         fontFamily="$body"
-                        color="$colorPress"
+                        color={c.textMuted as any}
                         numberOfLines={2}
                       >
                         {post.excerpt}

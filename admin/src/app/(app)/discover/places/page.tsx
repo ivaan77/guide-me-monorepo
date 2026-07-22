@@ -1,12 +1,22 @@
 import Link from 'next/link'
 import type { PoiCategory } from '@guide-me-app/core'
 import { listCitiesAction } from '@/actions/cities'
+import { listDraftsAction } from '@/actions/drafts'
 import { listPlacesAction } from '@/actions/places'
 import { Button } from '@/components/ui/button'
+import {
+  DraftsBanner,
+  type DraftBannerRow,
+} from '@/components/forms/drafts-banner'
 import { PageHeader } from '@/components/forms/page-header'
 import { Plus } from 'lucide-react'
 import { PlacesTable } from './places-table'
 import { PlacesFilters } from './places-filters'
+
+function labelForPlaceDraft(payload: unknown): string {
+  const p = payload as { name?: { en?: string } } | null
+  return p?.name?.en?.trim() || ''
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -39,9 +49,10 @@ export default async function PlacesPage({
     ? (sp.category as PoiCategory)
     : undefined
 
-  const [places, cities] = await Promise.all([
+  const [places, cities, drafts] = await Promise.all([
     listPlacesAction(citySlug, category),
     listCitiesAction(),
+    listDraftsAction('place'),
   ])
 
   return (
@@ -57,6 +68,18 @@ export default async function PlacesPage({
             </Link>
           </Button>
         }
+      />
+      <DraftsBanner
+        entityType="place"
+        rows={drafts.map<DraftBannerRow>((d) => ({
+          slug: d.slug,
+          isNew: d.isNew,
+          updatedAt: d.updatedAt,
+          label: labelForPlaceDraft(d.payload),
+          href: d.isNew
+            ? `/discover/places/new?draft=${encodeURIComponent(d.slug)}`
+            : `/discover/places/${encodeURIComponent(d.slug)}`,
+        }))}
       />
       <PlacesFilters
         cities={cities.map((c) => ({ slug: c.slug, name: c.name.en }))}

@@ -5,6 +5,7 @@ import { Check, MapPin } from '@tamagui/lucide-icons'
 import { H3, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
 import { palette } from '../../constants/Colors'
+import { useAppTheme } from '../../providers/ThemeContext'
 import type { PublicExcursionStop } from '@guide-me-app/core'
 
 const H_PADDING = 20
@@ -39,6 +40,7 @@ export function StartFromPicker({
 }: Props) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { c } = useAppTheme()
 
   return (
     <BottomSheet
@@ -47,7 +49,7 @@ export function StartFromPicker({
       heightRatio={0.75}
       header={
         <YStack px={H_PADDING} pt="$2" pb="$3">
-          <H3 fontFamily="$body" fontWeight="700" color="$color">
+          <H3 fontFamily="$body" fontWeight="700" color={c.text as any}>
             {t('excursion.startFrom.pickerTitle', {
               defaultValue: 'Choose starting stop',
             })}
@@ -93,6 +95,7 @@ function StopRow({
   onPress: () => void
 }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   return (
     <Pressable onPress={onPress}>
       <XStack
@@ -102,11 +105,11 @@ function StopRow({
         // reads as a faint warm wash on both light and dark surfaces).
         // Selected-but-not-nearest gets the standard surfaceMuted token.
         bg={
-          nearest
-            ? ('transparent' as any)
+          (nearest
+            ? 'transparent'
             : selected
-              ? '$surfaceMuted'
-              : 'transparent'
+              ? c.surfaceMuted
+              : 'transparent') as any
         }
         style={
           nearest ? { backgroundColor: 'rgba(245, 158, 11, 0.12)' } : undefined
@@ -138,13 +141,13 @@ function StopRow({
                 width={22}
                 height={22}
                 rounded={11}
-                bg="$primary"
+                bg={c.primary as any}
                 items="center"
                 justify="center"
               >
                 <SizableText
                   size="$1"
-                  color="$colorOnBrand"
+                  color={c.onBrand as any}
                   fontFamily="$body"
                   fontWeight="800"
                 >
@@ -153,7 +156,7 @@ function StopRow({
               </YStack>
               <SizableText
                 size="$3"
-                color="$color"
+                color={c.text as any}
                 fontFamily="$body"
                 fontWeight={nearest ? '700' : '600'}
                 numberOfLines={1}
@@ -166,7 +169,7 @@ function StopRow({
             {nearest && (
               <SizableText
                 size="$2"
-                color="$colorPress"
+                color={c.textMuted as any}
                 fontFamily="$body"
               >
                 {t('excursion.startFrom.nearestCaption', {
@@ -175,7 +178,7 @@ function StopRow({
               </SizableText>
             )}
           </YStack>
-          {selected && <Check size={20} color="$primary" />}
+          {selected && <Check size={20} color={c.primary as any} />}
         </XStack>
       </XStack>
     </Pressable>
@@ -184,6 +187,7 @@ function StopRow({
 
 function NearestPill() {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   return (
     <XStack
       items="center"
@@ -191,7 +195,7 @@ function NearestPill() {
       px="$2"
       py="$0.5"
       rounded="$10"
-      bg="$accent"
+      bg={c.accent as any}
     >
       <MapPin size={11} color={ON_ACCENT as any} />
       <SizableText

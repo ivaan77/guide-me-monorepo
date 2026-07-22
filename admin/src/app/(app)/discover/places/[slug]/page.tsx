@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { AlertTriangle } from 'lucide-react'
 import { listCitiesAction } from '@/actions/cities'
+import { getDraftAction } from '@/actions/drafts'
 import { getPlaceAction, getPlaceReferencesAction } from '@/actions/places'
 import { ApiError } from '@/lib/api'
 import { PageHeader } from '@/components/forms/page-header'
@@ -15,10 +16,11 @@ export default async function EditPlacePage({
 }) {
   const { slug } = await params
   try {
-    const [place, cities, references] = await Promise.all([
+    const [place, cities, references, draft] = await Promise.all([
       getPlaceAction(slug),
       listCitiesAction(),
       getPlaceReferencesAction(slug),
+      getDraftAction('place', slug),
     ])
     const notVisible = references.cities === 0 && references.excursions === 0
     return (
@@ -59,6 +61,7 @@ export default async function EditPlacePage({
           mode="edit"
           cities={cities.map((c) => ({ slug: c.slug, name: c.name.en }))}
           initialValues={place}
+          initialDraft={draft}
         />
       </>
     )

@@ -10,10 +10,14 @@ import type {
   TipTapDoc,
 } from '@guide-me-app/core'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
+import type Colors from '../../constants/Colors'
 
 // React-Native renderer for TipTap JSON. Mirrors the web renderer's
 // supported node set + walking approach, but emits Tamagui / RN
 // primitives. Unknown nodes render null (same defensive posture).
+
+type ThemeColors = (typeof Colors)['light']
 
 type TipTapNode = {
   type?: string
@@ -34,14 +38,17 @@ function extractYoutubeId(url: string | undefined): string | null {
 
 // Render inline text runs (paragraphs / headings / list items). Wraps
 // text in mark-aware Tamagui components so bold/italic/link show up.
-function renderInlineChildren(nodes: TipTapNode[] | undefined): ReactNode {
+function renderInlineChildren(
+  nodes: TipTapNode[] | undefined,
+  c: ThemeColors,
+): ReactNode {
   if (!nodes) return null
   return nodes.map((n, i) => (
-    <Fragment key={i}>{renderInlineNode(n)}</Fragment>
+    <Fragment key={i}>{renderInlineNode(n, c)}</Fragment>
   ))
 }
 
-function renderInlineNode(node: TipTapNode): ReactNode {
+function renderInlineNode(node: TipTapNode, c: ThemeColors): ReactNode {
   if (node.type === 'text') {
     const text = node.text ?? ''
     // Fold marks in the order they appear on the node. Link mark
@@ -63,7 +70,7 @@ function renderInlineNode(node: TipTapNode): ReactNode {
           fontFamily="$body"
           fontWeight={isBold ? '700' : '400'}
           fontStyle={isItalic ? 'italic' : 'normal'}
-          color="$color"
+          color={c.text as any}
         >
           {element}
         </SizableText>
@@ -73,7 +80,7 @@ function renderInlineNode(node: TipTapNode): ReactNode {
       element = (
         <SizableText
           fontFamily="$body"
-          color="$primary"
+          color={c.primary as any}
           onPress={() => Linking.openURL(href!).catch(() => undefined)}
           style={{ textDecorationLine: 'underline' }}
         >
@@ -89,7 +96,12 @@ function renderInlineNode(node: TipTapNode): ReactNode {
 
 // Block-level walker: paragraphs, headings, lists, blockquote, image,
 // youtube, horizontalRule, appLink.
-function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode {
+function renderBlockNode(
+  node: TipTapNode,
+  i: number,
+  t: TranslateFn,
+  c: ThemeColors,
+): ReactNode {
   switch (node.type) {
     case 'paragraph':
       return (
@@ -97,10 +109,10 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
           key={i}
           size="$4"
           fontFamily="$body"
-          color="$color"
+          color={c.text as any}
           style={{ marginBottom: 12, lineHeight: 24 }}
         >
-          {renderInlineChildren(node.content)}
+          {renderInlineChildren(node.content, c)}
         </SizableText>
       )
     case 'heading': {
@@ -112,10 +124,10 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
           size={size}
           fontFamily="$heading"
           fontWeight="700"
-          color="$color"
+          color={c.text as any}
           style={{ marginTop: level === 2 ? 24 : 16, marginBottom: 8 }}
         >
-          {renderInlineChildren(node.content)}
+          {renderInlineChildren(node.content, c)}
         </SizableText>
       )
     }
@@ -124,10 +136,10 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
         <YStack key={i} gap="$1" style={{ marginBottom: 12 }}>
           {(node.content ?? []).map((li, li_i) => (
             <XStack key={li_i} gap="$2" pl="$2">
-              <SizableText size="$4" color="$color">•</SizableText>
+              <SizableText size="$4" color={c.text as any}>•</SizableText>
               <YStack flex={1}>
-                {(li.content ?? []).map((c, c_i) => (
-                  <Fragment key={c_i}>{renderBlockNode(c, c_i, t)}</Fragment>
+                {(li.content ?? []).map((child, c_i) => (
+                  <Fragment key={c_i}>{renderBlockNode(child, c_i, t, c)}</Fragment>
                 ))}
               </YStack>
             </XStack>
@@ -139,10 +151,10 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
         <YStack key={i} gap="$1" style={{ marginBottom: 12 }}>
           {(node.content ?? []).map((li, li_i) => (
             <XStack key={li_i} gap="$2" pl="$2">
-              <SizableText size="$4" color="$color">{li_i + 1}.</SizableText>
+              <SizableText size="$4" color={c.text as any}>{li_i + 1}.</SizableText>
               <YStack flex={1}>
-                {(li.content ?? []).map((c, c_i) => (
-                  <Fragment key={c_i}>{renderBlockNode(c, c_i, t)}</Fragment>
+                {(li.content ?? []).map((child, c_i) => (
+                  <Fragment key={c_i}>{renderBlockNode(child, c_i, t, c)}</Fragment>
                 ))}
               </YStack>
             </XStack>
@@ -160,8 +172,8 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
             opacity: 0.8,
           }}
         >
-          {(node.content ?? []).map((c, c_i) => (
-            <Fragment key={c_i}>{renderBlockNode(c, c_i, t)}</Fragment>
+          {(node.content ?? []).map((child, c_i) => (
+            <Fragment key={c_i}>{renderBlockNode(child, c_i, t, c)}</Fragment>
           ))}
         </View>
       )
@@ -288,9 +300,9 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
               gap="$3"
               p="$3"
               rounded="$5"
-              bg="$surface"
+              bg={c.surface as any}
               borderWidth={1}
-              borderColor="$borderColor"
+              borderColor={c.border as any}
               style={{ marginVertical: 16, ...SHADOW.card }}
             >
               {imageUrl ? (
@@ -314,7 +326,7 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
                   size="$1"
                   fontFamily="$body"
                   fontWeight="700"
-                  color="$primary"
+                  color={c.primary as any}
                   style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
                 >
                   {t(`stories.appLink.${kind}` as const)}
@@ -323,13 +335,13 @@ function renderBlockNode(node: TipTapNode, i: number, t: TranslateFn): ReactNode
                   size="$4"
                   fontFamily="$body"
                   fontWeight="700"
-                  color="$color"
+                  color={c.text as any}
                   numberOfLines={2}
                 >
                   {label}
                 </SizableText>
               </YStack>
-              <SizableText size="$5" color="$colorPress">›</SizableText>
+              <SizableText size="$5" color={c.textMuted as any}>›</SizableText>
             </XStack>
           </Pressable>
         </Link>
@@ -425,11 +437,12 @@ type TranslateFn = (key: string, opts?: Record<string, unknown>) => string
 
 export function TipTapRenderer({ doc }: { doc: TipTapDoc | undefined }) {
   const { t } = useTranslation()
+  const { c } = useAppTheme()
   if (!doc || doc.type !== 'doc' || !Array.isArray(doc.content)) return null
   return (
     <>
       {(doc.content as TipTapNode[]).map((n, i) => (
-        <Fragment key={i}>{renderBlockNode(n, i, t as TranslateFn)}</Fragment>
+        <Fragment key={i}>{renderBlockNode(n, i, t as TranslateFn, c)}</Fragment>
       ))}
     </>
   )

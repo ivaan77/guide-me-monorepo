@@ -158,6 +158,33 @@ class OutroDto {
   audioUrl?: LocalizedAudioDto;
 }
 
+// Same shape as OutroDto — intro and outro share the same set of fields
+// (title, description, image, optional gallery, optional per-locale audio).
+// Kept as a separate class so class-validator/class-transformer see the
+// two as distinct nested groups.
+class IntroDto {
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  title: LocalizedStringDto;
+
+  @ValidateNested()
+  @Type(() => LocalizedStringDto)
+  description: LocalizedStringDto;
+
+  @IsString()
+  image: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedAudioDto)
+  audioUrl?: LocalizedAudioDto;
+}
+
 export class CreateExcursionDto {
   @IsString()
   @Matches(SLUG_REGEX)
@@ -195,6 +222,11 @@ export class CreateExcursionDto {
   @ValidateNested({ each: true })
   @Type(() => InterestingFactDto)
   interestingFacts?: InterestingFactDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => IntroDto)
+  intro?: IntroDto;
 
   @IsOptional()
   @ValidateNested()
@@ -248,6 +280,11 @@ export class UpdateExcursionDto {
   @ValidateNested({ each: true })
   @Type(() => InterestingFactDto)
   interestingFacts?: InterestingFactDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => IntroDto)
+  intro?: IntroDto;
 
   @IsOptional()
   @ValidateNested()

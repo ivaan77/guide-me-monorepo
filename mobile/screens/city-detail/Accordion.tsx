@@ -3,6 +3,7 @@ import { LayoutAnimation, Platform, Pressable, UIManager } from 'react-native'
 import { ChevronDown } from '@tamagui/lucide-icons'
 import type { IconProps } from '@tamagui/helpers-icon'
 import { SizableText, XStack, YStack } from 'tamagui'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 if (
   Platform.OS === 'android' &&
@@ -27,6 +28,7 @@ export function Accordion({
   children,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen)
+  const { c } = useAppTheme()
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
@@ -35,10 +37,10 @@ export function Accordion({
 
   return (
     <YStack
-      bg="$surface"
+      bg={c.surface as any}
       rounded="$5"
       borderWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
       overflow="hidden"
     >
       <Pressable onPress={toggle}>
@@ -47,18 +49,18 @@ export function Accordion({
             width={32}
             height={32}
             rounded={16}
-            bg="$surfaceMuted"
+            bg={c.surfaceMuted as any}
             items="center"
             justify="center"
           >
-            <Icon size={16} color="$primary" />
+            <Icon size={16} color={c.primary as any} />
           </YStack>
           <SizableText
             flex={1}
             size="$5"
             fontFamily="$body"
             fontWeight="600"
-            color="$color"
+            color={c.text as any}
           >
             {title}
           </SizableText>
@@ -66,7 +68,7 @@ export function Accordion({
             <SizableText
               size="$3"
               fontFamily="$body"
-              color="$colorPress"
+              color={c.textMuted as any}
               mr="$2"
             >
               {count}
@@ -77,11 +79,11 @@ export function Accordion({
               transform: [{ rotate: open ? '180deg' : '0deg' }],
             }}
           >
-            <ChevronDown size={18} color="$colorPress" />
+            <ChevronDown size={18} color={c.textMuted as any} />
           </YStack>
         </XStack>
       </Pressable>
-      {open && <YStack borderTopWidth={1} borderColor="$borderColor">{children}</YStack>}
+      {open && <YStack borderTopWidth={1} borderColor={c.border as any}>{children}</YStack>}
     </YStack>
   )
 }

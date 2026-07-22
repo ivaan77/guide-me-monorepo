@@ -1,7 +1,8 @@
 import { Pressable, TextInput } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { XStack, YStack, useTheme } from 'tamagui'
+import { XStack, YStack } from 'tamagui'
 import { Search, X } from '@tamagui/lucide-icons'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 type Props = {
   value: string
@@ -11,11 +12,11 @@ type Props = {
 }
 
 export function SearchBar({ value, onChange, hPadding, disabled }: Props) {
-  const theme = useTheme()
+  const { c } = useAppTheme()
   const { t } = useTranslation()
   return (
     <YStack
-      bg="$background"
+      bg={c.background as any}
       pt="$2"
       pb="$2.5"
       mx={-hPadding}
@@ -24,20 +25,20 @@ export function SearchBar({ value, onChange, hPadding, disabled }: Props) {
     >
       <XStack
         items="center"
-        bg="$surfaceMuted"
+        bg={c.surfaceMuted as any}
         rounded="$5"
         px="$3"
         height={44}
         borderWidth={1}
-        borderColor="$borderColor"
+        borderColor={c.border as any}
         gap="$2.5"
       >
-        <Search size={18} color="$colorPress" />
+        <Search size={18} color={c.textMuted as any} />
         <TextInput
           value={value}
           onChangeText={onChange}
           placeholder={t('discover.searchPlaceholder')}
-          placeholderTextColor={theme.colorPress.val}
+          placeholderTextColor={c.textMuted}
           autoCorrect={false}
           autoCapitalize="none"
           returnKeyType="search"
@@ -46,13 +47,13 @@ export function SearchBar({ value, onChange, hPadding, disabled }: Props) {
             flex: 1,
             fontFamily: 'Geist',
             fontSize: 15,
-            color: theme.color.val,
+            color: c.text,
             paddingVertical: 0,
           }}
         />
         {value.length > 0 && !disabled && (
           <Pressable onPress={() => onChange('')} hitSlop={10}>
-            <X size={16} color="$colorPress" />
+            <X size={16} color={c.textMuted as any} />
           </Pressable>
         )}
       </XStack>

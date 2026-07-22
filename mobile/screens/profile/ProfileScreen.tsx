@@ -89,7 +89,7 @@ export function ProfileScreen() {
     >
       <YStack
         flex={1}
-        bg="$background"
+        bg={c.background as any}
         px="$5"
         pt={insets.top + 24}
         gap="$6"
@@ -110,27 +110,27 @@ export function ProfileScreen() {
               width={88}
               height={88}
               rounded={44}
-              bg="$surfaceMuted"
+              bg={c.surfaceMuted as any}
               borderWidth={1}
-              borderColor="$borderColor"
+              borderColor={c.border as any}
               items="center"
               justify="center"
             >
-              <User size={40} color="$primary" />
+              <User size={40} color={c.primary as any} />
             </YStack>
           )}
-          <H2 color="$color" fontFamily="$body" fontWeight="600" fontSize="$8">
+          <H2 color={c.text as any} fontFamily="$body" fontWeight="600" fontSize="$8">
             {isSignedIn ? displayName ?? t('profile.guestName') : t('profile.guestName')}
           </H2>
           {!isSignedIn && (
             <>
-              <Paragraph color="$colorPress" text="center" fontFamily="$body" size="$4">
+              <Paragraph color={c.textMuted as any} text="center" fontFamily="$body" size="$4">
                 {t('profile.signInPrompt')}
               </Paragraph>
               <Button
                 size="$4"
-                bg="$primary"
-                color="$background"
+                bg={c.primary as any}
+                color={c.onBrand as any}
                 fontFamily="$heading"
                 fontWeight="700"
                 onPress={onSignIn}
@@ -143,8 +143,8 @@ export function ProfileScreen() {
             <Button
               size="$4"
               chromeless
-              icon={<LogOut size={16} />}
-              color="$colorPress"
+              icon={<LogOut size={16} color={c.textMuted as any} />}
+              color={c.textMuted as any}
               fontFamily="$body"
               fontWeight="500"
               onPress={onSignOut}
@@ -168,8 +168,8 @@ export function ProfileScreen() {
               size="$4"
               chromeless
               justify="flex-start"
-              icon={<ExternalLink size={16} />}
-              color="$color"
+              icon={<ExternalLink size={16} color={c.text as any} />}
+              color={c.text as any}
               fontFamily="$body"
               fontWeight="500"
               onPress={openTerms}
@@ -180,8 +180,8 @@ export function ProfileScreen() {
               size="$4"
               chromeless
               justify="flex-start"
-              icon={<ExternalLink size={16} />}
-              color="$color"
+              icon={<ExternalLink size={16} color={c.text as any} />}
+              color={c.text as any}
               fontFamily="$body"
               fontWeight="500"
               onPress={openPrivacy}
@@ -219,11 +219,12 @@ function Section({
   title: string
   children: React.ReactNode
 }) {
+  const { c } = useAppTheme()
   return (
     <YStack gap="$3">
       <SizableText
         size="$2"
-        color="$colorPress"
+        color={c.textMuted as any}
         fontFamily="$body"
         fontWeight="600"
         style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}

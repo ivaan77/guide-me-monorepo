@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import type {
   AdminBlog,
   AdminCreateBlogRequest,
+  AdminDraftEntry,
   AdminUpdateBlogRequest,
   BlogCategory,
   TipTapDoc,
@@ -18,6 +19,9 @@ import {
   regeneratePreviewTokenAction,
   updateBlogAction,
 } from '@/actions/blogs'
+import { deleteDraftAction } from '@/actions/drafts'
+import { DraftBadge } from '@/components/forms/draft-badge'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -107,8 +111,18 @@ type UpdateValues = z.infer<typeof updateSchema>
 export type BlogFormCity = { slug: string; name: string }
 
 type Props =
-  | { mode: 'create'; initialValues?: undefined; cities: BlogFormCity[] }
-  | { mode: 'edit'; initialValues: AdminBlog; cities: BlogFormCity[] }
+  | {
+      mode: 'create'
+      initialValues?: undefined
+      cities: BlogFormCity[]
+      initialDraft?: AdminDraftEntry | null
+    }
+  | {
+      mode: 'edit'
+      initialValues: AdminBlog
+      cities: BlogFormCity[]
+      initialDraft?: AdminDraftEntry | null
+    }
 
 const EMPTY_DOC: TipTapDoc = { type: 'doc', content: [] }
 
@@ -122,6 +136,14 @@ export function BlogForm(props: Props) {
   const [previewToken, setPreviewToken] = useState<string>(
     props.mode === 'edit' ? props.initialValues.previewToken : '',
   )
+
+  // Autosaved draft for create mode. When present, its payload becomes
+  // the create form's starting values. Edit mode never silently
+  // restores — the user opts in via the in-form banner (see below).
+  const createDraftPayload =
+    props.mode === 'create' && props.initialDraft
+      ? (props.initialDraft.payload as Partial<CreateValues> | undefined)
+      : undefined
 
   const defaults =
     props.mode === 'edit'
@@ -152,10 +174,13 @@ export function BlogForm(props: Props) {
 
   const createForm = useForm<CreateValues>({
     resolver: zodResolver(createSchema),
-    defaultValues: {
-      slug: '',
-      ...defaults,
-    } as CreateValues,
+    defaultValues:
+      createDraftPayload
+        ? (createDraftPayload as CreateValues)
+        : ({
+            slug: '',
+            ...defaults,
+          } as CreateValues),
   })
 
   const updateForm = useForm<UpdateValues>({
@@ -184,6 +209,39 @@ export function BlogForm(props: Props) {
     setValue('slug' as never, suggestedSlug as never, { shouldValidate: false })
   }, [suggestedSlug, setValue, props.mode])
 
+  // Autosave. In edit mode the identity is the immutable saved slug; in
+  // create mode it's the auto-derived slug from title.en (empty until
+  // the user types anything). See excursion-form for the full flow.
+  const draftSlug = props.mode === 'edit' ? props.initialValues.slug : slug ?? ''
+  const {
+    status: draftStatus,
+    clearDraft,
+    markSaved: markDraftSaved,
+  } = useDraftAutosave<CreateValues>({
+    entityType: 'blog',
+    slug: draftSlug,
+    isNew: props.mode !== 'edit',
+    form: form as unknown as ReturnType<typeof useForm<CreateValues>>,
+  })
+
+  const [editDraftBannerState, setEditDraftBannerState] = useState<
+    'visible' | 'dismissed'
+  >(props.mode === 'edit' && props.initialDraft ? 'visible' : 'dismissed')
+  const restoreEditDraft = () => {
+    if (!props.initialDraft) return
+    const payload = props.initialDraft.payload as CreateValues
+    form.reset(payload as never, { keepDirty: true })
+    setEditDraftBannerState('dismissed')
+    markDraftSaved(payload)
+    void clearDraft()
+    toast.success('Draft restored')
+  }
+  const discardEditDraft = async () => {
+    setEditDraftBannerState('dismissed')
+    await clearDraft()
+    toast.success('Draft discarded')
+  }
+
   const onCreate = handleSubmit((values: CreateValues) => {
     startTransition(async () => {
       const payload: AdminCreateBlogRequest = {
@@ -203,6 +261,13 @@ export function BlogForm(props: Props) {
       if (!res.ok) {
         toast.error(res.error)
         return
+      }
+      if (values.slug) {
+        try {
+          await deleteDraftAction('blog', values.slug)
+        } catch {
+          // non-fatal
+        }
       }
       toast.success('Post created')
       router.push(`/blogs/${res.data.slug}`)
@@ -231,6 +296,11 @@ export function BlogForm(props: Props) {
         toast.error(res.error)
         return
       }
+      try {
+        await deleteDraftAction('blog', props.initialValues.slug)
+      } catch {
+        // non-fatal
+      }
       toast.success('Post updated')
       router.refresh()
     })
@@ -241,6 +311,35 @@ export function BlogForm(props: Props) {
       onSubmit={props.mode === 'create' ? onCreate : onUpdate}
       className="flex flex-col gap-4"
     >
+      {props.mode === 'edit' &&
+        editDraftBannerState === 'visible' &&
+        props.initialDraft && (
+          <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+            <p className="flex-1 min-w-[16rem] text-sm text-amber-900">
+              You have unsaved changes from{' '}
+              <time
+                dateTime={props.initialDraft.updatedAt}
+                className="font-medium"
+              >
+                {new Date(props.initialDraft.updatedAt).toLocaleString()}
+              </time>
+              . Restore them or keep working from the saved version.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void discardEditDraft()}
+              >
+                Discard draft
+              </Button>
+              <Button type="button" size="sm" onClick={restoreEditDraft}>
+                Load draft
+              </Button>
+            </div>
+          </div>
+        )}
       <Card>
         <CardHeader>
           <CardTitle>Basics</CardTitle>
@@ -438,7 +537,10 @@ export function BlogForm(props: Props) {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-2 pt-4">
+      <div className="flex flex-wrap justify-end items-center gap-2 pt-4">
+        <div className="mr-auto">
+          <DraftBadge status={draftStatus} />
+        </div>
         {props.mode === 'edit' && (
           <>
             <Button

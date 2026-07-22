@@ -2,6 +2,7 @@ import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XStack, YStack } from 'tamagui'
 import { Shimmer, useShimmerProgress } from '../../common/Shimmer'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 const H_PADDING = 20
 
@@ -9,12 +10,13 @@ export function ExcursionSkeleton() {
   const { width, height } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const progress = useShimmerProgress()
+  const { c } = useAppTheme()
 
   const mapHeight = height * 0.5
   const rowWidth = width - H_PADDING * 2
 
   return (
-    <YStack flex={1} bg="$background">
+    <YStack flex={1} bg={c.background as any}>
       <Shimmer width={width} height={mapHeight} progress={progress} />
 
       <YStack flex={1} px={H_PADDING} pt="$3" gap="$2">
@@ -31,9 +33,9 @@ export function ExcursionSkeleton() {
       </YStack>
 
       <YStack
-        bg="$surface"
+        bg={c.surface as any}
         borderTopWidth={1}
-        borderColor="$borderColor"
+        borderColor={c.border as any}
         px={H_PADDING}
         pt="$4"
         pb={Math.max(insets.bottom, 16)}

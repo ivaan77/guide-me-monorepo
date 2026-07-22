@@ -82,6 +82,17 @@ export type AdminExcursionStop = {
     subStops?: AdminSubStop[]
 }
 
+// Optional welcome card shown on the excursion preview screen before
+// the user starts. Same shape as AdminExcursionOutro — intro and outro
+// share fields and admin renders them symmetrically.
+export type AdminExcursionIntro = {
+    title: LocalizedString
+    description: LocalizedString
+    image: string
+    images?: string[]
+    audioUrl?: LocalizedAudio
+}
+
 // Optional sign-off shown after the last stop. See PublicExcursionOutro
 // for the mobile-side rendering contract.
 export type AdminExcursionOutro = {
@@ -117,6 +128,7 @@ export type AdminExcursion = {
     stops: AdminExcursionStop[]
     pois?: AdminExcursionPoiRef[]
     interestingFacts?: AdminInterestingFact[]
+    intro?: AdminExcursionIntro
     outro?: AdminExcursionOutro
     isEnabled: boolean
     // See WeatherSensitivity in public types for semantics. Required —
@@ -135,6 +147,7 @@ export type AdminCreateExcursionRequest = {
     stops?: AdminExcursionStop[]
     pois?: AdminExcursionPoiRef[]
     interestingFacts?: AdminInterestingFact[]
+    intro?: AdminExcursionIntro
     outro?: AdminExcursionOutro
     isEnabled?: boolean
     // Required for new excursions. If a caller omits it, the API rejects.

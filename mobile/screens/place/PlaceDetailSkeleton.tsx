@@ -2,6 +2,7 @@ import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { YStack } from 'tamagui'
 import { Shimmer, useShimmerProgress } from '../../common/Shimmer'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 const HERO_RATIO = 0.85
 const H_PADDING = 20
@@ -9,12 +10,13 @@ const H_PADDING = 20
 export function PlaceDetailSkeleton() {
   const { width } = useWindowDimensions()
   const insets = useSafeAreaInsets()
+  const { c } = useAppTheme()
   const heroHeight = width * HERO_RATIO
   const progress = useShimmerProgress()
   const bodyWidth = width - H_PADDING * 2
 
   return (
-    <YStack flex={1} bg="$background">
+    <YStack flex={1} bg={c.background as any}>
       <Shimmer width={width} height={heroHeight} progress={progress} />
       <YStack px={H_PADDING} pt="$5" gap="$3">
         <Shimmer width={bodyWidth * 0.4} height={12} radius={4} progress={progress} />

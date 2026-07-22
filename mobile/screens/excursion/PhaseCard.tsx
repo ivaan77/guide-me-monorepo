@@ -2,6 +2,7 @@ import { Pressable } from 'react-native'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 // Shared card shape for every ExcursionScreen bottom panel. Enforces:
 //   - identical outer container (rounded, padded, shadowed the same way)
@@ -51,14 +52,15 @@ type CardProps = {
 // The phase tint lives on PhaseCardHeader (badge chip) and PhaseCardActions
 // (button color), not on the card itself — so the wrapper takes no accent.
 export function PhaseCard({ children }: CardProps) {
+  const { c } = useAppTheme()
   return (
     <YStack
-      bg="$surface"
+      bg={c.surface as any}
       rounded="$6"
       p="$3"
       gap="$3"
       borderWidth={1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
       style={SHADOW.card}
     >
       {children}
@@ -88,6 +90,7 @@ export function PhaseCardHeader({
   title,
   accessory,
 }: HeaderProps) {
+  const { c } = useAppTheme()
   return (
     <XStack items="center" gap="$3">
       {accessory}
@@ -117,7 +120,7 @@ export function PhaseCardHeader({
           size="$5"
           fontFamily="$heading"
           fontWeight="700"
-          color="$color"
+          color={c.text as any}
           numberOfLines={2}
         >
           {title}
@@ -159,13 +162,14 @@ export function PhaseCardActions({
   secondary,
   tertiary,
 }: ActionsProps) {
+  const { c } = useAppTheme()
   return (
     <YStack gap="$2">
       {secondary && (
         <Pressable onPress={secondary.onPress} hitSlop={6}>
           <YStack items="center" py="$1.5">
             <SizableText
-              color="$colorPress"
+              color={c.textMuted as any}
               fontFamily="$body"
               fontWeight="600"
               size="$3"
@@ -181,7 +185,7 @@ export function PhaseCardActions({
         hitSlop={4}
       >
         <XStack
-          bg="$primary"
+          bg={c.primary as any}
           px="$4"
           py="$3"
           rounded="$5"
@@ -192,7 +196,7 @@ export function PhaseCardActions({
         >
           {primary.icon}
           <SizableText
-            color="$colorOnBrand"
+            color={c.onBrand as any}
             fontFamily="$heading"
             fontWeight="700"
             size="$4"

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import type {
   AdminCreateExcursionRequest,
+  AdminDraftEntry,
   AdminExcursion,
   AdminUpdateExcursionRequest,
 } from '@guide-me-app/core'
@@ -14,6 +15,9 @@ import {
   createExcursionAction,
   updateExcursionAction,
 } from '@/actions/excursions'
+import { deleteDraftAction } from '@/actions/drafts'
+import { DraftBadge } from '@/components/forms/draft-badge'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -38,6 +42,12 @@ import { buildUniqueSlug, slugify } from '@/lib/slug'
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 
 const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/
+
+// Mirrors the mobile-side fallback for both stop arrival and geocoded facts
+// (see mobile/screens/excursion/ExcursionScreen.tsx and FloatingFactBanner.tsx).
+// Used only for the visual radius circle in the picker — the stored form
+// value can still be empty, which triggers this same default at runtime.
+const DEFAULT_TRIGGER_RADIUS_M = 30
 
 const localizedSchema = z.object({
   en: z.string().min(1, 'English is required'),
@@ -138,6 +148,16 @@ const interestingFactSchema = z.object({
   triggerRadius: optionalPositiveInt,
 })
 
+// Optional welcome card shown on the excursion preview screen before
+// the user starts. Same field shape as the outro; toggled independently.
+const introSchema = z.object({
+  title: localizedSchema,
+  description: localizedSchema,
+  image: z.string().url(),
+  images: z.array(z.string().url()).optional(),
+  audioUrl: localizedAudioSchema.optional(),
+})
+
 // Optional sign-off card shown after the last stop. Required fields
 // (title, description, image) become required only when the editor has
 // enabled the outro — handled by the enabled flag check inside the
@@ -158,6 +178,9 @@ const baseSchema = {
   stops: z.array(stopSchema),
   pois: z.array(poiRefSchema).optional(),
   interestingFacts: z.array(interestingFactSchema).optional(),
+  intro: introSchema.optional(),
+  // Same form-only pattern as outroEnabled — see below.
+  introEnabled: z.boolean(),
   outro: outroSchema.optional(),
   // Companion flag for the form only — toggles whether the outro is
   // submitted. Stripped from the payload in normalizePayload. Lets editors
@@ -182,17 +205,35 @@ type Props =
       // collisions (belem → belem-2).
       existingSlugs?: string[]
       initialValues?: undefined
+      // Optional autosaved draft (passed by /new?draft=<slug>). When set,
+      // its payload becomes the form's initial state so the user picks
+      // up exactly where they left off.
+      initialDraft?: AdminDraftEntry | null
     }
   | {
       mode: 'edit'
       cities: { slug: string; name: string }[]
       initialValues: AdminExcursion
+      // Autosaved draft for this slug, if any. Surfaced as an in-page
+      // banner so the user can choose whether to restore or discard.
+      // Never applied automatically in edit mode — the saved entity is
+      // authoritative until the user opts in.
+      initialDraft?: AdminDraftEntry | null
     }
 
 export function ExcursionForm(props: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const isEdit = props.mode === 'edit'
+
+  // In create mode, if we arrived via the "resume draft" flow, use the
+  // draft's payload as the form's starting values. In edit mode we
+  // ignore the draft here — the user has to opt in via the banner
+  // (see draftBanner below) so we never silently override saved data.
+  const createDraftPayload =
+    !isEdit && props.initialDraft
+      ? (props.initialDraft.payload as CreateValues | undefined)
+      : undefined
 
   const defaultValues: CreateValues = isEdit
     ? {
@@ -213,6 +254,8 @@ export function ExcursionForm(props: Props) {
           (a, b) => a.order - b.order,
         ),
         interestingFacts: props.initialValues.interestingFacts ?? [],
+        intro: props.initialValues.intro,
+        introEnabled: !!props.initialValues.intro,
         outro: props.initialValues.outro,
         outroEnabled: !!props.initialValues.outro,
         isEnabled: props.initialValues.isEnabled,
@@ -220,7 +263,7 @@ export function ExcursionForm(props: Props) {
         // but keeps the form robust if a doc slips through.
         weatherSensitivity: props.initialValues.weatherSensitivity ?? 'outdoor',
       }
-    : {
+    : createDraftPayload ?? {
         slug: '',
         citySlug: props.cities[0]?.slug ?? '',
         name: { en: '' },
@@ -229,6 +272,8 @@ export function ExcursionForm(props: Props) {
         stops: [],
         pois: [],
         interestingFacts: [],
+        intro: undefined,
+        introEnabled: false,
         outro: undefined,
         outroEnabled: false,
         isEnabled: true,
@@ -239,6 +284,55 @@ export function ExcursionForm(props: Props) {
     resolver: zodResolver(isEdit ? updateSchema : createSchema) as never,
     defaultValues,
   })
+
+  // Autosave: subscribes to form.watch, debounces 2s, PUTs to the drafts
+  // endpoint keyed by slug. In create mode we set defaultValues from the
+  // draft (if any) but ALSO mark the form dirty so autosave fires again
+  // on next edit — this preserves the same slug's draft as the user
+  // continues typing.
+  const currentSlug = form.watch('slug') ?? ''
+  const {
+    status: draftStatus,
+    clearDraft,
+    markSaved: markDraftSaved,
+  } = useDraftAutosave<CreateValues>({
+    entityType: 'excursion',
+    slug: currentSlug,
+    isNew: !isEdit,
+    form,
+  })
+
+  // Edit-mode "load draft" banner. Visible only if:
+  //  - we're in edit mode
+  //  - a draft exists for this slug
+  //  - the user hasn't yet chosen (load or discard)
+  const [editDraftBannerState, setEditDraftBannerState] = useState<
+    'visible' | 'dismissed'
+  >(isEdit && props.initialDraft ? 'visible' : 'dismissed')
+  const restoreEditDraft = () => {
+    if (!props.initialDraft) return
+    const payload = props.initialDraft.payload as CreateValues
+    form.reset(payload, {
+      // Keep the form marked dirty so the autosave hook fires again as
+      // soon as the user edits anything post-restore.
+      keepDirty: true,
+    })
+    setEditDraftBannerState('dismissed')
+    // Two-step cleanup: delete the server-side draft AND mark this
+    // exact snapshot as "already saved" locally. Without markDraftSaved,
+    // the watch echo from reset() would fire a redundant autosave 2s
+    // later, recreating the very draft we just deleted. If the user
+    // subsequently edits anything, that legitimately produces a new
+    // snapshot and autosaves fresh.
+    markDraftSaved(payload)
+    void clearDraft()
+    toast.success('Draft restored')
+  }
+  const discardEditDraft = async () => {
+    setEditDraftBannerState('dismissed')
+    await clearDraft()
+    toast.success('Draft discarded')
+  }
 
   const stops = useFieldArray({ control: form.control, name: 'stops' })
   const facts = useFieldArray({ control: form.control, name: 'interestingFacts' })
@@ -323,6 +417,18 @@ export function ExcursionForm(props: Props) {
         toast.error('Save failed', { description: res.error })
         return
       }
+      // Real save landed — drop the autosaved draft for this slug so it
+      // doesn't linger as a phantom "unsaved changes" entry. Best-effort:
+      // TTL will clean up if the delete fails (see clearDraft in the
+      // autosave hook).
+      const finalSlug = isEdit ? props.initialValues!.slug : raw.slug
+      if (finalSlug) {
+        try {
+          await deleteDraftAction('excursion', finalSlug)
+        } catch {
+          // non-fatal
+        }
+      }
       toast.success(isEdit ? 'Excursion updated' : 'Excursion created')
       router.push('/discover/excursions')
     })
@@ -331,6 +437,33 @@ export function ExcursionForm(props: Props) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-3xl">
       <ExcursionFormFloatingNav stops={stopJumpOptions} />
+      {isEdit && editDraftBannerState === 'visible' && props.initialDraft && (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+          <p className="flex-1 min-w-[16rem] text-sm text-amber-900">
+            You have unsaved changes from{' '}
+            <time
+              dateTime={props.initialDraft.updatedAt}
+              className="font-medium"
+            >
+              {new Date(props.initialDraft.updatedAt).toLocaleString()}
+            </time>
+            . Restore them or keep working from the saved version.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void discardEditDraft()}
+            >
+              Discard draft
+            </Button>
+            <Button type="button" size="sm" onClick={restoreEditDraft}>
+              Load draft
+            </Button>
+          </div>
+        </div>
+      )}
       {!isEdit && (
         <Card>
           <CardContent className="pt-6 flex flex-col gap-2">
@@ -392,6 +525,64 @@ export function ExcursionForm(props: Props) {
             required
             hint="Short line under the excursion name. Conventionally duration + price (e.g. '3h · €35')."
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">Intro</p>
+              <FieldHint text="A welcome card shown on the excursion preview screen before the user starts. Use it to set the scene and play a short narration. No GPS — visible on preview above the stops list." />
+            </div>
+            <Switch
+              checked={!!form.watch('introEnabled')}
+              onCheckedChange={(v) =>
+                form.setValue('introEnabled', v, { shouldDirty: true })
+              }
+            />
+          </div>
+          {form.watch('introEnabled') && (
+            <div className="flex flex-col gap-3">
+              <SingleImageInput
+                control={form.control}
+                name="intro.image"
+                label="Hero image"
+                required
+                hint="Image at the top of the intro card."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/intro`}
+              />
+              <LocalizedInput
+                control={form.control}
+                name="intro.title"
+                label="Title"
+                required
+                hint="Short heading at the top of the intro. e.g. 'Welcome to Baixa'."
+              />
+              <LocalizedInput
+                control={form.control}
+                name="intro.description"
+                label="Description"
+                required
+                multiline
+                hint="Long-form intro copy shown alongside the audio."
+              />
+              <ImageListInput
+                control={form.control}
+                name="intro.images"
+                label="Gallery images"
+                hint="Optional swipeable carousel for the intro."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/intro/gallery`}
+              />
+              <AudioInput
+                control={form.control}
+                name="intro.audioUrl"
+                label="Audio narration"
+                hint="Plays in the intro card. Optional."
+                folder={`excursion/${form.watch('slug') || 'untitled'}/intro`}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -466,8 +657,35 @@ export function ExcursionForm(props: Props) {
                   </div>
                 </div>
                 <MapCoordsPicker
+                  persistKey={`excursion-stop-${idx}`}
                   latitude={form.watch(`stops.${idx}.coords.latitude`) ?? 0}
                   longitude={form.watch(`stops.${idx}.coords.longitude`) ?? 0}
+                  radiusMeters={
+                    form.watch(`stops.${idx}.triggerRadius`) ||
+                    DEFAULT_TRIGGER_RADIUS_M
+                  }
+                  siblings={stops.fields
+                    .map((_, sIdx) => {
+                      if (sIdx === idx) return null
+                      const lat = form.watch(
+                        `stops.${sIdx}.coords.latitude`,
+                      )
+                      const lng = form.watch(
+                        `stops.${sIdx}.coords.longitude`,
+                      )
+                      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                        return null
+                      }
+                      if (lat === 0 && lng === 0) return null
+                      return {
+                        latitude: lat as number,
+                        longitude: lng as number,
+                        radiusMeters:
+                          form.watch(`stops.${sIdx}.triggerRadius`) ||
+                          DEFAULT_TRIGGER_RADIUS_M,
+                      }
+                    })
+                    .filter((s): s is NonNullable<typeof s> => s !== null)}
                   onChange={({ latitude, longitude }) => {
                     form.setValue(`stops.${idx}.coords.latitude`, latitude, {
                       shouldDirty: true,
@@ -708,6 +926,7 @@ export function ExcursionForm(props: Props) {
                     </div>
                   </div>
                   <MapCoordsPicker
+                    persistKey={`excursion-fact-${idx}`}
                     latitude={
                       form.watch(
                         `interestingFacts.${idx}.coords.latitude`,
@@ -717,6 +936,10 @@ export function ExcursionForm(props: Props) {
                       form.watch(
                         `interestingFacts.${idx}.coords.longitude`,
                       ) ?? 0
+                    }
+                    radiusMeters={
+                      form.watch(`interestingFacts.${idx}.triggerRadius`) ||
+                      DEFAULT_TRIGGER_RADIUS_M
                     }
                     onChange={({ latitude, longitude }) => {
                       form.setValue(
@@ -865,30 +1088,36 @@ export function ExcursionForm(props: Props) {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push('/discover/excursions')}
-          disabled={isPending}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Create excursion'}
-        </Button>
+      <div className="flex flex-wrap justify-end items-center gap-3">
+        <DraftBadge status={draftStatus} />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/discover/excursions')}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Create excursion'}
+          </Button>
+        </div>
       </div>
     </form>
   )
 }
 
 function normalizePayload(raw: CreateValues): CreateValues {
-  // Strip the form-only outroEnabled flag and drop outro entirely when
-  // disabled. The api treats absence as "no outro" rather than an empty
-  // shell.
+  // Strip the form-only intro/outroEnabled flags and drop the sub-doc
+  // entirely when its toggle is off. The api treats absence as "no
+  // intro/outro" rather than an empty shell.
+  const introEnabled = (raw as Record<string, unknown>).introEnabled === true
   const outroEnabled = (raw as Record<string, unknown>).outroEnabled === true
   const cloned = { ...raw } as Record<string, unknown>
+  delete cloned.introEnabled
   delete cloned.outroEnabled
+  if (!introEnabled) delete cloned.intro
   if (!outroEnabled) delete cloned.outro
   const out = stripEmpties(cloned) as Record<string, unknown>
 
@@ -1090,12 +1319,32 @@ function SubStopsEditor({
               </div>
             </div>
             <MapCoordsPicker
+              persistKey={`excursion-substop-${stopIdx}-${i}`}
               latitude={
                 form.watch(`stops.${stopIdx}.subStops.${i}.coords.latitude`) ?? 0
               }
               longitude={
                 form.watch(`stops.${stopIdx}.subStops.${i}.coords.longitude`) ?? 0
               }
+              // Sub-stops don't have their own geofence — the parent stop's
+              // arrival radius (at the parent's coords) is what actually
+              // fires. Render that circle here as a sibling so editors can
+              // see whether the sub-stop pin falls inside the arrival zone.
+              siblings={(() => {
+                const pLat = form.watch(`stops.${stopIdx}.coords.latitude`)
+                const pLng = form.watch(`stops.${stopIdx}.coords.longitude`)
+                if (!Number.isFinite(pLat) || !Number.isFinite(pLng)) return []
+                if (pLat === 0 && pLng === 0) return []
+                return [
+                  {
+                    latitude: pLat as number,
+                    longitude: pLng as number,
+                    radiusMeters:
+                      form.watch(`stops.${stopIdx}.triggerRadius`) ||
+                      DEFAULT_TRIGGER_RADIUS_M,
+                  },
+                ]
+              })()}
               onChange={({ latitude, longitude }) => {
                 form.setValue(
                   `stops.${stopIdx}.subStops.${i}.coords.latitude`,

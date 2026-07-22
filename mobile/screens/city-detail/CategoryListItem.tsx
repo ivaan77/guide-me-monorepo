@@ -4,6 +4,7 @@ import { Link, type Href } from 'expo-router'
 import { SizableText, XStack, YStack } from 'tamagui'
 import type { PublicCategoryItem } from '@guide-me-app/core'
 import { RatingStars } from '../../common/RatingStars'
+import { useAppTheme } from '../../providers/ThemeContext'
 
 type Props = {
   item: PublicCategoryItem
@@ -16,6 +17,7 @@ type Props = {
 }
 
 export function CategoryListItem({ item, isLast, href, trailingBadge }: Props) {
+  const { c } = useAppTheme()
   const row = (
     <XStack
       items="center"
@@ -23,7 +25,7 @@ export function CategoryListItem({ item, isLast, href, trailingBadge }: Props) {
       py="$3"
       gap="$3"
       borderBottomWidth={isLast ? 0 : 1}
-      borderColor="$borderColor"
+      borderColor={c.border as any}
     >
       <Image
         source={{ uri: item.image }}
@@ -36,7 +38,7 @@ export function CategoryListItem({ item, isLast, href, trailingBadge }: Props) {
             size="$4"
             fontFamily="$body"
             fontWeight="600"
-            color="$color"
+            color={c.text as any}
             numberOfLines={1}
             flex={1}
           >
@@ -48,7 +50,7 @@ export function CategoryListItem({ item, isLast, href, trailingBadge }: Props) {
           <SizableText
             size="$2"
             fontFamily="$body"
-            color="$colorPress"
+            color={c.textMuted as any}
             numberOfLines={1}
             flex={1}
           >
