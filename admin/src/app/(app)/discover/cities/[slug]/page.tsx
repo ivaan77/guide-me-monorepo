@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCityAction } from '@/actions/cities'
+import { getDraftAction } from '@/actions/drafts'
 import { ApiError } from '@/lib/api'
 import { PageHeader } from '@/components/forms/page-header'
 import { CityForm } from '../city-form'
@@ -13,7 +14,10 @@ export default async function EditCityPage({
 }) {
   const { slug } = await params
   try {
-    const city = await getCityAction(slug)
+    const [city, draft] = await Promise.all([
+      getCityAction(slug),
+      getDraftAction('city', slug),
+    ])
     return (
       <>
         <PageHeader
@@ -21,7 +25,7 @@ export default async function EditCityPage({
           description={city.slug}
           backHref="/discover/cities"
         />
-        <CityForm mode="edit" initialValues={city} />
+        <CityForm mode="edit" initialValues={city} initialDraft={draft} />
       </>
     )
   } catch (err) {

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import type {
   AdminCreateExcursionRequest,
+  AdminDraftEntry,
   AdminExcursion,
   AdminUpdateExcursionRequest,
 } from '@guide-me-app/core'
@@ -14,6 +15,9 @@ import {
   createExcursionAction,
   updateExcursionAction,
 } from '@/actions/excursions'
+import { deleteDraftAction } from '@/actions/drafts'
+import { DraftBadge } from '@/components/forms/draft-badge'
+import { useDraftAutosave } from '@/hooks/use-draft-autosave'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -188,17 +192,35 @@ type Props =
       // collisions (belem → belem-2).
       existingSlugs?: string[]
       initialValues?: undefined
+      // Optional autosaved draft (passed by /new?draft=<slug>). When set,
+      // its payload becomes the form's initial state so the user picks
+      // up exactly where they left off.
+      initialDraft?: AdminDraftEntry | null
     }
   | {
       mode: 'edit'
       cities: { slug: string; name: string }[]
       initialValues: AdminExcursion
+      // Autosaved draft for this slug, if any. Surfaced as an in-page
+      // banner so the user can choose whether to restore or discard.
+      // Never applied automatically in edit mode — the saved entity is
+      // authoritative until the user opts in.
+      initialDraft?: AdminDraftEntry | null
     }
 
 export function ExcursionForm(props: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const isEdit = props.mode === 'edit'
+
+  // In create mode, if we arrived via the "resume draft" flow, use the
+  // draft's payload as the form's starting values. In edit mode we
+  // ignore the draft here — the user has to opt in via the banner
+  // (see draftBanner below) so we never silently override saved data.
+  const createDraftPayload =
+    !isEdit && props.initialDraft
+      ? (props.initialDraft.payload as CreateValues | undefined)
+      : undefined
 
   const defaultValues: CreateValues = isEdit
     ? {
@@ -226,7 +248,7 @@ export function ExcursionForm(props: Props) {
         // but keeps the form robust if a doc slips through.
         weatherSensitivity: props.initialValues.weatherSensitivity ?? 'outdoor',
       }
-    : {
+    : createDraftPayload ?? {
         slug: '',
         citySlug: props.cities[0]?.slug ?? '',
         name: { en: '' },
@@ -245,6 +267,55 @@ export function ExcursionForm(props: Props) {
     resolver: zodResolver(isEdit ? updateSchema : createSchema) as never,
     defaultValues,
   })
+
+  // Autosave: subscribes to form.watch, debounces 2s, PUTs to the drafts
+  // endpoint keyed by slug. In create mode we set defaultValues from the
+  // draft (if any) but ALSO mark the form dirty so autosave fires again
+  // on next edit — this preserves the same slug's draft as the user
+  // continues typing.
+  const currentSlug = form.watch('slug') ?? ''
+  const {
+    status: draftStatus,
+    clearDraft,
+    markSaved: markDraftSaved,
+  } = useDraftAutosave<CreateValues>({
+    entityType: 'excursion',
+    slug: currentSlug,
+    isNew: !isEdit,
+    form,
+  })
+
+  // Edit-mode "load draft" banner. Visible only if:
+  //  - we're in edit mode
+  //  - a draft exists for this slug
+  //  - the user hasn't yet chosen (load or discard)
+  const [editDraftBannerState, setEditDraftBannerState] = useState<
+    'visible' | 'dismissed'
+  >(isEdit && props.initialDraft ? 'visible' : 'dismissed')
+  const restoreEditDraft = () => {
+    if (!props.initialDraft) return
+    const payload = props.initialDraft.payload as CreateValues
+    form.reset(payload, {
+      // Keep the form marked dirty so the autosave hook fires again as
+      // soon as the user edits anything post-restore.
+      keepDirty: true,
+    })
+    setEditDraftBannerState('dismissed')
+    // Two-step cleanup: delete the server-side draft AND mark this
+    // exact snapshot as "already saved" locally. Without markDraftSaved,
+    // the watch echo from reset() would fire a redundant autosave 2s
+    // later, recreating the very draft we just deleted. If the user
+    // subsequently edits anything, that legitimately produces a new
+    // snapshot and autosaves fresh.
+    markDraftSaved(payload)
+    void clearDraft()
+    toast.success('Draft restored')
+  }
+  const discardEditDraft = async () => {
+    setEditDraftBannerState('dismissed')
+    await clearDraft()
+    toast.success('Draft discarded')
+  }
 
   const stops = useFieldArray({ control: form.control, name: 'stops' })
   const facts = useFieldArray({ control: form.control, name: 'interestingFacts' })
@@ -329,6 +400,18 @@ export function ExcursionForm(props: Props) {
         toast.error('Save failed', { description: res.error })
         return
       }
+      // Real save landed — drop the autosaved draft for this slug so it
+      // doesn't linger as a phantom "unsaved changes" entry. Best-effort:
+      // TTL will clean up if the delete fails (see clearDraft in the
+      // autosave hook).
+      const finalSlug = isEdit ? props.initialValues!.slug : raw.slug
+      if (finalSlug) {
+        try {
+          await deleteDraftAction('excursion', finalSlug)
+        } catch {
+          // non-fatal
+        }
+      }
       toast.success(isEdit ? 'Excursion updated' : 'Excursion created')
       router.push('/discover/excursions')
     })
@@ -337,6 +420,33 @@ export function ExcursionForm(props: Props) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-3xl">
       <ExcursionFormFloatingNav stops={stopJumpOptions} />
+      {isEdit && editDraftBannerState === 'visible' && props.initialDraft && (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+          <p className="flex-1 min-w-[16rem] text-sm text-amber-900">
+            You have unsaved changes from{' '}
+            <time
+              dateTime={props.initialDraft.updatedAt}
+              className="font-medium"
+            >
+              {new Date(props.initialDraft.updatedAt).toLocaleString()}
+            </time>
+            . Restore them or keep working from the saved version.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void discardEditDraft()}
+            >
+              Discard draft
+            </Button>
+            <Button type="button" size="sm" onClick={restoreEditDraft}>
+              Load draft
+            </Button>
+          </div>
+        </div>
+      )}
       {!isEdit && (
         <Card>
           <CardContent className="pt-6 flex flex-col gap-2">
@@ -903,18 +1013,21 @@ export function ExcursionForm(props: Props) {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push('/discover/excursions')}
-          disabled={isPending}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Create excursion'}
-        </Button>
+      <div className="flex flex-wrap justify-end items-center gap-3">
+        <DraftBadge status={draftStatus} />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/discover/excursions')}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Create excursion'}
+          </Button>
+        </div>
       </div>
     </form>
   )
