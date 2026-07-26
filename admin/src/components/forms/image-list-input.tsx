@@ -7,10 +7,18 @@ import {
   type FieldValues,
 } from 'react-hook-form'
 import { toast } from 'sonner'
-import { ArrowDown, ArrowUp, Loader2, Trash2, Upload } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Images,
+  Loader2,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldHint } from '@/components/forms/field-hint'
 import { Label } from '@/components/ui/label'
+import { ImageGalleryPicker } from './image-gallery-picker'
 import { uploadImage } from './single-image-input'
 
 type Props<T extends FieldValues> = {
@@ -63,6 +71,7 @@ function Gallery({
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -147,7 +156,7 @@ function Gallery({
           </div>
         ))}
       </div>
-      <div>
+      <div className="flex gap-2">
         <Button
           type="button"
           variant="outline"
@@ -162,6 +171,16 @@ function Gallery({
           )}
           {isUploading ? 'Uploading…' : 'Add images'}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPickerOpen(true)}
+          disabled={isUploading}
+        >
+          <Images className="h-4 w-4" />
+          Pick from gallery
+        </Button>
       </div>
       <input
         ref={fileRef}
@@ -170,6 +189,16 @@ function Gallery({
         multiple
         onChange={handleSelect}
         className="hidden"
+      />
+      <ImageGalleryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={(url) => {
+          // Append — dedupe against the current list so double-picking the
+          // same image doesn't duplicate it in the carousel.
+          if (value.includes(url)) return
+          onChange([...value, url])
+        }}
       />
     </div>
   )
