@@ -15,7 +15,7 @@ export function SiteHeader() {
   return (
     <header className="px-6 sm:px-10 py-6 flex items-center gap-3">
       <Link href="/" className="flex items-center gap-3">
-        <Mark size={32} />
+        <Mark size={32} variant="inverse" />
         <span
           style={{ fontFamily: 'var(--font-display)' }}
           className="text-xl font-bold tracking-tight text-[var(--color-ink)]"
