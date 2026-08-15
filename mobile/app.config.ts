@@ -2,9 +2,14 @@ import type { ExpoConfig } from 'expo/config'
 
 const config: ExpoConfig = {
   name: 'HeyLocal',
-  slug: 'heylocal',
+  // Slug MUST match Expo dashboard's project slug for this projectId
+  // (Expo doesn't allow renaming slugs on existing projects). Users never
+  // see this string — it's an Expo internal identifier. Rebrand kept `guide-me`
+  // as the Expo slug intentionally; every user-facing identifier (name,
+  // scheme, bundleIdentifier, package) is HeyLocal.
+  slug: 'guide-me',
   owner: 'ivaanboss7',
-  version: '1.0.1',
+  version: '1.0.2',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'heylocal',
