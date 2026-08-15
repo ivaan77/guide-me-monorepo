@@ -65,7 +65,7 @@ export function PlaceDetailScreen({ id }: Props) {
       place_id: id,
       platform: Platform.OS,
     })
-    // Walking directions since GuideMe is a walking-tour app. If the OS
+    // Walking directions since HeyLocal is a walking-tour app. If the OS
     // maps app scheme isn't handled (rare — e.g., stripped Android build
     // without Google Maps installed), fall back to a web URL that any
     // browser can open.

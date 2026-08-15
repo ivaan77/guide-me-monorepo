@@ -1,30 +1,30 @@
 import type { ExpoConfig } from 'expo/config'
 
 const config: ExpoConfig = {
-  name: 'Guide Me',
-  slug: 'guide-me',
+  name: 'HeyLocal',
+  slug: 'heylocal',
   owner: 'ivaanboss7',
   version: '1.0.1',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
-  scheme: 'guideme',
+  scheme: 'heylocal',
   userInterfaceStyle: 'automatic',
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.guide.me',
+    bundleIdentifier: 'com.heylocal.app',
     usesAppleSignIn: true,
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
-        'Guide Me uses your location to walk you to each stop on your excursion.',
+        'HeyLocal uses your location to walk you to each stop on your excursion.',
       ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
-    package: 'com.guide.me',
+    package: 'com.heylocal.app',
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
-      backgroundColor: '#0B1F3A',
+      backgroundColor: '#011536',
     },
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
   },
@@ -46,11 +46,11 @@ const config: ExpoConfig = {
       {
         image: './assets/images/splash-icon.png',
         imageWidth: 200,
-        backgroundColor: '#0B1F3A',
+        backgroundColor: '#011536',
         resizeMode: 'contain',
         dark: {
           image: './assets/images/splash-icon.png',
-          backgroundColor: '#0B1F3A',
+          backgroundColor: '#011536',
         },
       },
     ],
@@ -58,7 +58,7 @@ const config: ExpoConfig = {
       'expo-location',
       {
         locationWhenInUsePermission:
-          'Guide Me uses your location to walk you to each stop on your excursion.',
+          'HeyLocal uses your location to walk you to each stop on your excursion.',
       },
     ],
     [

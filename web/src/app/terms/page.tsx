@@ -4,9 +4,9 @@ import { SiteFooter } from '../_components/SiteFooter'
 import { LegalPage } from '../_components/LegalPage'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — GuideMe',
+  title: 'Terms of Service — HeyLocal',
   description:
-    'The terms under which GuideMe provides its audio-guided city tour app and website.',
+    'The terms under which HeyLocal provides its audio-guided city tour app and website.',
 }
 
 export default function TermsPage() {
@@ -16,17 +16,17 @@ export default function TermsPage() {
       <LegalPage title="Terms of Service" effectiveDate="10 July 2026">
         <p>
           These Terms of Service (“<strong>Terms</strong>”) govern your use of the
-          GuideMe mobile app, website, and related services (together, the “
+          HeyLocal mobile app, website, and related services (together, the “
           <strong>Service</strong>”) provided by <strong>Ivan Bošnjaković</strong>,
           Kalnička 15, 10000 Zagreb, Croatia, operating under the trade name
-          “GuideMe” (“<strong>we</strong>”, “<strong>us</strong>”, “
+          “HeyLocal” (“<strong>we</strong>”, “<strong>us</strong>”, “
           <strong>our</strong>”). By using the Service you agree to these Terms.
           If you do not agree, do not use the Service.
         </p>
 
         <h2>1. The Service</h2>
         <p>
-          GuideMe offers audio-guided walking tours and curated recommendations
+          HeyLocal offers audio-guided walking tours and curated recommendations
           (restaurants, cafés, shops, points of interest). Content is created and
           curated by us. The Service is provided on an “as-is” and “as-available”
           basis; features may be added, changed, or removed at any time.
@@ -46,8 +46,8 @@ export default function TermsPage() {
           or Apple) via our authentication provider, Clerk. You are responsible
           for keeping your sign-in credentials secure and for activity on your
           account. Notify us promptly at{' '}
-          <a href="mailto:hello@guidemeapp.xyz">
-            hello@guidemeapp.xyz
+          <a href="mailto:hello@heylocal.xyz">
+            hello@heylocal.xyz
           </a>{' '}
           if you suspect unauthorized use.
         </p>
@@ -155,8 +155,8 @@ export default function TermsPage() {
         <h2>14. Contact</h2>
         <p>
           Questions about these Terms? Email us at{' '}
-          <a href="mailto:hello@guidemeapp.xyz">
-            hello@guidemeapp.xyz
+          <a href="mailto:hello@heylocal.xyz">
+            hello@heylocal.xyz
           </a>
           .
         </p>

@@ -94,7 +94,7 @@ function buildBody(appLinkNodes: unknown[]) {
         text('regular link', [
           {
             type: 'link',
-            attrs: { href: 'https://guidemeapp.xyz' },
+            attrs: { href: 'https://heylocal.xyz' },
           },
         ]),
         text('. Read on to see the full toolkit in action.'),

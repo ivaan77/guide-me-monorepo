@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic'
 // up in search results. Robots meta is the belt-and-suspenders here; the
 // URL is already token-gated at the API layer.
 export const metadata: Metadata = {
-  title: 'Preview — GuideMe',
+  title: 'Preview — HeyLocal',
   robots: { index: false, follow: false },
 }
 

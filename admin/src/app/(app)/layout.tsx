@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { auth, signOut } from '@/auth'
 import { Button } from '@/components/ui/button'
@@ -38,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Mark size={28} />
           <div className="flex flex-col leading-tight">
             <p className="text-base font-semibold">
-              Guide<em className="not-italic text-[var(--color-primary)]">Me</em>
+              Hey<em className="not-italic text-[var(--color-primary)]">Local</em>
             </p>
             <p className="text-xs text-[var(--color-muted-foreground)]">Admin</p>
           </div>
@@ -73,23 +74,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
 function Mark({ size }: { size: number }) {
   return (
-    <svg
+    <Image
+      src="/mark.svg"
+      alt="HeyLocal mark"
       width={size}
       height={size}
-      viewBox="0 0 64 64"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="GuideMe mark"
-    >
-      <path
-        d="M10 50 C 22 50, 30 46, 36 34 S 46 14, 54 14"
-        fill="none"
-        stroke="var(--color-primary)"
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-      <circle cx="54" cy="14" r="6.5" fill="var(--color-brand-amber)" />
-      <circle cx="10" cy="50" r="2.5" fill="var(--color-primary)" opacity=".85" />
-    </svg>
+      priority
+    />
   )
 }
 

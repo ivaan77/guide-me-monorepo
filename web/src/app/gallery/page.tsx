@@ -11,15 +11,15 @@ import { SiteFooter } from '../_components/SiteFooter'
 import { SiteHeader } from '../_components/SiteHeader'
 
 export const metadata: Metadata = {
-  title: 'Gallery · GuideMe',
+  title: 'Gallery · HeyLocal',
   description:
-    'A curated look at cities and places featured on GuideMe — the audio-guided walking tour app.',
+    'A curated look at cities and places featured on HeyLocal — the audio-guided walking tour app.',
 }
 
 // Two-section gallery:
 //   1. "Popular right now" — data-driven, sourced from PostHog event counts.
 //      Hidden when we have no popularity data (fresh install, PostHog down).
-//   2. "Featured on GuideMe" — admin-curated (editorial). Order set by the
+//   2. "Featured on HeyLocal" — admin-curated (editorial). Order set by the
 //      admin, unchanged by usage. Always renders if items exist.
 export default async function GalleryPage() {
   const [curatedRes, popularRes] = await Promise.all([
@@ -50,7 +50,7 @@ export default async function GalleryPage() {
             Gallery
           </h1>
           <p className="text-base sm:text-lg text-[var(--color-ink-2)] max-w-2xl mb-8">
-            Cities and places from the GuideMe app — narrated, mapped, and
+            Cities and places from the HeyLocal app — narrated, mapped, and
             ready when you arrive.
           </p>
 
@@ -83,7 +83,7 @@ export default async function GalleryPage() {
                 style={{ fontFamily: 'var(--font-display)' }}
                 className="text-2xl sm:text-3xl font-bold text-[var(--color-ink)]"
               >
-                Featured on GuideMe
+                Featured on HeyLocal
               </h2>
               <p className="text-xs text-[var(--color-ink-3)] uppercase tracking-[0.12em]">
                 Hand-picked

@@ -20,7 +20,7 @@ export function SiteHeader() {
           style={{ fontFamily: 'var(--font-display)' }}
           className="text-xl font-bold tracking-tight text-[var(--color-ink)]"
         >
-          Guide<em className="not-italic text-[var(--color-primary)]">Me</em>
+          Hey<em className="not-italic text-[var(--color-primary)]">Local</em>
         </span>
       </Link>
       {!isOnBlog && (

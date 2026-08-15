@@ -12,7 +12,7 @@ import { publicFetch } from '@/lib/api'
 // to-change base URL).
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
-  'https://guidemeapp.xyz'
+  'https://heylocal.xyz'
 
 // Fetch every published post for sitemap generation. The list endpoint
 // caps at limit=50 so we page until we've seen everything. Small blogs

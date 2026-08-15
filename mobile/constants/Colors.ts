@@ -1,4 +1,4 @@
-// GuideMe design system v0.1 — see handoff/tokens/tokens.ts for the source of truth.
+// HeyLocal design system v0.1 — see handoff/tokens/tokens.ts for the source of truth.
 // Names are kept semantic (background/surface/border/primary/accent/text/textMuted)
 // so screens consuming `c.background` etc. don't change when the palette evolves.
 

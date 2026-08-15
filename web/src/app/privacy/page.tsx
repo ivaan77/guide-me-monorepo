@@ -4,9 +4,9 @@ import { SiteFooter } from '../_components/SiteFooter'
 import { LegalPage } from '../_components/LegalPage'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — GuideMe',
+  title: 'Privacy Policy — HeyLocal',
   description:
-    'How GuideMe collects, uses, and protects your personal data. GDPR-friendly.',
+    'How HeyLocal collects, uses, and protects your personal data. GDPR-friendly.',
 }
 
 export default function PrivacyPage() {
@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <LegalPage title="Privacy Policy" effectiveDate="10 July 2026">
         <p>
           This Privacy Policy explains what personal data we collect when you use
-          the GuideMe mobile app and website (the “<strong>Service</strong>”),
+          the HeyLocal mobile app and website (the “<strong>Service</strong>”),
           why we collect it, and the rights you have over it. We designed the
           Service to collect as little data as possible — this policy reflects
           that.
@@ -29,13 +29,13 @@ export default function PrivacyPage() {
         <ul>
           <li>
             <strong>Ivan Bošnjaković</strong>, operating under the trade name
-            “GuideMe”
+            “HeyLocal”
           </li>
           <li>Kalnička 15, 10000 Zagreb, Croatia</li>
           <li>
             Email:{' '}
-            <a href="mailto:hello@guidemeapp.xyz">
-              hello@guidemeapp.xyz
+            <a href="mailto:hello@heylocal.xyz">
+              hello@heylocal.xyz
             </a>
           </li>
         </ul>
@@ -242,8 +242,8 @@ export default function PrivacyPage() {
         </ul>
         <p>
           To exercise any right, email us at{' '}
-          <a href="mailto:hello@guidemeapp.xyz">
-            hello@guidemeapp.xyz
+          <a href="mailto:hello@heylocal.xyz">
+            hello@heylocal.xyz
           </a>
           . We respond within one month.
         </p>
@@ -265,7 +265,7 @@ export default function PrivacyPage() {
 
         <h2>10. Cookies and Similar Technologies</h2>
         <p>
-          The GuideMe website (this site) does not set analytics or
+          The HeyLocal website (this site) does not set analytics or
           advertising cookies. The mobile app does not use browser
           cookies. Our authentication provider, Clerk, may set cookies
           necessary for sign-in if you sign in via the web. The mobile
@@ -285,8 +285,8 @@ export default function PrivacyPage() {
         <h2>12. Contact</h2>
         <p>
           For any privacy question or to exercise your rights, email us at{' '}
-          <a href="mailto:hello@guidemeapp.xyz">
-            hello@guidemeapp.xyz
+          <a href="mailto:hello@heylocal.xyz">
+            hello@heylocal.xyz
           </a>
           .
         </p>

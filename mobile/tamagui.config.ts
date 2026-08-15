@@ -21,7 +21,7 @@ const tokens = createTokens({
   color: colorTokens,
 })
 
-// Additional GuideMe-specific theme tokens. Tamagui's standard light/dark
+// Additional HeyLocal-specific theme tokens. Tamagui's standard light/dark
 // themes provide background/color/borderColor/etc.; we add semantic tokens
 // the app uses for branded UI. The custom color tokens (`onBrand`, etc.)
 // reference entries in `colorTokens` above so Tamagui resolves them as
@@ -81,7 +81,7 @@ const darkOverrides = {
   onMediaMuted: 'rgba(255,255,255,0.78)',
 }
 
-// GuideMe display font — Bricolage Grotesque. Used for headings/UI emphasis.
+// HeyLocal display font — Bricolage Grotesque. Used for headings/UI emphasis.
 // Font files are loaded once in app/_layout.tsx via expo-font; the keys we
 // register there must match `face[weight].normal` here.
 const displayFont = createFont({
@@ -98,7 +98,7 @@ const displayFont = createFont({
   },
 })
 
-// GuideMe body font — Geist.
+// HeyLocal body font — Geist.
 const bodyFont = createFont({
   family: 'Geist',
   size: { 1: 11, 2: 12, 3: 14, 4: 16, 5: 19, 6: 20, 7: 24, 8: 28, 9: 40, 10: 64, 11: 96, true: 16 },
