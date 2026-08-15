@@ -47,7 +47,15 @@ export function ImageGalleryPicker({ open, onClose, onPick }: Props) {
 
   useEffect(() => {
     if (!open) return
-    if (cachedEntries !== null) return
+    // Cache is already populated (from another picker instance that
+    // opened first): sync local state from the cache. Without this,
+    // pickers that mounted while the cache was still null get stuck
+    // showing "Loading gallery…" forever on re-open — their useEffect
+    // early-returns before setEntries ever runs.
+    if (cachedEntries !== null) {
+      if (entries === null) setEntries(cachedEntries)
+      return
+    }
     setIsLoading(true)
     // Merge two sources so freshly-uploaded (but unattached) library
     // images show up alongside images already referenced by content:
