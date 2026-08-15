@@ -28,7 +28,7 @@ const CATEGORY_DESCRIPTION: Record<BlogCategory, string> = {
     "Hand-picked, walkable stories about the cities we've mapped.",
   'food-drink':
     'Places worth queuing for — from long lunches to late-night bars.',
-  news: "What's new at GuideMe: features, cities, and behind-the-scenes.",
+  news: "What's new at HeyLocal: features, cities, and behind-the-scenes.",
 }
 
 export const revalidate = 3600
@@ -46,11 +46,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { category } = await params
   if (!(BLOG_CATEGORIES as readonly string[]).includes(category)) {
-    return { title: 'Stories — GuideMe' }
+    return { title: 'Stories — HeyLocal' }
   }
   const cat = category as BlogCategory
   return {
-    title: `${CATEGORY_LABEL[cat]} — GuideMe`,
+    title: `${CATEGORY_LABEL[cat]} — HeyLocal`,
     description: CATEGORY_DESCRIPTION[cat],
   }
 }

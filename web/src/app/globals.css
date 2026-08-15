@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* GuideMe design system v0.1 — dark theme (handoff darkTheme values). */
+/* HeyLocal design system v0.1 — dark theme (handoff darkTheme values). */
 @theme {
   --color-canvas: #07101f;
   --color-surface: #0e1b2e;

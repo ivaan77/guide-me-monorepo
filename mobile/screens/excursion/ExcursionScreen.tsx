@@ -4,7 +4,6 @@ import {
   AppState,
   Image,
   Linking,
-  PanResponder,
   Pressable,
   useWindowDimensions,
 } from 'react-native'
@@ -26,6 +25,8 @@ import {
   LocateFixed,
   MapPin,
   MapPinOff,
+  Maximize2,
+  Minimize2,
   Navigation,
   Play,
   Undo2,
@@ -203,6 +204,13 @@ function ExcursionBody({
   primary: string
 }) {
   const [phase, setPhase] = useState<Phase>('preview')
+  // Ref mirror of phase — callbacks registered once (like the map's
+  // onRegionChange, which fires on every camera tick) need to read the
+  // current phase without capturing it into a stale closure.
+  const phaseRef = useRef<Phase>('preview')
+  useEffect(() => {
+    phaseRef.current = phase
+  }, [phase])
   const ratingPrompt = useRatingPrompt('excursion', id)
   const posthog = usePostHog()
   const { t } = useTranslation()
@@ -281,9 +289,59 @@ function ExcursionBody({
     currentSubStopIndexRef.current = currentSubStopIndex
   }, [currentSubStopIndex])
   const [userLocation, setUserLocation] = useState<LatLng | null>(null)
-  // Compass heading in degrees (0 = north, clockwise). Null until the first
-  // sample arrives; also null on devices without a magnetometer.
-  const [heading, setHeading] = useState<number | null>(null)
+  // Heading source selection.
+  //
+  // For walking navigation we prefer the GPS COURSE (direction of movement,
+  // derived from position deltas) over the COMPASS (direction the phone is
+  // facing). Reason: users look at their screen from odd angles, and the
+  // compass would spin the map every time they twist the phone in their
+  // hand — even though they're still walking north. GPS course tracks the
+  // actual direction of travel and rotates the map only when the user
+  // actually turns a corner.
+  //
+  // GPS course is unreliable when stationary or moving slowly (samples
+  // drift randomly). Below MIN_MOVING_SPEED_MPS we fall back to compass,
+  // which gives stationary users a stable orientation. We hold the current
+  // speed in a ref so the compass subscription callback — registered once —
+  // can read it without recreating the subscription on every sample.
+  const gpsSpeedRef = useRef<number | null>(null)
+  const MIN_MOVING_SPEED_MPS = 1.4
+
+  // Ring buffer of recent heading samples, smoothed via a circular mean so
+  // the 0°/359° wraparound doesn't spike. Filled on every new heading value
+  // (whichever source it came from), then read by the camera animation
+  // effect. Without this the camera steps in 5° jumps and feels jittery;
+  // with it, turns roll smoothly. Length 5 = ~1s of samples at typical
+  // update rates, which is enough to kill jitter without adding latency.
+  const HEADING_WINDOW = 5
+  const headingSamplesRef = useRef<number[]>([])
+  const [smoothedHeading, setSmoothedHeading] = useState<number | null>(null)
+
+  // Fold a new raw heading into the ring buffer and recompute the circular
+  // mean. Circular mean = atan2(sum(sin), sum(cos)) — arithmetic mean of
+  // e.g. [359, 1] would give 180, which is exactly wrong.
+  const pushHeadingSample = useCallback((raw: number) => {
+    const buf = headingSamplesRef.current
+    buf.push(raw)
+    if (buf.length > HEADING_WINDOW) buf.shift()
+    let sinSum = 0
+    let cosSum = 0
+    for (const deg of buf) {
+      const rad = (deg * Math.PI) / 180
+      sinSum += Math.sin(rad)
+      cosSum += Math.cos(rad)
+    }
+    const meanRad = Math.atan2(sinSum, cosSum)
+    let meanDeg = (meanRad * 180) / Math.PI
+    if (meanDeg < 0) meanDeg += 360
+    setSmoothedHeading(meanDeg)
+  }, [])
+
+  // Selected heading for the camera. Prefers GPS course when the user is
+  // actually moving; falls back to compass otherwise. When neither is
+  // available, no rotation happens (heading stays null → camera doesn't
+  // animate).
+  const heading = smoothedHeading
   const [routePolyline, setRoutePolyline] = useState<LatLng[]>([])
   const [routeMeta, setRouteMeta] = useState<{
     distanceMeters: number
@@ -372,99 +430,50 @@ function ExcursionBody({
 
   const { height: screenHeight } = useWindowDimensions()
 
-  // Three snap points for the bottom container: [MIN, FIT, MAX].
-  //   MIN — small peek at 15% of screen (map dominant, card partial)
-  //   FIT — computed to match the actual PhaseCard content height, so
-  //         there's zero empty space below the card in the default state
-  //   MAX — 70% of screen (card dominant, small map preview)
-  // FIT is dynamic (grows/shrinks per phase — Preview is short, Arrived-
-  // bundle is tall) and re-snaps automatically on phase change UNLESS the
-  // user has manually chosen a different snap since. That respects a user
-  // who dragged to MAX to browse the map without yanking them back.
-  const MIN_SNAP_FRACTION = 0.15
-  const MAX_SNAP_FRACTION = 0.7
-  const HANDLE_HEIGHT = 28
-  // Fallback FIT height for the initial render, before onLayout has
-  // measured the card. Picks the middle of the old 45% default so first-
-  // paint is close to what users historically saw.
-  const INITIAL_FIT_FRACTION = 0.45
-  const DEFAULT_SNAP_INDEX = 1 // 0=MIN, 1=FIT, 2=MAX
-  const snapHeights = useMemo(() => {
-    const min = screenHeight * MIN_SNAP_FRACTION
-    const max = screenHeight * MAX_SNAP_FRACTION
-    // FIT is computed lazily below from bottomPanelHeight; here we just
-    // provide the min/max bookends. FIT gets patched in on every render
-    // via computedSnapHeights (see below).
-    return [min, screenHeight * INITIAL_FIT_FRACTION, max]
-  }, [screenHeight])
-  // Actual snap heights used everywhere, with FIT computed from the
-  // measured panel height. Clamped to sit between MIN and MAX so a very
-  // tall card doesn't push the map off-screen and an empty card doesn't
-  // let FIT drop below MIN.
-  const computedSnapHeights = useMemo(() => {
-    const min = snapHeights[0]
-    const max = snapHeights[2]
-    const rawFit = bottomPanelHeight + HANDLE_HEIGHT
-    const fit = rawFit > 0
-      ? Math.max(min, Math.min(max, rawFit))
-      : snapHeights[1]
-    return [min, fit, max] as const
-  }, [snapHeights, bottomPanelHeight])
-  const [snapIndex, setSnapIndex] = useState<number>(DEFAULT_SNAP_INDEX)
+  // Fullscreen-map toggle. When true, the bottom card is hidden and the map
+  // fills the screen. Back/favorite/fact banner stay visible; the undo-skip
+  // deck hides with the card since it anchors to the card top.
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false)
+
+  // The bottom card is fixed-height (no drag/snap). Height content-hugs the
+  // PhaseCard measured via onLayout, capped at MAX_CARD_FRACTION so a very
+  // tall card (arrived-bundle with a long description) can't push the map
+  // off-screen. First paint uses INITIAL_CARD_FRACTION until the
+  // measurement lands, then the card resizes into place on phase changes.
+  const MAX_CARD_FRACTION = 0.65
+  const INITIAL_CARD_FRACTION = 0.45
+  const cardHeight = useMemo(() => {
+    if (isMapFullscreen) return 0
+    if (bottomPanelHeight <= 0) return screenHeight * INITIAL_CARD_FRACTION
+    return Math.min(screenHeight * MAX_CARD_FRACTION, bottomPanelHeight)
+  }, [isMapFullscreen, bottomPanelHeight, screenHeight])
+
+  // Animated mirror of cardHeight — FloatingFactPlayer expects an
+  // Animated.Value so it can float its player just above the card edge.
+  // The value is static now (no drag); we animate transitions on phase
+  // change and fullscreen toggle so nothing snaps rudely into place.
   const bottomHeightAnim = useRef(
-    new Animated.Value(snapHeights[DEFAULT_SNAP_INDEX]),
+    new Animated.Value(screenHeight * INITIAL_CARD_FRACTION),
   ).current
-  // Plain JS mirror of the animated height — kept in sync via an addListener
-  // subscription so PanResponder can read the current value at gesture-grant
-  // time without poking the Animated.Value's private _value.
-  const bottomHeightRef = useRef(snapHeights[DEFAULT_SNAP_INDEX])
-  // Snapshot of the height at the moment a drag begins; used to compute the
-  // delta-from-start without accumulating rounding drift across moves.
-  const dragStartHeightRef = useRef(snapHeights[DEFAULT_SNAP_INDEX])
   useEffect(() => {
-    const id = bottomHeightAnim.addListener(({ value }) => {
-      bottomHeightRef.current = value
-    })
-    return () => bottomHeightAnim.removeListener(id)
-  }, [bottomHeightAnim])
-
-  // When the computed snap targets change (screen height change OR the
-  // PhaseCard's measured height changed and we're currently sitting on
-  // the FIT snap), re-pin the animated value so we don't sit at a stale
-  // height. No-op if the target height didn't actually change — the effect
-  // fires on every bottomPanelHeight tick but MIN/MAX are stable, so this
-  // guard prevents spurious spring animations.
-  useEffect(() => {
-    const target = computedSnapHeights[snapIndex]
-    if (Math.abs(bottomHeightRef.current - target) < 0.5) return
-    bottomHeightRef.current = target
-    Animated.spring(bottomHeightAnim, {
-      toValue: target,
+    Animated.timing(bottomHeightAnim, {
+      toValue: cardHeight,
+      duration: 200,
       useNativeDriver: false,
-      bounciness: 4,
     }).start()
-  }, [computedSnapHeights, snapIndex, bottomHeightAnim])
+  }, [cardHeight, bottomHeightAnim])
 
-  // On phase change, reset to FIT so the card auto-sizes to the new
-  // phase's content. If the user manually dragged to MIN or MAX during
-  // the prior phase, we deliberately reset — every phase gets its own
-  // default. We could persist the user's choice across phases, but the
-  // phases have very different card heights, so an old snap choice
-  // usually reads worse than a fresh FIT default.
+  // Map fills whatever the card doesn't. Animated for the same reason:
+  // fullscreen enter/exit and phase transitions should slide, not jump.
+  const mapHeight = screenHeight - cardHeight
+  const mapHeightAnim = useRef(new Animated.Value(screenHeight * (1 - INITIAL_CARD_FRACTION))).current
   useEffect(() => {
-    setSnapIndex(DEFAULT_SNAP_INDEX)
-  }, [phase])
-
-  const mapHeightAnim = useMemo(
-    () =>
-      Animated.subtract(new Animated.Value(screenHeight), bottomHeightAnim),
-    [screenHeight, bottomHeightAnim],
-  )
-
-  // Map height as a plain number, derived from the current snap. Used by the
-  // initial map fit logic (the camera math needs a scalar, not an animated
-  // value); the visible <Animated.View> uses mapHeightAnim directly.
-  const mapHeight = screenHeight - computedSnapHeights[snapIndex]
+    Animated.timing(mapHeightAnim, {
+      toValue: mapHeight,
+      duration: 200,
+      useNativeDriver: false,
+    }).start()
+  }, [mapHeight, mapHeightAnim])
 
   const currentStop = stops[currentIndex]
 
@@ -509,17 +518,45 @@ function ExcursionBody({
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
         })
+        // GPS course = direction of movement. Platform reports -1 when it
+        // has no confident estimate (right after permission grant, or when
+        // the user is stationary). Only accept a positive value.
+        const rawSpeed = loc.coords.speed
+        const speed =
+          typeof rawSpeed === 'number' && rawSpeed >= 0 ? rawSpeed : null
+        gpsSpeedRef.current = speed
+        const rawGpsHeading = loc.coords.heading
+        const gpsH =
+          typeof rawGpsHeading === 'number' && rawGpsHeading >= 0
+            ? rawGpsHeading
+            : null
+        // Feed the smoother whenever we have a reliable GPS course AND the
+        // user is actually moving. Below MIN_MOVING_SPEED_MPS the compass
+        // takes over via the heading watcher below.
+        if (gpsH != null && speed != null && speed >= MIN_MOVING_SPEED_MPS) {
+          pushHeadingSample(gpsH)
+        }
       })
-      // Compass heading. Prefer trueHeading (calibrated against true north,
-      // matches map orientation); fall back to magHeading when the device
-      // can't compute trueHeading (low accuracy / no GPS lock yet).
+      // Compass heading — the FALLBACK for stationary / slow-walking users.
+      // Prefer trueHeading (calibrated against true north, matches map
+      // orientation); fall back to magHeading when the device can't compute
+      // trueHeading (low accuracy / no GPS lock yet).
       headSub = await Location.watchHeadingAsync((h) => {
         if (cancelled) return
         const next =
           h.trueHeading != null && h.trueHeading >= 0
             ? h.trueHeading
             : h.magHeading
-        setHeading(next)
+        // Only push the compass sample into the smoother when the GPS
+        // course isn't reliable (either no fix or user is stationary).
+        // Otherwise the compass would fight the course whenever the phone
+        // is held loosely and pointed at an angle to the walking direction.
+        const currentSpeed = gpsSpeedRef.current
+        const moving =
+          currentSpeed != null && currentSpeed >= MIN_MOVING_SPEED_MPS
+        if (!moving) {
+          pushHeadingSample(next)
+        }
       })
     }
 
@@ -631,70 +668,35 @@ function ExcursionBody({
     hasFittedPreviewRef.current = true
   }, [phase, stops, pois, userLocation, mapRef, mapHeight])
 
-  // Drag-handle PanResponder for resizing the bottom container. The handle
-  // is a small bar at the top of the bottom container; only the handle owns
-  // this responder so the inner ScrollView still scrolls normally. On
-  // release we snap to the nearest of the three target heights and update
-  // `snapIndex` so the camera-fit logic (which uses scalar `mapHeight`) can
-  // re-fire.
-  const snapPanResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 2,
-        onPanResponderGrant: () => {
-          // Snapshot the current animated height (mirrored by the listener)
-          // so we can compute the drag delta against a stable starting point.
-          dragStartHeightRef.current = bottomHeightRef.current
-        },
-        onPanResponderMove: (_, gesture) => {
-          // Drag down (positive dy) shrinks the bottom container; drag up
-          // (negative dy) grows it. Clamp to the min/max snap targets so we
-          // can't drag outside the snap range.
-          const next = dragStartHeightRef.current - gesture.dy
-          const min = computedSnapHeights[0]
-          const max = computedSnapHeights[computedSnapHeights.length - 1]
-          bottomHeightAnim.setValue(Math.max(min, Math.min(max, next)))
-        },
-        onPanResponderRelease: (_, gesture) => {
-          const released = dragStartHeightRef.current - gesture.dy
-          let nearestIdx = 0
-          let nearestDist = Infinity
-          for (let i = 0; i < computedSnapHeights.length; i++) {
-            const d = Math.abs(computedSnapHeights[i] - released)
-            if (d < nearestDist) {
-              nearestDist = d
-              nearestIdx = i
-            }
-          }
-          Animated.spring(bottomHeightAnim, {
-            toValue: computedSnapHeights[nearestIdx],
-            useNativeDriver: false,
-            bounciness: 6,
-          }).start()
-          setSnapIndex(nearestIdx)
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(bottomHeightAnim, {
-            toValue: computedSnapHeights[snapIndex],
-            useNativeDriver: false,
-            bounciness: 6,
-          }).start()
-        },
-      }),
-    [bottomHeightAnim, computedSnapHeights, snapIndex],
-  )
-
-  // User-interaction cooldown for the auto-camera. While `Date.now()` is
-  // below `userInteractingUntilRef.current` the heading-up animation skips,
-  // so the user can pan/zoom freely without the camera yanking back. The
-  // re-center button (rendered as an overlay below) clears this immediately
-  // and resets the per-leg fitted flag so the next tick re-fires.
-  const userInteractingUntilRef = useRef(0)
-  const GESTURE_COOLDOWN_MS = 8000
-  const markUserInteraction = useCallback(() => {
-    userInteractingUntilRef.current = Date.now() + GESTURE_COOLDOWN_MS
+  // Follow-mode state, Google-Maps-style. `isFollowing` = camera tracks the
+  // user's position + heading. Any user pan/pinch during navigating flips
+  // this to false PERMANENTLY (no cooldown re-arming); the user has to tap
+  // the recenter button to resume follow. That matches Google's model —
+  // "if you touched it, you meant to touch it" — instead of yanking the
+  // camera back after N seconds.
+  const [isFollowing, setIsFollowing] = useState(true)
+  const isFollowingRef = useRef(true)
+  useEffect(() => {
+    isFollowingRef.current = isFollowing
+  }, [isFollowing])
+  // Called from the map's onRegionChange when the user gesture-panned. If
+  // we're navigating AND currently in follow mode, drop out. In non-nav
+  // phases the map is already free-form (no follow to break), so this
+  // is a no-op there.
+  const handleUserGesture = useCallback(() => {
+    if (phaseRef.current === 'navigating' && isFollowingRef.current) {
+      setIsFollowing(false)
+    }
   }, [])
+
+  // Last zoom the camera was known to be at while in follow mode. Read from
+  // `getCamera()` after user pinches, so the next heading-tick animation
+  // preserves the user's chosen zoom instead of hard-snapping back to 17.
+  // Seeded from the initial fit; `getCamera()` returns a Promise so we
+  // capture it lazily.
+  const NAV_DEFAULT_ZOOM = 17
+  const NAV_TILT = 45
+  const lastFollowZoomRef = useRef<number>(NAV_DEFAULT_ZOOM)
 
   // On entering navigating (or each new leg), zoom the camera to fit both
   // the user and the next stop with padding. After that initial overview
@@ -706,19 +708,30 @@ function ExcursionBody({
     // Reset the per-leg flag every time the leg changes or the phase leaves
     // navigating, so a re-entry triggers a fresh fit.
     hasFittedThisLegRef.current = false
+    // A new leg starts in follow mode. Previous leg's user-initiated
+    // free-look is intentionally NOT persisted across legs — the user is
+    // now navigating to a new stop, follow-mode is the useful default.
+    if (phase === 'navigating') {
+      setIsFollowing(true)
+      lastFollowZoomRef.current = NAV_DEFAULT_ZOOM
+    }
   }, [phase, currentIndex])
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || !currentStop) return
     if (hasFittedThisLegRef.current) return
-    if (Date.now() < userInteractingUntilRef.current) return
     // If the user is already on top of the stop (within ~5m of the same
     // coordinate), fitToCoordinates degenerates to absurd zoom. Fall back
-    // to a centered camera at the user with the same zoom heading-up uses.
+    // to a centered camera at the user with the nav default zoom + tilt.
     const same =
       haversineMeters(userLocation, currentStop.coords) < 5
     if (same) {
       mapRef.current?.animateCamera(
-        { center: userLocation, heading: 0, pitch: 0, zoom: 17 },
+        {
+          center: userLocation,
+          heading: heading ?? 0,
+          pitch: NAV_TILT,
+          zoom: NAV_DEFAULT_ZOOM,
+        },
         { duration: 600 },
       )
     } else {
@@ -731,33 +744,37 @@ function ExcursionBody({
       )
     }
     hasFittedThisLegRef.current = true
-  }, [phase, currentIndex, userLocation, currentStop, mapRef, mapHeight])
+  }, [phase, currentIndex, userLocation, currentStop, mapRef, mapHeight, heading])
 
-  // Heading-up rotation during navigation. We re-animate the camera whenever
-  // the heading changes by at least 5° so the map turns visibly without
-  // chattering on every compass tick. Suppressed until the initial fit
-  // above has landed, so the overview isn't immediately blown away.
+  // Heading-up rotation + user-follow during navigation. Every heading
+  // sample re-centers the camera on the user and rotates to the smoothed
+  // heading — BUT ONLY when in follow mode. Threshold is 3° now (down from
+  // 5°) because the circular-mean smoother already kills jitter — a small
+  // threshold plus a smoothed signal yields the continuous-curve feel
+  // Google Maps has, not the 5° step feel we had before. Preserves the
+  // user's current zoom (read from getCamera() when they pinched) instead
+  // of hard-snapping back to NAV_DEFAULT_ZOOM.
   const lastAnimatedHeadingRef = useRef<number | null>(null)
   useEffect(() => {
     if (phase !== 'navigating' || !userLocation || heading == null) return
     if (!hasFittedThisLegRef.current) return
-    if (Date.now() < userInteractingUntilRef.current) return
+    if (!isFollowing) return
     const prev = lastAnimatedHeadingRef.current
     if (prev != null) {
       const diff = Math.abs(((heading - prev + 540) % 360) - 180)
-      if (diff < 5) return
+      if (diff < 3) return
     }
     lastAnimatedHeadingRef.current = heading
     mapRef.current?.animateCamera(
       {
         center: userLocation,
         heading,
-        pitch: 0,
-        zoom: 17,
+        pitch: NAV_TILT,
+        zoom: lastFollowZoomRef.current,
       },
-      { duration: 500 },
+      { duration: 300 },
     )
-  }, [phase, userLocation, heading, mapRef])
+  }, [phase, userLocation, heading, mapRef, isFollowing])
 
   // When the user re-enters preview/arrived/complete, reset the camera to
   // north-up so the map is readable as a normal 2D view.
@@ -770,11 +787,11 @@ function ExcursionBody({
     )
   }, [phase, mapRef])
 
-  // Re-center button: clear the gesture cooldown and force the auto-camera
-  // to re-fit immediately. Resets the per-leg fitted flag (triggers the fit
-  // effect) and the last-heading ref (so heading-up animates next tick).
+  // Re-center button: resume follow mode and jump the camera to the user
+  // with heading-up + nav tilt + the last-known follow zoom. Only surfaced
+  // in navigating phase (in other phases the map is free-form by design).
   const recenter = useCallback(() => {
-    userInteractingUntilRef.current = 0
+    setIsFollowing(true)
     hasFittedThisLegRef.current = false
     lastAnimatedHeadingRef.current = null
     if (userLocation) {
@@ -782,8 +799,8 @@ function ExcursionBody({
         {
           center: userLocation,
           heading: heading ?? 0,
-          pitch: 0,
-          zoom: 17,
+          pitch: NAV_TILT,
+          zoom: lastFollowZoomRef.current,
         },
         { duration: 500 },
       )
@@ -1172,15 +1189,26 @@ function ExcursionBody({
         showsBuildings={false}
         showsTraffic={false}
         showsIndoors={false}
-        // During navigation we rotate the map heading-up via animateCamera;
-        // disable the user's manual rotation so the gestures don't fight
-        // the auto-rotation. Pan + pinch stay enabled.
-        rotateEnabled={phase !== 'navigating'}
-        // Pause auto-camera for 8s whenever the user actively pans/pinches.
-        // `details.isGesture` distinguishes user input from our own
-        // animateCamera calls so the camera doesn't lock itself out.
+        // Rotation stays enabled everywhere, including during navigation.
+        // A user 2-finger-rotating during nav simply drops out of follow
+        // mode via `handleUserGesture` — same treatment as a pan or pinch —
+        // and can be resumed with the recenter FAB. Matches Google Maps.
+        rotateEnabled={true}
+        // On any user gesture (pan / pinch / rotate) during navigation we
+        // exit follow mode permanently. No timeout re-arm — the user has
+        // to tap the recenter FAB to resume tracking. Also snapshot the
+        // current camera zoom so if they resume follow later the camera
+        // preserves the zoom they chose instead of jumping back to the
+        // navigation default.
         onRegionChange={(_region, details) => {
-          if (details?.isGesture) markUserInteraction()
+          if (details?.isGesture) {
+            handleUserGesture()
+            mapRef.current?.getCamera().then((cam) => {
+              if (typeof cam.zoom === 'number') {
+                lastFollowZoomRef.current = cam.zoom
+              }
+            })
+          }
         }}
       >
         {/* Stops: hidden during navigation except the current target, so
@@ -1361,7 +1389,13 @@ function ExcursionBody({
         )}
       </MapView>
 
-      {phase === 'navigating' && (
+      {/* Recenter FAB — surfaces only when navigating AND the user has
+          broken out of follow mode (via pan/pinch/rotate). Tapping resumes
+          follow and jumps the camera back onto the user with heading-up +
+          tilt + the last-known follow zoom preserved. Matches Google Maps:
+          the button appears when you're off-follow and hides once you're
+          tracking again. */}
+      {phase === 'navigating' && !isFollowing && (
         <Pressable
           onPress={recenter}
           style={{
@@ -1384,6 +1418,41 @@ function ExcursionBody({
           <LocateFixed size={22} color={primary as any} />
         </Pressable>
       )}
+      {/* Fullscreen-map toggle. Sits above the recenter button when the
+          recenter is visible (navigating + off-follow), otherwise at the
+          same bottom position. In fullscreen mode the card is hidden and
+          the map fills the screen — Back + Favorite + fact banner stay
+          visible. */}
+      <Pressable
+        onPress={() => setIsMapFullscreen((v) => !v)}
+        style={{
+          position: 'absolute',
+          bottom: phase === 'navigating' && !isFollowing ? 16 + 48 + 8 : 16,
+          right: H_PADDING,
+          zIndex: 12,
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: c.surface,
+          borderWidth: 1,
+          borderColor: c.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...SHADOW.card,
+        }}
+        hitSlop={8}
+        accessibilityLabel={
+          isMapFullscreen
+            ? t('excursion.map.exitFullscreen', { defaultValue: 'Exit fullscreen map' })
+            : t('excursion.map.enterFullscreen', { defaultValue: 'Fullscreen map' })
+        }
+      >
+        {isMapFullscreen ? (
+          <Minimize2 size={22} color={primary as any} />
+        ) : (
+          <Maximize2 size={22} color={primary as any} />
+        )}
+      </Pressable>
       {/* Stops FAB — floats above the snap card (inside the map's shrinkable
           Animated.View, so it naturally hovers just above the top edge of
           the card). Hidden on outro/complete since browsing stops has no
@@ -1463,23 +1532,17 @@ function ExcursionBody({
 
       {waitingForGps && <WaitingForGpsToast topInset={topInset} />}
 
-      {/* Snap card — just the drag handle + BottomPanel now. The list of
-          stops used to live between them but competed with the PhaseCard
-          for vertical space (users saw 1-2 stops max). It moved into
-          <StopsSheet> (opened from the "Stops · N" chip on each phase's
-          header), giving it real 85%-screen room to breathe. */}
+      {/* Bottom card — fixed height, content-hugs the PhaseCard measurement
+          (capped at MAX_CARD_FRACTION). No drag/snap. Hidden entirely in
+          fullscreen-map mode. The stops list used to live inline here but
+          competed with the PhaseCard for vertical space (users saw 1-2
+          stops max); it moved into <StopsSheet> (opened from the "Stops · N"
+          chip on each phase's header), giving it 85%-screen room to breathe. */}
+      {!isMapFullscreen && (
       <Animated.View
         style={{ width: '100%', height: bottomHeightAnim, overflow: 'hidden' }}
       >
         <YStack flex={1}>
-          <YStack
-            items="center"
-            justify="center"
-            height={28}
-            {...snapPanResponder.panHandlers}
-          >
-            <YStack width={56} height={5} rounded={3} bg={c.border as any} />
-          </YStack>
           <YStack
             onLayout={(e) =>
               setBottomPanelHeight(e.nativeEvent.layout.height)
@@ -1551,8 +1614,9 @@ function ExcursionBody({
           </YStack>
         </YStack>
       </Animated.View>
+      )}
 
-      {undoSkips.length > 0 && (
+      {!isMapFullscreen && undoSkips.length > 0 && (
         <YStack
           position="absolute"
           // Anchor the deck to sit just above the BottomPanel. The container

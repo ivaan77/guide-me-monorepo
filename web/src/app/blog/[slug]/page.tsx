@@ -26,14 +26,14 @@ export async function generateMetadata({
   if (!res) {
     // Missing post = generic metadata so a share of a broken link still
     // renders SOMETHING sane rather than "undefined" strings.
-    return { title: 'Story — GuideMe' }
+    return { title: 'Story — HeyLocal' }
   }
   const { post } = res
   const title = post.metaTitle ?? post.title
   const description = post.metaDescription ?? post.excerpt
   const image = post.ogImage ?? post.coverImage
   return {
-    title: `${title} — GuideMe`,
+    title: `${title} — HeyLocal`,
     description,
     openGraph: {
       title,

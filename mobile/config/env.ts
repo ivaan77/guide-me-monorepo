@@ -25,6 +25,6 @@ export const API_URL = resolveApiUrl()
 
 // Marketing / legal site. Not per-env — Terms and Privacy live in one place
 // and are the URLs App Store / Play Store review teams inspect.
-export const WEB_URL = 'https://www.guidemeapp.xyz'
+export const WEB_URL = 'https://www.heylocal.xyz'
 export const TERMS_URL = `${WEB_URL}/terms`
 export const PRIVACY_URL = `${WEB_URL}/privacy`

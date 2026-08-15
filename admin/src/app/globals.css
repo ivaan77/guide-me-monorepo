@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* GuideMe design system v0.1 — mapped onto shadcn-style token names so all
+/* HeyLocal design system v0.1 — mapped onto shadcn-style token names so all
    existing admin components/pages pick up the new palette automatically. */
 @theme {
   --color-background: #ffffff;

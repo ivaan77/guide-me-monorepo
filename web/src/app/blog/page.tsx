@@ -12,9 +12,9 @@ import { BlogIndexView } from '../_components/BlogIndexView'
 const PAGE_SIZE = 12
 
 export const metadata: Metadata = {
-  title: 'Stories — GuideMe',
+  title: 'Stories — HeyLocal',
   description:
-    'City guides, travel tips, and behind-the-scenes stories from the GuideMe team.',
+    'City guides, travel tips, and behind-the-scenes stories from the HeyLocal team.',
 }
 
 // Public blog index. ISR-cached (1h) so we don't hammer the API on

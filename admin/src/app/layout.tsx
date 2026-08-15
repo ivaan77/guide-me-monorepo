@@ -17,8 +17,8 @@ const geist = Geist({
 })
 
 export const metadata: Metadata = {
-  title: 'GuideMe · Admin',
-  description: 'Manage Discover content for the GuideMe app.',
+  title: 'HeyLocal · Admin',
+  description: 'Manage Discover content for the HeyLocal app.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     apple: '/apple-touch-icon.png',
