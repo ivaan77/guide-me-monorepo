@@ -21,7 +21,7 @@ export default async function LandingPage() {
       <section className="flex-1 flex items-center justify-center px-6 py-8 sm:py-10 min-h-0">
         <div className="max-w-3xl text-center py-4 md:py-0">
           <div className="flex justify-center mb-6 sm:mb-8">
-            <Mark size={72} />
+            <Mark size={72} variant="inverse" />
           </div>
           <span
             style={{ fontFamily: 'var(--font-body)' }}
