@@ -584,6 +584,10 @@ function ExcursionBody({
   useEffect(() => {
     if (phase === 'arrived' && previousPhaseRef.current !== 'arrived') {
       playArrivalFeedback()
+      // Auto-exit fullscreen map so the arrival card is immediately visible.
+      // Without this, users who navigated in fullscreen mode get haptic +
+      // chime but no visual context (which stop, what's next, audio player).
+      setIsMapFullscreen(false)
     }
     previousPhaseRef.current = phase
   }, [phase])
