@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Marker } from 'react-native-maps'
 import Svg, { Circle, Defs, RadialGradient, Stop, Path } from 'react-native-svg'
 import { View } from 'react-native'
@@ -22,6 +23,28 @@ type Props = {
 // circle with a thin white outline for visibility on any background.
 export function UserHeadingPin({ coords, heading }: Props) {
   const theme = useTheme()
+
+  // `tracksViewChanges` tells react-native-maps to re-rasterise the marker's
+  // React children into a native bitmap on every render. Left on permanently
+  // it re-uploads the SVG continuously as location/heading tick, which reads
+  // as a flickering pin sitting on top of nearby stop markers. We only need
+  // it true long enough to capture the first paint, then it can settle.
+  const [tracksViewChanges, setTracksViewChanges] = useState(true)
+  useEffect(() => {
+    // One frame is enough for the SVG to rasterise; the timeout gives
+    // react-native-svg room to finish on slower devices.
+    const t = setTimeout(() => setTracksViewChanges(false), 500)
+    return () => clearTimeout(t)
+  }, [])
+  // Re-capture when the cone appears/disappears — that's a real visual
+  // change to the bitmap, unlike a position or rotation update (those are
+  // handled natively by `coordinate` and `rotation`).
+  const hasCone = heading != null
+  useEffect(() => {
+    setTracksViewChanges(true)
+    const t = setTimeout(() => setTracksViewChanges(false), 500)
+    return () => clearTimeout(t)
+  }, [hasCone])
   const primary = theme.primary?.val ?? '#2A5BD7'
 
   // The marker positions the SVG's center at `coords`. The cone is drawn
@@ -38,7 +61,7 @@ export function UserHeadingPin({ coords, heading }: Props) {
     <Marker
       coordinate={coords}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges
+      tracksViewChanges={tracksViewChanges}
       flat
       rotation={heading ?? 0}
     >

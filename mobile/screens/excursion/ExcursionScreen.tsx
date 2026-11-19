@@ -441,12 +441,36 @@ function ExcursionBody({
   // off-screen. First paint uses INITIAL_CARD_FRACTION until the
   // measurement lands, then the card resizes into place on phase changes.
   const MAX_CARD_FRACTION = 0.65
+  // Intro and outro are "read this, then continue" cards: the map behind
+  // them is decorative at that moment, and their authored descriptions are
+  // the longest text in the app. Give them more of the screen so the body
+  // isn't a two-line scroll slot under the header and buttons.
+  const TEXT_PHASE_MAX_CARD_FRACTION = 0.88
   const INITIAL_CARD_FRACTION = 0.45
+  const isTextPhase = phase === 'intro' || phase === 'outro'
+  const maxCardFraction = isTextPhase
+    ? TEXT_PHASE_MAX_CARD_FRACTION
+    : MAX_CARD_FRACTION
+  // Text phases get a floor as well as a cap: their body scrolls, so the
+  // natural measurement collapses to whatever the ScrollView happens to
+  // settle at. Without a floor the card content-hugs down to a sliver and
+  // the description gets a one-line scroll slot under the header/buttons.
+  const MIN_TEXT_PHASE_FRACTION = 0.6
   const cardHeight = useMemo(() => {
     if (isMapFullscreen) return 0
     if (bottomPanelHeight <= 0) return screenHeight * INITIAL_CARD_FRACTION
-    return Math.min(screenHeight * MAX_CARD_FRACTION, bottomPanelHeight)
-  }, [isMapFullscreen, bottomPanelHeight, screenHeight])
+    const capped = Math.min(screenHeight * maxCardFraction, bottomPanelHeight)
+    if (isTextPhase) {
+      return Math.max(capped, screenHeight * MIN_TEXT_PHASE_FRACTION)
+    }
+    return capped
+  }, [
+    isMapFullscreen,
+    bottomPanelHeight,
+    screenHeight,
+    maxCardFraction,
+    isTextPhase,
+  ])
 
   // Animated mirror of cardHeight — FloatingFactPlayer expects an
   // Animated.Value so it can float its player just above the card edge.
