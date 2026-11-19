@@ -148,22 +148,32 @@ export function PlaceDetailScreen({ id }: Props) {
         />
 
         <YStack px={H_PADDING} pt="$5" gap="$3">
-          <XStack justify="space-between" items="center">
-            <SizableText
-              size="$2"
-              color={c.textMuted as any}
-              fontFamily="$body"
-              fontWeight="600"
-              style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+          <XStack justify="space-between" items="center" gap="$3">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ alignItems: 'center' }}
             >
-              {place.meta}
-            </SizableText>
-            <RatingStars
-              mode="display"
-              aggregate={place.rating}
-              showEmptyState
-              onPress={onTapRating}
-            />
+              <SizableText
+                size="$2"
+                color={c.textMuted as any}
+                fontFamily="$body"
+                fontWeight="600"
+                numberOfLines={1}
+                style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}
+              >
+                {place.meta}
+              </SizableText>
+            </ScrollView>
+            <XStack style={{ flexShrink: 0 }}>
+              <RatingStars
+                mode="display"
+                aggregate={place.rating}
+                showEmptyState
+                onPress={onTapRating}
+              />
+            </XStack>
           </XStack>
           {place.audioUrl && (
             <AudioPlayer

@@ -1,4 +1,4 @@
-import { Pressable } from 'react-native'
+import { Pressable, ScrollView } from 'react-native'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { palette } from '../../constants/Colors'
 import { SHADOW } from '../../constants/Sizes'
@@ -61,7 +61,11 @@ export function PhaseCard({ children }: CardProps) {
       gap="$3"
       borderWidth={1}
       borderColor={c.border as any}
-      style={SHADOW.card}
+      // Allow the card to shrink inside ExcursionScreen's height-capped
+      // container so PhaseCardBody's ScrollView has a bounded height to
+      // scroll within; without this the card keeps its full natural
+      // height and the overflow is simply clipped.
+      style={{ ...SHADOW.card, flexShrink: 1, maxHeight: '100%' }}
     >
       {children}
     </YStack>
@@ -163,48 +167,65 @@ export function PhaseCardActions({
   tertiary,
 }: ActionsProps) {
   const { c } = useAppTheme()
+  // Secondary sits BESIDE the primary rather than stacked above it. On a
+  // height-capped card every row the actions take is a row the scrollable
+  // body loses, and the secondary is always a short text link ("Skip",
+  // "More info") that doesn't need its own full-width row.
+  const renderPrimary = (inRow: boolean) => (
+    <Pressable
+      onPress={primary.onPress}
+      disabled={primary.disabled}
+      hitSlop={4}
+      style={inRow ? { flex: 1 } : undefined}
+    >
+      <XStack
+        bg={c.primary as any}
+        px="$4"
+        py="$3"
+        rounded="$5"
+        items="center"
+        justify="center"
+        gap="$2"
+        opacity={primary.disabled ? 0.5 : 1}
+      >
+        {primary.icon}
+        <SizableText
+          color={c.onBrand as any}
+          fontFamily="$heading"
+          fontWeight="700"
+          size="$4"
+        >
+          {primary.label}
+        </SizableText>
+      </XStack>
+    </Pressable>
+  )
   return (
     <YStack gap="$2">
-      {secondary && (
-        <Pressable onPress={secondary.onPress} hitSlop={6}>
-          <YStack items="center" py="$1.5">
-            <SizableText
-              color={c.textMuted as any}
-              fontFamily="$body"
-              fontWeight="600"
-              size="$3"
+      {secondary ? (
+        <XStack items="stretch" gap="$3">
+          <Pressable onPress={secondary.onPress} hitSlop={6} style={{ flex: 1 }}>
+            <YStack
+              items="center"
+              justify="center"
+              px="$4"
+              py="$3"
             >
-              {secondary.label}
-            </SizableText>
-          </YStack>
-        </Pressable>
-      )}
-      <Pressable
-        onPress={primary.onPress}
-        disabled={primary.disabled}
-        hitSlop={4}
-      >
-        <XStack
-          bg={c.primary as any}
-          px="$4"
-          py="$3"
-          rounded="$5"
-          items="center"
-          justify="center"
-          gap="$2"
-          opacity={primary.disabled ? 0.5 : 1}
-        >
-          {primary.icon}
-          <SizableText
-            color={c.onBrand as any}
-            fontFamily="$heading"
-            fontWeight="700"
-            size="$4"
-          >
-            {primary.label}
-          </SizableText>
+              <SizableText
+                color={c.textMuted as any}
+                fontFamily="$body"
+                fontWeight="600"
+                size="$3"
+              >
+                {secondary.label}
+              </SizableText>
+            </YStack>
+          </Pressable>
+          {renderPrimary(true)}
         </XStack>
-      </Pressable>
+      ) : (
+        renderPrimary(false)
+      )}
       {tertiary && (
         <Pressable onPress={tertiary.onPress} hitSlop={6}>
           <YStack items="center" py="$1.5">
@@ -223,9 +244,27 @@ export function PhaseCardActions({
   )
 }
 
-// Simple body slot — most panels don't need special wrapping around
-// their content, but exporting a named slot keeps the composition
-// consistent and makes it easy to add default spacing later.
+// Body slot. Scrolls when its content is taller than the room the card
+// has: ExcursionScreen caps the card at MAX_CARD_FRACTION of the screen
+// and clips the overflow, so a long authored description (the Zagreb
+// intro, an arrived-bundle stop) used to push PhaseCardActions out of
+// view with no way to reach Skip / Continue. shrink lets this region give
+// up space inside the capped card while the header and actions keep
+// theirs, so the buttons stay on screen at any content length.
 export function PhaseCardBody({ children }: { children: React.ReactNode }) {
-  return <YStack gap="$2.5">{children}</YStack>
+  return (
+    <YStack style={{ flexShrink: 1, minHeight: 0 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        // Let a short body sit at its natural height rather than
+        // stretching to fill the card.
+        contentContainerStyle={{ flexGrow: 0 }}
+        // The card lives above a map; keep the map's pan gesture from
+        // stealing a scroll that starts inside the card.
+        nestedScrollEnabled
+      >
+        <YStack gap="$2.5">{children}</YStack>
+      </ScrollView>
+    </YStack>
+  )
 }

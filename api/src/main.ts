@@ -1,9 +1,17 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Express defaults to a 100kb JSON body, which excursions outgrow: a route
+  // with ~14 stops of narration across en/de/hr already sits at ~100kb, so
+  // the next edit would 413. Matches admin's serverActions.bodySizeLimit
+  // ('2mb' in admin/next.config.mjs) so both ends of the path agree.
+  app.useBodyParser('json', { limit: '2mb' });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // strip properties not declared on DTOs

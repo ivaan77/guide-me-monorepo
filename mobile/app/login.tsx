@@ -2,9 +2,9 @@ import { useCallback } from 'react'
 import { Stack, useRouter, type Href } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { Paragraph, SizableText, XStack, YStack } from 'tamagui'
-import Svg, { Circle, Path } from 'react-native-svg'
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '../providers/ThemeContext'
+import { HeyLocalMark } from '../common/HeyLocalMark'
 import { SocialAuthButtons } from '../common/SocialAuthButtons'
 import { PRIVACY_URL, TERMS_URL } from '../config/env'
 
@@ -16,14 +16,13 @@ export default function LoginScreen() {
   const router = useRouter()
 
   const goToApp = useCallback(() => router.replace(TABS_HREF), [router])
-  const stroke = resolved === 'dark' ? '#F5F7FA' : '#0B1F3A'
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <YStack flex={1} bg={c.background as any} px="$6" pt="$12" pb="$8" justify="space-between">
         <YStack gap="$5" items="center" mt="$10">
-          <Mark size={88} stroke={stroke} />
+          <HeyLocalMark size={88} inverse={resolved === 'dark'} />
           <SizableText
             color={c.text as any}
             fontFamily="$heading"
@@ -82,18 +81,3 @@ export default function LoginScreen() {
   )
 }
 
-function Mark({ size, stroke }: { size: number; stroke: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 64 64">
-      <Path
-        d="M10 50 C 22 50, 30 46, 36 34 S 46 14, 54 14"
-        stroke={stroke}
-        strokeWidth={6}
-        strokeLinecap="round"
-        fill="none"
-      />
-      <Circle cx={54} cy={14} r={6.5} fill="#FFB23F" />
-      <Circle cx={10} cy={50} r={2.5} fill={stroke} opacity={0.85} />
-    </Svg>
-  )
-}

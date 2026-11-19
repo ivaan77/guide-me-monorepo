@@ -193,6 +193,49 @@ const baseSchema = {
   weatherSensitivity: z.enum(['outdoor', 'mixed', 'indoor']),
 }
 
+// Turns react-hook-form's nested error object into a short, human list of
+// the sections that failed, plus the DOM id of the first offending stop card
+// so we can scroll the editor straight to it.
+//
+// Why this exists: this form is ~1400 lines with every stop collapsed into
+// its own card far down the page. Without this, a failure deep inside
+// `stops.12.image` silently does nothing when Save is pressed — the inputs
+// render their own inline errors, but the editor never sees them because
+// they're off-screen.
+type InvalidSummary = { messages: string[]; focusId: string | null }
+
+function summarizeErrors(
+  errors: Record<string, unknown>,
+  stopLabel: (idx: number) => string,
+): InvalidSummary {
+  const messages: string[] = []
+  let focusId: string | null = null
+
+  // Stops are the common case and the only deeply-nested array, so they get
+  // per-index treatment; everything else is reported by its top-level name.
+  const stopErrors = errors.stops as Record<string, unknown> | undefined
+  if (stopErrors && typeof stopErrors === 'object') {
+    for (const key of Object.keys(stopErrors)) {
+      const idx = Number(key)
+      if (!Number.isInteger(idx)) continue
+      const fields = Object.keys(
+        (stopErrors[key] as Record<string, unknown>) ?? {},
+      )
+      messages.push(
+        `${stopLabel(idx)}: ${fields.length ? fields.join(', ') : 'invalid'}`,
+      )
+      if (focusId === null) focusId = `stop-card-${idx}`
+    }
+  }
+
+  for (const key of Object.keys(errors)) {
+    if (key === 'stops') continue
+    messages.push(key)
+  }
+
+  return { messages, focusId }
+}
+
 const createSchema = z.object({ slug: z.string().regex(SLUG_REGEX), ...baseSchema })
 const updateSchema = z.object(baseSchema)
 type CreateValues = z.infer<typeof createSchema>
@@ -434,8 +477,33 @@ export function ExcursionForm(props: Props) {
     })
   }
 
+  // Runs when zod rejects the form. Without it react-hook-form swallows the
+  // failure and the Save button looks dead (see summarizeErrors above).
+  const onInvalid = (errors: Record<string, unknown>) => {
+    const { messages, focusId } = summarizeErrors(errors, (idx) => {
+      const nameEn = form.getValues(`stops.${idx}.name.en`) ?? ''
+      return `Stop ${idx + 1}${nameEn ? ` (${nameEn})` : ''}`
+    })
+    toast.error('Save failed — fix these fields', {
+      description: messages.join(' · ') || 'Some fields are invalid.',
+    })
+    if (focusId) {
+      const el = document.getElementById(focusId)
+      // Same 80px header offset the floating nav's jump-to-stop uses.
+      if (el) {
+        window.scrollTo({
+          top: el.getBoundingClientRect().top + window.scrollY - 80,
+          behavior: 'smooth',
+        })
+      }
+    }
+  }
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-3xl">
+    <form
+      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+      className="flex flex-col gap-6 max-w-3xl"
+    >
       <ExcursionFormFloatingNav stops={stopJumpOptions} />
       {isEdit && editDraftBannerState === 'visible' && props.initialDraft && (
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
