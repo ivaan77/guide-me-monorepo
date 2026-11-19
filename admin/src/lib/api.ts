@@ -43,10 +43,27 @@ async function request<T>(
   })
   if (res.status === 204) return undefined as T
   const text = await res.text()
-  const json = text ? JSON.parse(text) : undefined
+  // Not every error body is JSON — a 413 raised by Express's body parser (or
+  // by a proxy in front of the api) comes back as HTML or plain text. Parsing
+  // it unguarded would throw and bury the real status code.
+  let json: { message?: unknown } | undefined
+  try {
+    json = text ? JSON.parse(text) : undefined
+  } catch {
+    json = undefined
+  }
   if (!res.ok) {
+    // 413 means the payload outgrew the api's body limit (see useBodyParser
+    // in api/src/main.ts). The raw status text ("Payload Too Large") reads as
+    // a generic save failure in the form toast, so name the real cause.
+    if (res.status === 413) {
+      throw new ApiError(
+        413,
+        'Content is too large to save. Shorten the longest descriptions, or raise the body limit in api/src/main.ts.',
+      )
+    }
     const msg = json?.message
-    const flat = Array.isArray(msg) ? msg.join('; ') : msg ?? res.statusText
+    const flat = Array.isArray(msg) ? msg.join('; ') : (msg as string) ?? res.statusText
     throw new ApiError(res.status, flat)
   }
   return json as T
