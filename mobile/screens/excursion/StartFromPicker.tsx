@@ -7,8 +7,8 @@ import { BottomSheet } from '../../common/BottomSheet'
 import { palette } from '../../constants/Colors'
 import { useAppTheme } from '../../providers/ThemeContext'
 import type { PublicExcursionStop } from '@guide-me-app/core'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
-const H_PADDING = 20
 // Navy reads cleanly on the amber accent — same pairing used by the
 // fact banner/player and the NearestStopCallout marker. Keeping it
 // consistent so the "Nearest" affordance has the same visual signature
@@ -48,7 +48,7 @@ export function StartFromPicker({
       onClose={onClose}
       heightRatio={0.75}
       header={
-        <YStack px={H_PADDING} pt="$2" pb="$3">
+        <YStack px={SCREEN_PADDING} pt="$2" pb="$3">
           <H3 fontFamily="$body" fontWeight="700" color={c.text as any}>
             {t('excursion.startFrom.pickerTitle', {
               defaultValue: 'Choose starting stop',
@@ -127,7 +127,7 @@ function StopRow({
           flex={1}
           items="center"
           gap="$3"
-          px={H_PADDING}
+          px={SCREEN_PADDING}
           py={nearest ? '$3' : '$2.5'}
         >
           <Image

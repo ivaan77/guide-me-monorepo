@@ -9,15 +9,13 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useFuzzySearch } from '../../hooks/useFuzzySearch'
 import { useLayout } from '../../hooks/useLayout'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
-import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
+import { GRID_GUTTER, SCREEN_PADDING, TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { CityCard } from './CityCard'
 import { CityCardSkeleton } from './CityCardSkeleton'
 import { EmptyState } from './EmptyState'
 import { SearchBar } from './SearchBar'
 
-const GUTTER = 16
-const H_PADDING = 20
 const SEARCH_DEBOUNCE_MS = 350
 const SKELETON_COUNT = 8
 
@@ -36,7 +34,7 @@ export function DiscoverScreen() {
   const effectiveWidth = isTablet
     ? Math.min(width, TABLET_MAX_CONTENT_WIDTH)
     : width
-  const cardWidth = (effectiveWidth - H_PADDING * 2 - GUTTER) / 2
+  const cardWidth = (effectiveWidth - SCREEN_PADDING * 2 - GRID_GUTTER) / 2
   // Horizontal margin used by list containers to center the fixed-width
   // grid on tablets. Zero on phones (full-bleed).
   const tabletSideMargin = isTablet
@@ -75,7 +73,7 @@ export function DiscoverScreen() {
     <SearchBar
       value={query}
       onChange={setQuery}
-      hPadding={H_PADDING}
+      hPadding={SCREEN_PADDING}
       disabled={isPending || isError}
     />
   )
@@ -128,15 +126,16 @@ export function DiscoverScreen() {
         numColumns={2}
         style={{ backgroundColor: bg }}
         contentContainerStyle={{
-          paddingLeft: H_PADDING + tabletSideMargin,
-          paddingRight: H_PADDING + tabletSideMargin,
+          paddingLeft: SCREEN_PADDING + tabletSideMargin,
+          paddingRight: SCREEN_PADDING + tabletSideMargin,
           paddingBottom: bottomPadding,
           backgroundColor: bg,
           flexGrow: 1,
         }}
-        columnWrapperStyle={{ gap: GUTTER }}
-        ItemSeparatorComponent={() => <YStack height={GUTTER} />}
+        columnWrapperStyle={{ gap: GRID_GUTTER }}
+        ItemSeparatorComponent={() => <YStack height={GRID_GUTTER} />}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         stickyHeaderIndices={[0]}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
@@ -163,8 +162,8 @@ function SkeletonGrid({
     <ScrollView
       style={{ backgroundColor: bg }}
       contentContainerStyle={{
-        paddingLeft: H_PADDING + sideMargin,
-        paddingRight: H_PADDING + sideMargin,
+        paddingLeft: SCREEN_PADDING + sideMargin,
+        paddingRight: SCREEN_PADDING + sideMargin,
         paddingBottom: 24,
         backgroundColor: bg,
         flexGrow: 1,
@@ -174,9 +173,9 @@ function SkeletonGrid({
       scrollEnabled={false}
     >
       {header}
-      <YStack gap={GUTTER}>
+      <YStack gap={GRID_GUTTER}>
         {Array.from({ length: rows }, (_, rowIdx) => (
-          <XStack key={rowIdx} gap={GUTTER}>
+          <XStack key={rowIdx} gap={GRID_GUTTER}>
             <CityCardSkeleton width={cardWidth} />
             <CityCardSkeleton width={cardWidth} />
           </XStack>
@@ -196,8 +195,8 @@ function NonScrollableState({
   const { c } = useAppTheme()
   return (
     <YStack flex={1} bg={c.background as any}>
-      <YStack px={H_PADDING}>{header}</YStack>
-      <YStack flex={1} px={H_PADDING}>
+      <YStack px={SCREEN_PADDING}>{header}</YStack>
+      <YStack flex={1} px={SCREEN_PADDING}>
         {children}
       </YStack>
     </YStack>

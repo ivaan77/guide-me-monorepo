@@ -4,10 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { BookOpen } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { useStories } from '../../hooks/useStories'
-import { SHADOW } from '../../constants/Sizes'
+import { SCREEN_PADDING, SHADOW } from '../../constants/Sizes'
 import { useAppTheme } from '../../providers/ThemeContext'
 
-const H_PADDING = 20
 const GUTTER = 12
 const CARD_WIDTH = 260
 
@@ -30,7 +29,7 @@ export function RelatedStories({ citySlug }: { citySlug: string }) {
 
   return (
     <YStack gap="$3" pt="$4">
-      <XStack items="center" gap="$2" px={H_PADDING}>
+      <XStack items="center" gap="$2" px={SCREEN_PADDING}>
         <BookOpen size={18} color={c.text as any} />
         <SizableText size="$6" fontFamily="$body" fontWeight="700" color={c.text as any}>
           {t('stories.relatedTitle')}
@@ -40,7 +39,7 @@ export function RelatedStories({ citySlug }: { citySlug: string }) {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
-          paddingHorizontal: H_PADDING,
+          paddingHorizontal: SCREEN_PADDING,
           gap: GUTTER,
         }}
       >

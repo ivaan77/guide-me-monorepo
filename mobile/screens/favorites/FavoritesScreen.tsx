@@ -20,12 +20,11 @@ import { useExcursion } from '../../hooks/useExcursion'
 import { usePlace } from '../../hooks/usePlace'
 import { useLayout } from '../../hooks/useLayout'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
-import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
+import { SCREEN_PADDING, TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { EmptyState } from '../discover/EmptyState'
 
 const LOGIN_HREF = '/login' as Href
-const H_PADDING = 20
 
 export function FavoritesScreen() {
   const { t } = useTranslation()
@@ -51,7 +50,15 @@ export function FavoritesScreen() {
 
   if (!isSignedIn) {
     return (
-      <YStack flex={1} bg={c.background as any} pt={insets.top + 8}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: c.background }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 8,
+          paddingBottom: 24,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
           <Heart size={48} color={c.primary as any} />
           <H2
@@ -84,7 +91,7 @@ export function FavoritesScreen() {
             {t('profile.signIn')}
           </Button>
         </YStack>
-      </YStack>
+      </ScrollView>
     )
   }
 
@@ -93,7 +100,7 @@ export function FavoritesScreen() {
       <YStack flex={1} bg={c.background as any} pt={insets.top + 8}>
         <YStack
           gap="$2"
-          px={H_PADDING}
+          px={SCREEN_PADDING}
           pt="$3"
         >
           {[0, 1, 2, 3].map((i) => (
@@ -143,7 +150,7 @@ export function FavoritesScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingHorizontal: H_PADDING,
+          paddingHorizontal: SCREEN_PADDING,
           paddingTop: 12,
           paddingBottom: bottomPadding,
           alignItems: isTablet ? 'center' : 'stretch',

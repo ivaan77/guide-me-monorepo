@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Animated, Pressable } from 'react-native'
+import { Animated, Pressable, ScrollView } from 'react-native'
 import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@clerk/clerk-expo'
@@ -9,6 +9,7 @@ import { Star } from '@tamagui/lucide-icons'
 import { H2, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import type { RatingTargetType, RatingValue } from '@guide-me-app/core'
 import { BottomSheet } from './BottomSheet'
+import { useLayout } from '../hooks/useLayout'
 import { useMyRating } from '../hooks/useMyRating'
 import { useRateTarget } from '../hooks/useRateTarget'
 import { UnauthorizedError } from '../lib/authedApi'
@@ -49,6 +50,7 @@ export function RatingPromptSheet({
   entityName,
 }: Props) {
   const { t } = useTranslation()
+  const { isSmall } = useLayout()
   const router = useRouter()
   const toast = useToastController()
   const posthog = usePostHog()
@@ -178,7 +180,15 @@ export function RatingPromptSheet({
   const litUpTo = hovered ?? selected ?? 0
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} heightRatio={0.42}>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      heightRatio={isSmall ? 0.58 : 0.42}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
       <YStack px="$5" py="$4" gap="$4" flex={1}>
         <YStack gap="$2">
           <H2 color={c.text as any} fontFamily="$heading" fontWeight="700" fontSize="$7">
@@ -209,7 +219,7 @@ export function RatingPromptSheet({
                 hitSlop={6}
               >
                 <Star
-                  size={44}
+                  size={isSmall ? 36 : 44}
                   color={isLit ? (STAR_FILLED as any) : (STAR_OUTLINE as any)}
                   fill={isLit ? (STAR_FILLED as any) : 'transparent'}
                 />
@@ -243,6 +253,7 @@ export function RatingPromptSheet({
           </Pressable>
         )}
       </YStack>
+      </ScrollView>
     </BottomSheet>
   )
 }

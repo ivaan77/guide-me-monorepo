@@ -36,6 +36,14 @@ export const HERO_RATIO = 0.85
 // keeps the fold visible.
 export const HERO_MAX_VIEWPORT_RATIO = 0.5
 
+// Hero display title (city / place name over the hero image). 44pt is the
+// design size; on an iPhone SE-class screen (<380pt, see useLayout's
+// isSmall) a long name like "Savudrija" or "Šibenik City Museum" eats both
+// allowed lines and clips, so step it down. lineHeight travels with it —
+// a fixed lineHeight against a smaller size leaves an awkward gap.
+export const HERO_TITLE_SIZE = { default: 44, small: 34 }
+export const HERO_TITLE_LINE_HEIGHT = { default: 48, small: 38 }
+
 // Bottom tab bar height. Was hardcoded 49/iOS + 80/Android inconsistently.
 // - iOS: 49pt is the standard tab bar (matches Apple's UITabBar default).
 // - Android: 56dp is the Material Design bottom nav spec (was 80 — overshoot).

@@ -9,8 +9,8 @@ import { useStories } from '../../hooks/useStories'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { StoryCard } from './StoryCard'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
-const H_PADDING = 20
 
 // Simple vertically-scrolling list of story cards. Category filter chips
 // at the top switch the fetch. No pagination on mobile for now — the
@@ -32,7 +32,7 @@ export function StoriesScreen() {
 
   return (
     <YStack flex={1} bg={c.background as any} pt={insets.top}>
-      <YStack px={H_PADDING} pt="$4" pb="$3">
+      <YStack px={SCREEN_PADDING} pt="$4" pb="$3">
         <SizableText
           size="$9"
           fontFamily="$heading"
@@ -47,7 +47,7 @@ export function StoriesScreen() {
         showsHorizontalScrollIndicator={false}
         data={[undefined, ...BLOG_CATEGORIES] as (BlogCategory | undefined)[]}
         keyExtractor={(item) => item ?? '__all'}
-        contentContainerStyle={{ paddingHorizontal: H_PADDING, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, gap: 8 }}
         style={{ flexGrow: 0, marginBottom: 8 }}
         renderItem={({ item }) => (
           <Chip
@@ -68,7 +68,7 @@ export function StoriesScreen() {
           showsHorizontalScrollIndicator={false}
           data={[undefined, ...cities.map((city) => city.id)] as (string | undefined)[]}
           keyExtractor={(item) => item ?? '__all-cities'}
-          contentContainerStyle={{ paddingHorizontal: H_PADDING, gap: 8 }}
+          contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, gap: 8 }}
           style={{ flexGrow: 0, marginBottom: 12 }}
           renderItem={({ item }) => (
             <Chip
@@ -88,13 +88,13 @@ export function StoriesScreen() {
           <ActivityIndicator />
         </YStack>
       ) : isError || !posts ? (
-        <YStack flex={1} items="center" justify="center" px={H_PADDING}>
+        <YStack flex={1} items="center" justify="center" px={SCREEN_PADDING}>
           <SizableText size="$3" fontFamily="$body" color={c.textMuted as any} text="center">
             {t('stories.errorBody')}
           </SizableText>
         </YStack>
       ) : posts.length === 0 ? (
-        <YStack flex={1} items="center" justify="center" px={H_PADDING}>
+        <YStack flex={1} items="center" justify="center" px={SCREEN_PADDING}>
           <SizableText size="$3" fontFamily="$body" color={c.textMuted as any} text="center">
             {t('stories.emptyBody')}
           </SizableText>
@@ -104,7 +104,7 @@ export function StoriesScreen() {
           data={posts}
           keyExtractor={(item) => item.slug}
           contentContainerStyle={{
-            paddingHorizontal: H_PADDING,
+            paddingHorizontal: SCREEN_PADDING,
             paddingBottom: tabPad + 24,
             gap: 16,
           }}

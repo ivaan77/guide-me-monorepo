@@ -5,6 +5,7 @@ import {
   Image,
   Linking,
   Pressable,
+  ScrollView,
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -48,7 +49,8 @@ import {
   YStack,
 } from 'tamagui'
 import { palette } from '../../constants/Colors'
-import { SHADOW } from '../../constants/Sizes'
+import { SCREEN_PADDING, SHADOW } from '../../constants/Sizes'
+import { useLayout } from '../../hooks/useLayout'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
@@ -118,7 +120,6 @@ type Phase =
 // (set in admin). Increase for stops in dense urban areas where GPS jitters;
 // tighten for precise photo-ops.
 const DEFAULT_ARRIVAL_RADIUS_METERS = 30
-const H_PADDING = 20
 
 export function ExcursionScreen({ id }: Props) {
   const router = useRouter()
@@ -1428,8 +1429,8 @@ function ExcursionBody({
           onPress={recenter}
           style={{
             position: 'absolute',
-            bottom: 16,
-            right: H_PADDING,
+            bottom: isMapFullscreen ? bottomInset + 16 : 16,
+            right: SCREEN_PADDING,
             zIndex: 12,
             width: 48,
             height: 48,
@@ -1456,7 +1457,7 @@ function ExcursionBody({
         style={{
           position: 'absolute',
           bottom: phase === 'navigating' && !isFollowing ? 16 + 48 + 8 : 16,
-          right: H_PADDING,
+          right: SCREEN_PADDING,
           zIndex: 12,
           width: 48,
           height: 48,
@@ -1494,8 +1495,8 @@ function ExcursionBody({
           onPress={() => setStopsSheetOpen(true)}
           style={{
             position: 'absolute',
-            bottom: 16,
-            left: H_PADDING,
+            bottom: isMapFullscreen ? bottomInset + 16 : 16,
+            left: SCREEN_PADDING,
             zIndex: 12,
             height: 48,
             paddingHorizontal: 14,
@@ -1529,7 +1530,7 @@ function ExcursionBody({
       <YStack
         position="absolute"
         t={topInset + 8}
-        r={H_PADDING}
+        r={SCREEN_PADDING}
         z={10}
       >
         <FavoriteButton refToFavorite={{ type: 'excursion', id }} />
@@ -1652,8 +1653,8 @@ function ExcursionBody({
           // to overlap like a card deck — newest on top fully visible, older
           // ones peeking out behind.
           b={bottomPanelHeight + 8}
-          l={H_PADDING}
-          r={H_PADDING}
+          l={SCREEN_PADDING}
+          r={SCREEN_PADDING}
           height={100}
           z={12}
           pointerEvents="box-none"
@@ -1792,17 +1793,24 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
   const { t } = useTranslation()
   const { c } = useAppTheme()
   return (
-    <YStack
-      position="absolute"
-      t={0}
-      l={0}
-      r={0}
-      b={0}
-      bg="rgba(0,0,0,0.55)"
-      items="center"
-      justify="center"
-      px="$5"
-      z={50}
+    <ScrollView
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        zIndex: 50,
+      }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 24,
+      }}
+      showsVerticalScrollIndicator={false}
     >
       <YStack
         bg={c.surface as any}
@@ -1897,7 +1905,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
           </YStack>
         </Pressable>
       </YStack>
-    </YStack>
+    </ScrollView>
   )
 }
 
@@ -2069,7 +2077,7 @@ function BottomPanel({
       bg={c.surface as any}
       borderTopWidth={1}
       borderColor={c.border as any}
-      px={H_PADDING}
+      px={SCREEN_PADDING}
       pt="$4"
       pb={Math.max(bottomInset, 16)}
       gap="$3"
@@ -2868,6 +2876,7 @@ function IntroPanel({
 }) {
   const { t } = useTranslation()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   return (
     <PhaseCard>
       <PhaseCardHeader
@@ -2878,7 +2887,7 @@ function IntroPanel({
       <PhaseCardBody>
         <Image
           source={{ uri: intro.image }}
-          style={{ width: '100%', height: 160, borderRadius: 12 }}
+          style={{ width: '100%', height: isSmall ? 110 : 160, borderRadius: 12 }}
           resizeMode="cover"
         />
         <AudioPlayer
@@ -2926,6 +2935,7 @@ function OutroPanel({
 }) {
   const { t } = useTranslation()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   // Outro card — coral phase tint. Hero image sits in the body as a full-
   // width banner (this phase intentionally leans on the image as the
   // emotional close); audio + description below it. Same PhaseCard shape
@@ -2941,7 +2951,7 @@ function OutroPanel({
       <PhaseCardBody>
         <Image
           source={{ uri: outro.image }}
-          style={{ width: '100%', height: 160, borderRadius: 12 }}
+          style={{ width: '100%', height: isSmall ? 110 : 160, borderRadius: 12 }}
           resizeMode="cover"
         />
         <AudioPlayer
@@ -3053,7 +3063,7 @@ function BackButton({
       style={{
         position: 'absolute',
         top: topInset + 8,
-        left: H_PADDING,
+        left: SCREEN_PADDING,
         zIndex: 10,
       }}
     >

@@ -28,7 +28,7 @@ import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
 import { clearAuthChoice } from '../../providers/AuthChoice'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { EmptyState } from '../discover/EmptyState'
-import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
+import { HERO_MAX_VIEWPORT_RATIO, HERO_TITLE_LINE_HEIGHT, HERO_TITLE_SIZE, SCREEN_PADDING, TABLET_MAX_CONTENT_WIDTH, TAB_BAR_HEIGHT } from '../../constants/Sizes'
 
 const LOGIN_HREF = '/login' as Href
 import { CLEAN_MAP_STYLE } from '../excursion/cleanMapStyle'
@@ -39,8 +39,6 @@ type Props = {
 }
 
 const HERO_RATIO = 0.85
-const H_PADDING = 20
-const TAB_BAR_HEIGHT = 49
 
 export function PlaceDetailScreen({ id }: Props) {
   const { width: rawWidth } = useWindowDimensions()
@@ -50,7 +48,7 @@ export function PlaceDetailScreen({ id }: Props) {
   const { data: place, isPending, isError, refetch } = usePlace(id)
   const ratingPrompt = useDwellRatingPrompt('place', id, { enabled: !!place })
   const posthog = usePostHog()
-  const { isTablet } = useLayout()
+  const { isTablet, isSmall, screen } = useLayout()
   const { c } = useAppTheme()
   // Same tablet cap as CityDetailScreen — see comment there.
   const width = isTablet ? Math.min(rawWidth, TABLET_MAX_CONTENT_WIDTH) : rawWidth
@@ -126,7 +124,10 @@ export function PlaceDetailScreen({ id }: Props) {
     )
   }
 
-  const heroHeight = width * HERO_RATIO
+  const heroHeight = Math.min(
+    width * HERO_RATIO,
+    screen.height * HERO_MAX_VIEWPORT_RATIO,
+  )
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 24
 
   return (
@@ -147,7 +148,7 @@ export function PlaceDetailScreen({ id }: Props) {
           categoryLabel={categoryLabel}
         />
 
-        <YStack px={H_PADDING} pt="$5" gap="$3">
+        <YStack px={SCREEN_PADDING} pt="$5" gap="$3">
           <XStack justify="space-between" items="center" gap="$3">
             <ScrollView
               horizontal
@@ -260,7 +261,7 @@ export function PlaceDetailScreen({ id }: Props) {
       <YStack
         position="absolute"
         t={insets.top + 8}
-        r={H_PADDING}
+        r={SCREEN_PADDING}
         z={10}
       >
         <FavoriteButton refToFavorite={{ type: 'place', id: place.id }} />
@@ -289,6 +290,9 @@ function HeroCarousel({
   categoryLabel: (c: PoiCategory) => string
 }) {
   const { c } = useAppTheme()
+  // Own useLayout call rather than a prop — the hook is memoized off
+  // useWindowDimensions, so this is cheap and keeps the signature small.
+  const { isSmall } = useLayout()
   // Same carousel pattern as StopDetailSheet / PoiDetailSheet. Falls back to
   // [image] when no gallery so we always have at least one slide.
   const images = place.images?.length ? place.images : [place.image]
@@ -364,7 +368,7 @@ function HeroCarousel({
         l={0}
         r={0}
         b={0}
-        px={H_PADDING}
+        px={SCREEN_PADDING}
         pb="$5"
         gap="$1"
         // pointerEvents="none" lets the underlying FlatList still receive
@@ -374,8 +378,12 @@ function HeroCarousel({
         <H1
           fontFamily="$heading"
           fontWeight="800"
-          fontSize={44}
-          lineHeight={48}
+          fontSize={isSmall ? HERO_TITLE_SIZE.small : HERO_TITLE_SIZE.default}
+          lineHeight={
+            isSmall
+              ? HERO_TITLE_LINE_HEIGHT.small
+              : HERO_TITLE_LINE_HEIGHT.default
+          }
           color={c.onMedia as any}
           numberOfLines={2}
           style={{ letterSpacing: -1 }}
@@ -411,7 +419,7 @@ function BackButton({
       style={{
         position: 'absolute',
         top: topInset + 8,
-        left: H_PADDING,
+        left: SCREEN_PADDING,
         zIndex: 10,
       }}
     >

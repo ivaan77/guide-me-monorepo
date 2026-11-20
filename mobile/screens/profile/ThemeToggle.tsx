@@ -52,6 +52,8 @@ export function ThemeToggle() {
                 fontFamily="$body"
                 fontWeight={active ? '600' : '500'}
                 color={(active ? c.text : c.textMuted) as any}
+                numberOfLines={1}
+                style={{ flexShrink: 1 }}
               >
                 {t(labelKey)}
               </SizableText>

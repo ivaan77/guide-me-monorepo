@@ -39,7 +39,7 @@ import { RatingStars } from '../../common/RatingStars'
 import { useCity } from '../../hooks/useCity'
 import { useLayout } from '../../hooks/useLayout'
 import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
-import { TABLET_MAX_CONTENT_WIDTH } from '../../constants/Sizes'
+import { HERO_MAX_VIEWPORT_RATIO, HERO_TITLE_LINE_HEIGHT, HERO_TITLE_SIZE, SCREEN_PADDING, TABLET_MAX_CONTENT_WIDTH, TAB_BAR_HEIGHT } from '../../constants/Sizes'
 import { clearAuthChoice } from '../../providers/AuthChoice'
 import { useAppTheme } from '../../providers/ThemeContext'
 
@@ -57,8 +57,6 @@ type Props = {
 }
 
 const HERO_RATIO = 0.85
-const H_PADDING = 20
-const TAB_BAR_HEIGHT = 49
 
 // User's coarse location for the "distance from me" sort inside category
 // sections. We only need one fix — accuracy is Balanced, no watch. If the
@@ -122,7 +120,7 @@ export function CityDetailScreen({ id }: Props) {
   const { data: city, isPending, isError, refetch } = useCity(id)
   const ratingPrompt = useDwellRatingPrompt('city', id, { enabled: !!city })
   const userLocation = useCoarseUserLocation()
-  const { isTablet } = useLayout()
+  const { isTablet, isSmall, screen } = useLayout()
   const { c } = useAppTheme()
   // On tablets, cap the working content width so the hero image doesn't
   // stretch to 1024pt+ (unreadably large) and body text lines stay in the
@@ -169,7 +167,10 @@ export function CityDetailScreen({ id }: Props) {
     )
   }
 
-  const heroHeight = width * HERO_RATIO
+  const heroHeight = Math.min(
+    width * HERO_RATIO,
+    screen.height * HERO_MAX_VIEWPORT_RATIO,
+  )
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 24
 
   return (
@@ -205,15 +206,19 @@ export function CityDetailScreen({ id }: Props) {
             l={0}
             r={0}
             b={0}
-            px={H_PADDING}
+            px={SCREEN_PADDING}
             pb="$5"
             gap="$1"
           >
             <H1
               fontFamily="$heading"
               fontWeight="800"
-              fontSize={44}
-              lineHeight={48}
+              fontSize={isSmall ? HERO_TITLE_SIZE.small : HERO_TITLE_SIZE.default}
+              lineHeight={
+                isSmall
+                  ? HERO_TITLE_LINE_HEIGHT.small
+                  : HERO_TITLE_LINE_HEIGHT.default
+              }
               color={c.onMedia as any}
               numberOfLines={2}
               style={{ letterSpacing: -1 }}
@@ -247,7 +252,7 @@ export function CityDetailScreen({ id }: Props) {
         )}
         {city.audioUrl && (
           <YStack
-            px={H_PADDING}
+            px={SCREEN_PADDING}
             mt={city.editorPick ? '$3' : -14}
             z={5}
           >
@@ -261,7 +266,7 @@ export function CityDetailScreen({ id }: Props) {
             />
           </YStack>
         )}
-        <YStack px={H_PADDING} pt="$5" gap="$3">
+        <YStack px={SCREEN_PADDING} pt="$5" gap="$3">
           {/* Excursions is the hero feature — expanded by default. The
               other 13 categories collapse by default so the initial view
               is a scannable index rather than a wall of content. Distance
@@ -390,7 +395,7 @@ export function CityDetailScreen({ id }: Props) {
         </YStack>
         {/* Related stories: renders nothing if the city has no tied
             blog posts, so screens that don't have editorial coverage
-            stay uncluttered. Lives OUTSIDE the H_PADDING YStack so its
+            stay uncluttered. Lives OUTSIDE the SCREEN_PADDING YStack so its
             horizontal scroll can bleed to the screen edge. */}
         <RelatedStories citySlug={city.id} />
       </ScrollView>
@@ -398,7 +403,7 @@ export function CityDetailScreen({ id }: Props) {
       <YStack
         position="absolute"
         t={insets.top + 8}
-        r={H_PADDING}
+        r={SCREEN_PADDING}
         z={10}
       >
         <FavoriteButton refToFavorite={{ type: 'city', id: city.id }} />
@@ -693,7 +698,7 @@ function BackButton({
       style={{
         position: 'absolute',
         top: topInset + 8,
-        left: H_PADDING,
+        left: SCREEN_PADDING,
         zIndex: 10,
       }}
     >
