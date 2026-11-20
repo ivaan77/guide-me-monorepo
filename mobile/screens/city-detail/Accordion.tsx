@@ -4,6 +4,7 @@ import { ChevronDown } from '@tamagui/lucide-icons'
 import type { IconProps } from '@tamagui/helpers-icon'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { useLayout } from '../../hooks/useLayout'
 
 if (
   Platform.OS === 'android' &&
@@ -29,6 +30,7 @@ export function Accordion({
 }: Props) {
   const [open, setOpen] = useState(defaultOpen)
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
@@ -44,10 +46,15 @@ export function Accordion({
       overflow="hidden"
     >
       <Pressable onPress={toggle}>
-        <XStack items="center" px="$4" py="$3.5" gap="$3">
+        <XStack
+          items="center"
+          px={isSmall ? "$3" : "$4"}
+          py={isSmall ? "$3" : "$3.5"}
+          gap="$3"
+        >
           <YStack
-            width={32}
-            height={32}
+            width={isSmall ? 28 : 32}
+            height={isSmall ? 28 : 32}
             rounded={16}
             bg={c.surfaceMuted as any}
             items="center"
@@ -57,6 +64,7 @@ export function Accordion({
           </YStack>
           <SizableText
             flex={1}
+            numberOfLines={1}
             size="$5"
             fontFamily="$body"
             fontWeight="600"

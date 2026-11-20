@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Animated, Pressable, ScrollView } from 'react-native'
+import { Animated, Pressable } from 'react-native'
 import { useRouter, type Href } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@clerk/clerk-expo'
@@ -183,13 +183,10 @@ export function RatingPromptSheet({
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      heightRatio={isSmall ? 0.58 : 0.42}
+      fitContent
+      heightRatio={0.7}
     >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-      >
-      <YStack px="$5" py="$4" gap="$4" flex={1}>
+      <YStack px="$5" py="$4" gap="$3">
         <YStack gap="$2">
           <H2 color={c.text as any} fontFamily="$heading" fontWeight="700" fontSize="$7">
             {title}
@@ -206,7 +203,7 @@ export function RatingPromptSheet({
           </Paragraph>
         </YStack>
 
-        <XStack justify="center" gap="$3" py="$4">
+        <XStack justify="center" gap="$3" py="$2">
           {STAR_VALUES.map((v) => {
             const isLit = v <= litUpTo
             return (
@@ -253,7 +250,6 @@ export function RatingPromptSheet({
           </Pressable>
         )}
       </YStack>
-      </ScrollView>
     </BottomSheet>
   )
 }

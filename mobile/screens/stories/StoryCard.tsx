@@ -5,6 +5,7 @@ import { SizableText, XStack, YStack } from 'tamagui'
 import type { BlogCategory, PublicBlogSummary } from '@guide-me-app/core'
 import { SHADOW } from '../../constants/Sizes'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { useLayout } from '../../hooks/useLayout'
 
 type Props = {
   post: PublicBlogSummary
@@ -16,6 +17,7 @@ type Props = {
 export function StoryCard({ post }: Props) {
   const { t, i18n } = useTranslation()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   const dateFmt = new Intl.DateTimeFormat(i18n.language, {
     day: 'numeric',
     month: 'short',
@@ -59,7 +61,7 @@ export function StoryCard({ post }: Props) {
               )}
             </XStack>
             <SizableText
-              size="$6"
+              size={isSmall ? '$5' : '$6'}
               fontFamily="$body"
               fontWeight="700"
               color={c.text as any}

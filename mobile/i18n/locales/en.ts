@@ -91,6 +91,7 @@ export const en = {
     countLabel_other: '{{count}} ratings',
     signInToRate: 'Sign in to rate',
     noRatingsYet: 'No ratings yet',
+    noRatingsShort: 'Not rated yet',
     beFirstToRate: 'Be the first to rate',
     prompt: {
       titleCity: 'How was {{name}}?',

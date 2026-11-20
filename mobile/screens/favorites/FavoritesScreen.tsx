@@ -32,7 +32,7 @@ export function FavoritesScreen() {
   const insets = useSafeAreaInsets()
   const { isSignedIn } = useAuth()
   const { data: me, isPending, isError, refetch } = useMe()
-  const { isTablet } = useLayout()
+  const { isTablet, fontStep } = useLayout()
   const { c } = useAppTheme()
 
   const onSignIn = useCallback(async () => {
@@ -65,7 +65,7 @@ export function FavoritesScreen() {
             color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
-            fontSize="$8"
+            fontSize={fontStep('$8')}
             text="center"
           >
             {t('favorites.signInRequiredTitle')}
@@ -132,7 +132,7 @@ export function FavoritesScreen() {
             color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
-            fontSize="$8"
+            fontSize={fontStep('$8')}
             text="center"
           >
             {t('favorites.emptyTitle')}

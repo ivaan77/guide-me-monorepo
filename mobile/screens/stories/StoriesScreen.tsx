@@ -7,6 +7,7 @@ import { BLOG_CATEGORIES, type BlogCategory } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
 import { useStories } from '../../hooks/useStories'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { useLayout } from '../../hooks/useLayout'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { StoryCard } from './StoryCard'
 import { SCREEN_PADDING } from '../../constants/Sizes'
@@ -21,6 +22,7 @@ export function StoriesScreen() {
   const insets = useSafeAreaInsets()
   const tabPad = useTabBarPadding()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   const [category, setCategory] = useState<BlogCategory | undefined>(undefined)
   const [citySlug, setCitySlug] = useState<string | undefined>(undefined)
   const { data: cities } = useCities()
@@ -34,7 +36,7 @@ export function StoriesScreen() {
     <YStack flex={1} bg={c.background as any} pt={insets.top}>
       <YStack px={SCREEN_PADDING} pt="$4" pb="$3">
         <SizableText
-          size="$9"
+          size={isSmall ? '$7' : '$9'}
           fontFamily="$heading"
           fontWeight="800"
           color={c.text as any}

@@ -3,6 +3,8 @@ import { Link } from 'expo-router'
 import type { PublicCity } from '@guide-me-app/core'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { RatingStars } from '../../common/RatingStars'
+import { CITY_CARD_RATIO } from '../../constants/Sizes'
+import { useLayout } from '../../hooks/useLayout'
 import { useAppTheme } from '../../providers/ThemeContext'
 
 type Props = {
@@ -12,6 +14,7 @@ type Props = {
 
 export function CityCard({ city, width }: Props) {
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   return (
     <Link href={`/city/${city.id}`} asChild>
       <Pressable style={{ width }}>
@@ -24,12 +27,17 @@ export function CityCard({ city, width }: Props) {
         >
           <Image
             source={{ uri: city.image }}
-            style={{ width: '100%', height: width * 1.15 }}
+            style={{
+              width: '100%',
+              height:
+                width *
+                (isSmall ? CITY_CARD_RATIO.small : CITY_CARD_RATIO.default),
+            }}
             resizeMode="cover"
           />
           <YStack items="center" justify="center" py="$3" px="$2">
             <SizableText
-              size="$5"
+              size={isSmall ? '$4' : '$5'}
               fontFamily="$body"
               fontWeight="600"
               color={c.text as any}
@@ -49,9 +57,12 @@ export function CityCard({ city, width }: Props) {
               {city.country}
             </SizableText>
             <XStack mt="$1.5" justify="center" minH={20}>
-              {city.rating && city.rating.count > 0 ? (
-                <RatingStars mode="display" aggregate={city.rating} compact />
-              ) : null}
+              <RatingStars
+                mode="display"
+                aggregate={city.rating}
+                compact
+                showEmptyState
+              />
             </XStack>
           </YStack>
         </YStack>

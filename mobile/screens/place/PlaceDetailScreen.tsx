@@ -28,7 +28,7 @@ import { useDwellRatingPrompt } from '../../hooks/useRatingPrompt'
 import { clearAuthChoice } from '../../providers/AuthChoice'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { EmptyState } from '../discover/EmptyState'
-import { HERO_MAX_VIEWPORT_RATIO, HERO_TITLE_LINE_HEIGHT, HERO_TITLE_SIZE, SCREEN_PADDING, TABLET_MAX_CONTENT_WIDTH, TAB_BAR_HEIGHT } from '../../constants/Sizes'
+import { HERO_MAX_VIEWPORT_RATIO, HERO_RATIO_SMALL, HERO_TITLE_LINE_HEIGHT, HERO_TITLE_SIZE, SCREEN_PADDING, TABLET_MAX_CONTENT_WIDTH, TAB_BAR_HEIGHT } from '../../constants/Sizes'
 
 const LOGIN_HREF = '/login' as Href
 import { CLEAN_MAP_STYLE } from '../excursion/cleanMapStyle'
@@ -125,7 +125,7 @@ export function PlaceDetailScreen({ id }: Props) {
   }
 
   const heroHeight = Math.min(
-    width * HERO_RATIO,
+    width * (isSmall ? HERO_RATIO_SMALL : HERO_RATIO),
     screen.height * HERO_MAX_VIEWPORT_RATIO,
   )
   const bottomPadding = insets.bottom + TAB_BAR_HEIGHT + 24
@@ -328,14 +328,18 @@ function HeroCarousel({
         )}
       />
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.75)']}
-        locations={[0, 1]}
+        colors={[
+          'rgba(0,0,0,0)',
+          'rgba(0,0,0,0.45)',
+          'rgba(0,0,0,0.88)',
+        ]}
+        locations={[0, 0.45, 1]}
         style={{
           position: 'absolute',
           left: 0,
           right: 0,
           bottom: 0,
-          height: heroHeight * 0.55,
+          height: heroHeight * 0.72,
         }}
         pointerEvents="none"
       />
@@ -386,7 +390,12 @@ function HeroCarousel({
           }
           color={c.onMedia as any}
           numberOfLines={2}
-          style={{ letterSpacing: -1 }}
+          style={{
+            letterSpacing: -1,
+            textShadowColor: 'rgba(0,0,0,0.45)',
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 6,
+          }}
         >
           {place.name}
         </H1>

@@ -20,6 +20,7 @@ import { useWeather } from '../../hooks/useWeather'
 import { SHADOW } from '../../constants/Sizes'
 import { palette } from '../../constants/Colors'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { useLayout } from '../../hooks/useLayout'
 import { WeatherDateSheet } from './WeatherDateSheet'
 
 // ---- Recommendation decision matrix --------------------------------------
@@ -208,6 +209,7 @@ export function WeatherBanner({
   const { t, i18n } = useTranslation()
   const posthog = usePostHog()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   const [sheetOpen, setSheetOpen] = useState(false)
   const { data: weather, isError } = useWeather(coords, date)
 
@@ -254,8 +256,8 @@ export function WeatherBanner({
       <Pressable onPress={() => setSheetOpen(true)} hitSlop={2}>
         <XStack
           items="center"
-          gap="$3"
-          p="$3"
+          gap={isSmall ? '$2' : '$2.5'}
+          p={isSmall ? '$2' : '$2.5'}
           rounded="$5"
           borderWidth={1}
           style={{
@@ -265,22 +267,22 @@ export function WeatherBanner({
           }}
         >
           <YStack
-            width={40}
-            height={40}
-            rounded={20}
+            width={isSmall ? 28 : 34}
+            height={isSmall ? 28 : 34}
+            rounded={17}
             items="center"
             justify="center"
             style={{ backgroundColor: c.surface }}
           >
-            <Icon size={22} color={style.icon} />
+            <Icon size={isSmall ? 16 : 19} color={style.icon} />
           </YStack>
           <YStack flex={1} gap="$0.5" style={{ minWidth: 0 }}>
             <SizableText
-              size="$4"
+              size="$3"
               fontFamily="$body"
               fontWeight="700"
               style={{ color: style.ink }}
-              numberOfLines={2}
+              numberOfLines={1}
             >
               {t(`excursion.weather.${rec.headlineKey}`, {
                 date: dateFmt,
@@ -289,10 +291,10 @@ export function WeatherBanner({
             </SizableText>
             {rec.subKey && (
               <SizableText
-                size="$3"
+                size="$2"
                 fontFamily="$body"
                 color={c.textMuted as any}
-                numberOfLines={2}
+                numberOfLines={1}
               >
                 {t(`excursion.weather.${rec.subKey}`, {
                   defaultValue: '',

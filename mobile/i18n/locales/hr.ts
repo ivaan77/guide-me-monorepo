@@ -100,6 +100,7 @@ export const hr = {
     countLabel_other: '{{count}} ocjena',
     signInToRate: 'Prijavi se za ocjenjivanje',
     noRatingsYet: 'Još nema ocjena',
+    noRatingsShort: 'Još nije ocijenjeno',
     beFirstToRate: 'Budi prvi koji ocjenjuje',
     prompt: {
       titleCity: 'Kako ti se svidio {{name}}?',

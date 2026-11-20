@@ -96,6 +96,7 @@ export const de = {
     countLabel_other: '{{count}} Bewertungen',
     signInToRate: 'Zum Bewerten anmelden',
     noRatingsYet: 'Noch keine Bewertungen',
+    noRatingsShort: 'Noch nicht bewertet',
     beFirstToRate: 'Sei der Erste, der bewertet',
     prompt: {
       titleCity: 'Wie war {{name}}?',

@@ -119,6 +119,12 @@ type Phase =
 // Default arrival geofence. Per-stop overrides come from `stop.triggerRadius`
 // (set in admin). Increase for stops in dense urban areas where GPS jitters;
 // tighten for precise photo-ops.
+// ~0.5 m at Croatian latitudes. GPS jitters by a few metres even when the
+// device is stationary; without this guard every tick allocates a new
+// coords object, React re-renders, and react-native-maps re-rasterises the
+// user marker — which reads as a flickering blue dot while standing still.
+const COORD_EPSILON = 0.000005
+
 const DEFAULT_ARRIVAL_RADIUS_METERS = 30
 
 export function ExcursionScreen({ id }: Props) {
@@ -488,6 +494,21 @@ function ExcursionBody({
     }).start()
   }, [cardHeight, bottomHeightAnim])
 
+  // Memoised element (not a memo() component — MapView type-checks its
+  // children and rejects an object). Rounding the heading keeps sub-degree
+  // compass jitter from re-rendering the marker, which reads as flicker.
+  const headingForPin = phase === 'navigating' ? heading : null
+  const headingKey = headingForPin == null ? null : Math.round(headingForPin)
+  const userPin = useMemo(
+    () =>
+      userLocation && !permissionDenied ? (
+        <UserHeadingPin coords={userLocation} heading={headingForPin} />
+      ) : null,
+    // headingForPin is intentionally not a dep: headingKey gates the update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userLocation, permissionDenied, headingKey],
+  )
+
   // Map fills whatever the card doesn't. Animated for the same reason:
   // fullscreen enter/exit and phase transitions should slide, not jump.
   const mapHeight = screenHeight - cardHeight
@@ -539,10 +560,17 @@ function ExcursionBody({
           }
         : { accuracy: Location.Accuracy.High, distanceInterval: 5 }
       posSub = await Location.watchPositionAsync(watchOptions, (loc) => {
-        setUserLocation({
+        const next = {
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
-        })
+        }
+        setUserLocation((prev) =>
+          prev &&
+          Math.abs(prev.latitude - next.latitude) < COORD_EPSILON &&
+          Math.abs(prev.longitude - next.longitude) < COORD_EPSILON
+            ? prev
+            : next,
+        )
         // GPS course = direction of movement. Platform reports -1 when it
         // has no confident estimate (right after permission grant, or when
         // the user is stationary). Only accept a positive value.
@@ -1390,6 +1418,7 @@ function ExcursionBody({
                 onPress={() => setSelectedPoi(poi)}
                 anchor={{ x: 0.5, y: 0.5 }}
                 tracksViewChanges={false}
+                zIndex={4}
               >
                 <YStack
                   width={32}
@@ -1410,12 +1439,7 @@ function ExcursionBody({
 
         {/* Custom user pin with heading cone. Replaces the default blue
             dot. Rendered last so it always sits on top of polylines. */}
-        {userLocation && !permissionDenied && (
-          <UserHeadingPin
-            coords={userLocation}
-            heading={phase === 'navigating' ? heading : null}
-          />
-        )}
+        {userPin}
       </MapView>
 
       {/* Recenter FAB — surfaces only when navigating AND the user has
@@ -1571,7 +1595,7 @@ function ExcursionBody({
       <Animated.View
         style={{ width: '100%', height: bottomHeightAnim, overflow: 'hidden' }}
       >
-        <YStack flex={1}>
+        <YStack>
           <YStack
             onLayout={(e) =>
               setBottomPanelHeight(e.nativeEvent.layout.height)

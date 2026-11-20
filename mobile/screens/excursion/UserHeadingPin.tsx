@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Marker } from 'react-native-maps'
 import Svg, { Circle, Defs, RadialGradient, Stop, Path } from 'react-native-svg'
 import { View } from 'react-native'
@@ -29,21 +29,27 @@ export function UserHeadingPin({ coords, heading }: Props) {
   // it re-uploads the SVG continuously as location/heading tick, which reads
   // as a flickering pin sitting on top of nearby stop markers. We only need
   // it true long enough to capture the first paint, then it can settle.
+  // Capture once per mount and once per cone appear/disappear, then stop.
+  // The `hasCone` effect deliberately does NOT re-run on heading value
+  // changes — rotation is applied natively via the Marker's `rotation`
+  // prop, so re-rasterising on every GPS tick only produces flicker.
+  const hasCone = heading != null
   const [tracksViewChanges, setTracksViewChanges] = useState(true)
+  const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastConeRef = useRef(hasCone)
+
   useEffect(() => {
+    // First paint, and any real change to what the bitmap contains.
+    const coneChanged = lastConeRef.current !== hasCone
+    lastConeRef.current = hasCone
+    if (coneChanged) setTracksViewChanges(true)
+    if (settleRef.current) clearTimeout(settleRef.current)
     // One frame is enough for the SVG to rasterise; the timeout gives
     // react-native-svg room to finish on slower devices.
-    const t = setTimeout(() => setTracksViewChanges(false), 500)
-    return () => clearTimeout(t)
-  }, [])
-  // Re-capture when the cone appears/disappears — that's a real visual
-  // change to the bitmap, unlike a position or rotation update (those are
-  // handled natively by `coordinate` and `rotation`).
-  const hasCone = heading != null
-  useEffect(() => {
-    setTracksViewChanges(true)
-    const t = setTimeout(() => setTracksViewChanges(false), 500)
-    return () => clearTimeout(t)
+    settleRef.current = setTimeout(() => setTracksViewChanges(false), 400)
+    return () => {
+      if (settleRef.current) clearTimeout(settleRef.current)
+    }
   }, [hasCone])
   const primary = theme.primary?.val ?? '#2A5BD7'
 
@@ -62,6 +68,9 @@ export function UserHeadingPin({ coords, heading }: Props) {
       coordinate={coords}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={tracksViewChanges}
+      // Above stop/POI pins: when the user stands on a stop the two markers
+      // share a coordinate, and without an explicit order they z-fight.
+      zIndex={10}
       flat
       rotation={heading ?? 0}
     >

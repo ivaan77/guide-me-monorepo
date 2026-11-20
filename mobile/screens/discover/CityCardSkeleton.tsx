@@ -10,6 +10,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import { YStack } from 'tamagui'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { CITY_CARD_RATIO } from '../../constants/Sizes'
+import { useLayout } from '../../hooks/useLayout'
 
 type Props = {
   width: number
@@ -19,7 +21,10 @@ const STRIPE_WIDTH_RATIO = 0.6
 
 export function CityCardSkeleton({ width }: Props) {
   const { c } = useAppTheme()
-  const imageHeight = width * 1.15
+  const { isSmall } = useLayout()
+  // Must track CityCard exactly or the grid reflows when data lands.
+  const imageHeight =
+    width * (isSmall ? CITY_CARD_RATIO.small : CITY_CARD_RATIO.default)
   const progress = useSharedValue(-1)
 
   useEffect(() => {

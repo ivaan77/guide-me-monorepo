@@ -18,6 +18,7 @@ import { SizableText, XStack, YStack } from 'tamagui'
 import { useStory } from '../../hooks/useStories'
 import { TipTapRenderer } from './TipTapRenderer'
 import { SCREEN_PADDING, SHADOW } from '../../constants/Sizes'
+import { useLayout } from '../../hooks/useLayout'
 import { useAppTheme } from '../../providers/ThemeContext'
 
 
@@ -32,6 +33,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
   const posthog = usePostHog()
   const { data: post, isLoading, isError } = useStory(slug)
   const { c } = useAppTheme()
+  const { fontStep } = useLayout()
 
   // Scroll-to-top FAB. Threshold: user has scrolled past ~60% of screen
   // height. Animated.Value on the opacity means we fade in/out instead
@@ -149,7 +151,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
               size we use for large screen titles elsewhere, and pairs
               better with the excerpt below. */}
           <SizableText
-            size="$8"
+            size={fontStep('$8')}
             fontFamily="$heading"
             fontWeight="800"
             color={c.text as any}
