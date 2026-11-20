@@ -180,7 +180,21 @@ function RootLayoutNav() {
         <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="sso-callback" options={{ headerShown: false }} />
         <Stack.Screen name="city/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="excursion/[id]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="excursion/[id]"
+          options={{
+            headerShown: false,
+            // Full-bleed light map in both themes: the themed bar (light
+            // icons in dark mode) is invisible against it.
+            //
+            // Android only: on iOS react-native-screens requires
+            // UIViewControllerBasedStatusBarAppearance=YES in Info.plist
+            // and throws without it, so iOS keeps the global themed bar.
+            ...(Platform.OS === 'android'
+              ? { statusBarStyle: 'dark' as const }
+              : {}),
+          }}
+        />
         <Stack.Screen name="place/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="story/[slug]" options={{ headerShown: false }} />
       </Stack>

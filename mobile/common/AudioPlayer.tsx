@@ -250,11 +250,13 @@ export function AudioPlayer({
             onPress={handleSeekForward}
             disabled={!hasStarted}
           />
-          <CircleButton
-            icon={Square}
-            onPress={handleStop}
-            disabled={!isPlaying}
-          />
+          {(!isSmall || isPlaying) && (
+            <CircleButton
+              icon={Square}
+              onPress={handleStop}
+              disabled={!isPlaying}
+            />
+          )}
         </XStack>
       </XStack>
       {hasStarted && (

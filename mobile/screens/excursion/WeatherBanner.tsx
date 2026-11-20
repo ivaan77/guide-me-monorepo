@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable } from 'react-native'
+import { Platform, Pressable } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { usePostHog } from 'posthog-react-native'
 import {
@@ -263,7 +263,9 @@ export function WeatherBanner({
           style={{
             backgroundColor: style.bg,
             borderColor: style.border,
-            ...SHADOW.subtle,
+            ...(Platform.OS === 'android'
+              ? { elevation: 0 }
+              : SHADOW.subtle),
           }}
         >
           <YStack

@@ -4,6 +4,7 @@ import {
   AppState,
   Image,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   useWindowDimensions,
@@ -544,14 +545,19 @@ function ExcursionBody({
       // from Settings). Clear the denied flag so the overlay dismisses on
       // the next render.
       setPermissionDenied(false)
-      const initial = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      })
-      if (cancelled) return
-      setUserLocation({
-        latitude: initial.coords.latitude,
-        longitude: initial.coords.longitude,
-      })
+      try {
+        const initial = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        })
+        if (cancelled) return
+        setUserLocation({
+          latitude: initial.coords.latitude,
+          longitude: initial.coords.longitude,
+        })
+      } catch {
+        // No fix yet — keep going and let watchPositionAsync below supply
+        // the first position once the device acquires one.
+      }
       const watchOptions: Location.LocationOptions = isNavigating
         ? {
             accuracy: Location.Accuracy.BestForNavigation,
@@ -613,7 +619,8 @@ function ExcursionBody({
       })
     }
 
-    start()
+    start().catch(() => {
+    })
     return () => {
       cancelled = true
       posSub?.remove()
@@ -2392,7 +2399,7 @@ function NearestStopInlinePill({
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.12)',
           overflow: 'hidden',
-          ...SHADOW.subtle,
+          ...(Platform.OS === 'android' ? {} : SHADOW.subtle),
         }}
       >
         <XStack items="center" gap="$2.5" px="$3" py="$2">

@@ -48,6 +48,7 @@ export default function TabsLayout() {
       backgroundColor={c.surface}
       disableTransparentOnScrollEdge
       rippleColor={c.surfaceMuted}
+      labelVisibilityMode="labeled"
     >
       <NativeTabs.Trigger name="index" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Label selectedStyle={selectedLabelStyle}>

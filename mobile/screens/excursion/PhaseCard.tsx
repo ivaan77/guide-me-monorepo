@@ -196,6 +196,8 @@ export function PhaseCardActions({
           fontFamily="$heading"
           fontWeight="700"
           size="$4"
+          numberOfLines={1}
+          style={{ flexShrink: 1 }}
         >
           {primary.label}
         </SizableText>
