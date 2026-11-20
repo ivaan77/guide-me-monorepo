@@ -133,13 +133,17 @@ function Chip({
         px="$3"
         py="$1.5"
         rounded={9999}
+        items="center"
+        justify="center"
         bg={(active ? c.primary : c.surfaceMuted) as any}
       >
         <SizableText
           size="$2"
           fontFamily="$body"
           fontWeight="700"
+          numberOfLines={1}
           color={(active ? c.onBrand : c.text) as any}
+          style={{ lineHeight: 16, textAlignVertical: 'center' }}
         >
           {label}
         </SizableText>

@@ -676,6 +676,8 @@ function SortChip({
         px={isSmall ? '$2' : '$2.5'}
         py={isSmall ? '$0.5' : '$1'}
         rounded="$10"
+        items="center"
+        justify="center"
         borderWidth={1}
         borderColor={(active ? c.primary : c.border) as any}
         bg={active ? (c.primary as any) : 'transparent'}

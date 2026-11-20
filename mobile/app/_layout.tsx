@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Text as RNText, TextInput as RNTextInput } from 'react-native'
+import {
+  Platform,
+  Text as RNText,
+  TextInput as RNTextInput,
+} from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
@@ -48,6 +52,22 @@ const MAX_TEXT_SCALE = 1.4
 ;((
   RNTextInput as unknown as { defaultProps?: Record<string, unknown> }
 ).defaultProps ??= {}).maxFontSizeMultiplier = MAX_TEXT_SCALE
+
+// Android adds extra padding above and below the glyphs based on the font's
+// ascender/descender metrics. Inside a tight pill or badge that padding is
+// not symmetric, so the label sits high and can look clipped — iOS has no
+// equivalent. Switching it off app-wide makes vertical centring behave the
+// same on both platforms; `textAlignVertical: 'center'` then does what it
+// says inside fixed-height rows.
+if (Platform.OS === 'android') {
+  const textDefaults = ((
+    RNText as unknown as { defaultProps?: Record<string, unknown> }
+  ).defaultProps ??= {})
+  textDefaults.style = [
+    { includeFontPadding: false },
+    textDefaults.style as never,
+  ]
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontsError] = useFonts({

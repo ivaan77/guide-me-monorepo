@@ -104,6 +104,8 @@ export function PhaseCardHeader({
             px="$2"
             py="$1"
             rounded="$10"
+            items="center"
+            justify="center"
             style={{ backgroundColor: PHASE_ACCENT[accent] }}
           >
             <SizableText
