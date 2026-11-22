@@ -14,8 +14,8 @@ import { BottomSheet } from '../../common/BottomSheet'
 import { FavoriteButton } from '../../common/FavoriteButton'
 import { useAppTheme } from '../../providers/ThemeContext'
 import type { PublicSubStop } from '@guide-me-app/core'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
-const H_PADDING = 20
 
 type Props = {
   visible: boolean
@@ -50,7 +50,7 @@ function SubStopDetailSheetInner({
       onClose={onClose}
       heightRatio={0.88}
       header={
-        <XStack px={H_PADDING} pt="$2" pb="$3" items="center">
+        <XStack px={SCREEN_PADDING} pt="$2" pb="$3" items="center">
           <H3 fontFamily="$body" fontWeight="700" color={c.text as any} flex={1}>
             {sub.name}
           </H3>
@@ -145,7 +145,7 @@ function SubStopBody({
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <YStack px={H_PADDING} pt="$4" gap="$3">
+        <YStack px={SCREEN_PADDING} pt="$4" gap="$3">
           <AudioPlayer
             audioUrl={sub.audioUrl}
             title={t('excursion.stopSheet.audioTitle')}

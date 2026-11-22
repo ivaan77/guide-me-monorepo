@@ -14,8 +14,8 @@ import { BottomSheet } from '../../common/BottomSheet'
 import type { PublicExcursionStop as ExcursionStop } from '@guide-me-app/core'
 import { BUNDLE_ACCENT } from './StopBundlePin'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
-const H_PADDING = 20
 
 type Props = {
   visible: boolean
@@ -37,7 +37,7 @@ function StopDetailSheetInner({ visible, stop, onClose }: Props) {
       onClose={onClose}
       heightRatio={0.88}
       header={
-        <XStack px={H_PADDING} pt="$2" pb="$3" items="center">
+        <XStack px={SCREEN_PADDING} pt="$2" pb="$3" items="center">
           <H3 fontFamily="$body" fontWeight="700" color={c.text as any} flex={1}>
             {stop.name}
           </H3>
@@ -122,7 +122,7 @@ function StopBody({ stop }: { stop: ExcursionStop }) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <YStack px={H_PADDING} pt="$4" gap="$3">
+        <YStack px={SCREEN_PADDING} pt="$4" gap="$3">
           {isBundle && (
             <SizableText
               size="$2"

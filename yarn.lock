@@ -3212,6 +3212,7 @@ __metadata:
     expo-web-browser: "npm:~55.0.16"
     fuse.js: "npm:^7.4.2"
     i18next: "npm:^26.2.0"
+    intl-pluralrules: "npm:^2.0.1"
     posthog-react-native: "npm:^4.55.0"
     react: "npm:19.2.0"
     react-dom: "npm:19.2.0"
@@ -14611,6 +14612,13 @@ __metadata:
     hasown: "npm:^2.0.2"
     side-channel: "npm:^1.1.0"
   checksum: 10c0/03966f5e259b009a9bf1a78d60da920df198af4318ec004f57b8aef1dd3fe377fbc8cce63a96e8c810010302654de89f9e19de1cd8ad0061d15be28a695465c7
+  languageName: node
+  linkType: hard
+
+"intl-pluralrules@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "intl-pluralrules@npm:2.0.1"
+  checksum: 10c0/ba9786694f7e748c4639bffaa465a8609f61b92da174c92b16b385cf91704af9bad12dd9cb8907e14f4b2b419663891c217b5466d08f58a93ef2970b29b30554
   languageName: node
   linkType: hard
 

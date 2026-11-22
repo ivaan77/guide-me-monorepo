@@ -11,6 +11,7 @@ import {
   LogOut,
   MapPin,
   Newspaper,
+  Stethoscope,
   Store,
 } from 'lucide-react'
 
@@ -59,6 +60,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <NavLink href="/media" icon={<Images className="h-4 w-4" />} label="Media" />
         <NavLink href="/stats" icon={<BarChart3 className="h-4 w-4" />} label="Stats" />
         <NavLink href="/web-content" icon={<Globe className="h-4 w-4" />} label="Web content" />
+        <NavLink
+          href="/content-health"
+          icon={<Stethoscope className="h-4 w-4" />}
+          label="Content health"
+        />
         <NavLink href="/help" icon={<HelpCircle className="h-4 w-4" />} label="Help" />
         <div className="mt-auto pt-4 border-t border-[var(--color-border)] flex items-center justify-between">
           <span className="text-xs text-[var(--color-muted-foreground)] truncate pl-2">

@@ -1,4 +1,5 @@
 import {
+    Locale,
     LocalizedString,
     PoiCategory,
     PublicLatLng,
@@ -269,6 +270,42 @@ export type AdminStats = {
 }
 
 export type AdminStatsResponse = { stats: AdminStats }
+
+// --- Content health (audio coverage) ---
+//
+// Mirrors the severity model of the offline content audit
+// (.content-audit/audit.py) so the admin page and the script agree:
+//   critical — no audio in any language
+//   high     — has some audio but no English (the fallback locale)
+//   medium   — has English, missing German and/or Croatian
+//   ok       — all three locales present
+// Image grading needs real pixel dimensions and byte sizes, which means
+// downloading every file, so it stays in the script and is deliberately
+// NOT computed here.
+export type ContentHealthSeverity = 'critical' | 'high' | 'medium' | 'ok'
+
+// One audio-bearing surface: an excursion intro/outro, a stop, or a sub-stop.
+export type AdminAudioSlot = {
+    excursionSlug: string
+    // Display name of the owning excursion, English.
+    excursionName: string
+    // 'intro' | 'outro' | 'stop 3' | 'stop 3.sub2' — same vocabulary the
+    // audit script uses, so rows can be matched up by eye.
+    slot: string
+    // Locales that actually have an audio file.
+    languages: Locale[]
+    severity: ContentHealthSeverity
+}
+
+export type AdminContentHealth = {
+    audio: {
+        total: number
+        bySeverity: Record<ContentHealthSeverity, number>
+        slots: AdminAudioSlot[]
+    }
+}
+
+export type AdminContentHealthResponse = { health: AdminContentHealth }
 
 // How many cities and excursions currently reference a place. Used by the
 // admin place edit form to surface a warning when a place isn't linked to

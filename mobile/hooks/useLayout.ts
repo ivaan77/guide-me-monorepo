@@ -13,6 +13,38 @@ const SMALL_MAX = 380
 const MEDIUM_MAX = 600
 const TABLET_MIN = 768
 
+// Tamagui's size scale has uneven gaps ($6 20pt -> $5 19pt is a 1pt step),
+// so stepping tokens barely changes anything. `fontPx` returns an explicit
+// pixel size instead: the design value on a normal phone, and a genuinely
+// smaller one on a 375pt screen where the stock sizes read oversized.
+//
+// Keys are the design intent, not Tamagui tokens:
+//   screenTitle  — "Stories", big screen headings
+//   sectionTitle — accordion headers ("Excursions", "Restaurants")
+//   rowTitle     — list row names ("Market Bistro & Bar")
+//   rowMeta      — the muted line under a row title
+//   body         — paragraphs
+const FONT_PX = {
+  screenTitle: { default: 40, small: 24 },
+  sectionTitle: { default: 20, small: 14 },
+  rowTitle: { default: 16, small: 12.5 },
+  rowMeta: { default: 12, small: 10.5 },
+  body: { default: 14, small: 12 },
+} as const
+
+export type FontRole = keyof typeof FONT_PX
+
+export type FontToken = '$4' | '$5' | '$6' | '$7' | '$8' | '$9' | '$10'
+
+const FONT_STEP_DOWN: Partial<Record<FontToken, FontToken>> = {
+  $10: '$9',
+  $9: '$8',
+  $8: '$7',
+  $7: '$6',
+  $6: '$5',
+  $5: '$4',
+}
+
 export type Layout = {
   screen: { width: number; height: number }
   isSmall: boolean
@@ -22,6 +54,13 @@ export type Layout = {
   // Convenience: any non-tablet phone. Most screens branch on tablet OR
   // small-phone; medium/large are usually treated as "the default."
   isPhone: boolean
+  /**
+   * One rung down the Tamagui font scale on small phones, unchanged
+   * elsewhere. `fontStep('$9')` → `'$8'` on an iPhone SE, `'$9'` otherwise.
+   */
+  fontStep: <T extends FontToken>(token: T) => FontToken
+  /** Explicit px size for a semantic text role, scaled on small phones. */
+  fontPx: (role: FontRole) => number
 }
 
 // Reactive layout info: recomputes when the window changes (rotation on
@@ -41,6 +80,10 @@ export function useLayout(): Layout {
       isLarge,
       isTablet,
       isPhone: !isTablet,
+      fontStep: <T extends FontToken>(token: T): FontToken =>
+        isSmall ? (FONT_STEP_DOWN[token] ?? token) : token,
+      fontPx: (role: FontRole) =>
+        isSmall ? FONT_PX[role].small : FONT_PX[role].default,
     }
   }, [width, height])
 }

@@ -4,7 +4,9 @@ import {
   AppState,
   Image,
   Linking,
+  Platform,
   Pressable,
+  ScrollView,
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -48,7 +50,8 @@ import {
   YStack,
 } from 'tamagui'
 import { palette } from '../../constants/Colors'
-import { SHADOW } from '../../constants/Sizes'
+import { SCREEN_PADDING, SHADOW } from '../../constants/Sizes'
+import { useLayout } from '../../hooks/useLayout'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { AudioPlayer } from '../../common/AudioPlayer'
 import { FavoriteButton } from '../../common/FavoriteButton'
@@ -117,8 +120,13 @@ type Phase =
 // Default arrival geofence. Per-stop overrides come from `stop.triggerRadius`
 // (set in admin). Increase for stops in dense urban areas where GPS jitters;
 // tighten for precise photo-ops.
+// ~0.5 m at Croatian latitudes. GPS jitters by a few metres even when the
+// device is stationary; without this guard every tick allocates a new
+// coords object, React re-renders, and react-native-maps re-rasterises the
+// user marker — which reads as a flickering blue dot while standing still.
+const COORD_EPSILON = 0.000005
+
 const DEFAULT_ARRIVAL_RADIUS_METERS = 30
-const H_PADDING = 20
 
 export function ExcursionScreen({ id }: Props) {
   const router = useRouter()
@@ -487,6 +495,21 @@ function ExcursionBody({
     }).start()
   }, [cardHeight, bottomHeightAnim])
 
+  // Memoised element (not a memo() component — MapView type-checks its
+  // children and rejects an object). Rounding the heading keeps sub-degree
+  // compass jitter from re-rendering the marker, which reads as flicker.
+  const headingForPin = phase === 'navigating' ? heading : null
+  const headingKey = headingForPin == null ? null : Math.round(headingForPin)
+  const userPin = useMemo(
+    () =>
+      userLocation && !permissionDenied ? (
+        <UserHeadingPin coords={userLocation} heading={headingForPin} />
+      ) : null,
+    // headingForPin is intentionally not a dep: headingKey gates the update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userLocation, permissionDenied, headingKey],
+  )
+
   // Map fills whatever the card doesn't. Animated for the same reason:
   // fullscreen enter/exit and phase transitions should slide, not jump.
   const mapHeight = screenHeight - cardHeight
@@ -522,14 +545,19 @@ function ExcursionBody({
       // from Settings). Clear the denied flag so the overlay dismisses on
       // the next render.
       setPermissionDenied(false)
-      const initial = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      })
-      if (cancelled) return
-      setUserLocation({
-        latitude: initial.coords.latitude,
-        longitude: initial.coords.longitude,
-      })
+      try {
+        const initial = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        })
+        if (cancelled) return
+        setUserLocation({
+          latitude: initial.coords.latitude,
+          longitude: initial.coords.longitude,
+        })
+      } catch {
+        // No fix yet — keep going and let watchPositionAsync below supply
+        // the first position once the device acquires one.
+      }
       const watchOptions: Location.LocationOptions = isNavigating
         ? {
             accuracy: Location.Accuracy.BestForNavigation,
@@ -538,10 +566,17 @@ function ExcursionBody({
           }
         : { accuracy: Location.Accuracy.High, distanceInterval: 5 }
       posSub = await Location.watchPositionAsync(watchOptions, (loc) => {
-        setUserLocation({
+        const next = {
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
-        })
+        }
+        setUserLocation((prev) =>
+          prev &&
+          Math.abs(prev.latitude - next.latitude) < COORD_EPSILON &&
+          Math.abs(prev.longitude - next.longitude) < COORD_EPSILON
+            ? prev
+            : next,
+        )
         // GPS course = direction of movement. Platform reports -1 when it
         // has no confident estimate (right after permission grant, or when
         // the user is stationary). Only accept a positive value.
@@ -584,7 +619,8 @@ function ExcursionBody({
       })
     }
 
-    start()
+    start().catch(() => {
+    })
     return () => {
       cancelled = true
       posSub?.remove()
@@ -1389,6 +1425,7 @@ function ExcursionBody({
                 onPress={() => setSelectedPoi(poi)}
                 anchor={{ x: 0.5, y: 0.5 }}
                 tracksViewChanges={false}
+                zIndex={4}
               >
                 <YStack
                   width={32}
@@ -1409,12 +1446,7 @@ function ExcursionBody({
 
         {/* Custom user pin with heading cone. Replaces the default blue
             dot. Rendered last so it always sits on top of polylines. */}
-        {userLocation && !permissionDenied && (
-          <UserHeadingPin
-            coords={userLocation}
-            heading={phase === 'navigating' ? heading : null}
-          />
-        )}
+        {userPin}
       </MapView>
 
       {/* Recenter FAB — surfaces only when navigating AND the user has
@@ -1428,8 +1460,8 @@ function ExcursionBody({
           onPress={recenter}
           style={{
             position: 'absolute',
-            bottom: 16,
-            right: H_PADDING,
+            bottom: isMapFullscreen ? bottomInset + 16 : 16,
+            right: SCREEN_PADDING,
             zIndex: 12,
             width: 48,
             height: 48,
@@ -1456,7 +1488,7 @@ function ExcursionBody({
         style={{
           position: 'absolute',
           bottom: phase === 'navigating' && !isFollowing ? 16 + 48 + 8 : 16,
-          right: H_PADDING,
+          right: SCREEN_PADDING,
           zIndex: 12,
           width: 48,
           height: 48,
@@ -1494,8 +1526,8 @@ function ExcursionBody({
           onPress={() => setStopsSheetOpen(true)}
           style={{
             position: 'absolute',
-            bottom: 16,
-            left: H_PADDING,
+            bottom: isMapFullscreen ? bottomInset + 16 : 16,
+            left: SCREEN_PADDING,
             zIndex: 12,
             height: 48,
             paddingHorizontal: 14,
@@ -1529,7 +1561,7 @@ function ExcursionBody({
       <YStack
         position="absolute"
         t={topInset + 8}
-        r={H_PADDING}
+        r={SCREEN_PADDING}
         z={10}
       >
         <FavoriteButton refToFavorite={{ type: 'excursion', id }} />
@@ -1570,7 +1602,7 @@ function ExcursionBody({
       <Animated.View
         style={{ width: '100%', height: bottomHeightAnim, overflow: 'hidden' }}
       >
-        <YStack flex={1}>
+        <YStack>
           <YStack
             onLayout={(e) =>
               setBottomPanelHeight(e.nativeEvent.layout.height)
@@ -1652,8 +1684,8 @@ function ExcursionBody({
           // to overlap like a card deck — newest on top fully visible, older
           // ones peeking out behind.
           b={bottomPanelHeight + 8}
-          l={H_PADDING}
-          r={H_PADDING}
+          l={SCREEN_PADDING}
+          r={SCREEN_PADDING}
           height={100}
           z={12}
           pointerEvents="box-none"
@@ -1792,17 +1824,24 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
   const { t } = useTranslation()
   const { c } = useAppTheme()
   return (
-    <YStack
-      position="absolute"
-      t={0}
-      l={0}
-      r={0}
-      b={0}
-      bg="rgba(0,0,0,0.55)"
-      items="center"
-      justify="center"
-      px="$5"
-      z={50}
+    <ScrollView
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        zIndex: 50,
+      }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 24,
+      }}
+      showsVerticalScrollIndicator={false}
     >
       <YStack
         bg={c.surface as any}
@@ -1897,7 +1936,7 @@ function LocationDeniedOverlay({ onGoBack }: { onGoBack: () => void }) {
           </YStack>
         </Pressable>
       </YStack>
-    </YStack>
+    </ScrollView>
   )
 }
 
@@ -2069,7 +2108,7 @@ function BottomPanel({
       bg={c.surface as any}
       borderTopWidth={1}
       borderColor={c.border as any}
-      px={H_PADDING}
+      px={SCREEN_PADDING}
       pt="$4"
       pb={Math.max(bottomInset, 16)}
       gap="$3"
@@ -2360,7 +2399,7 @@ function NearestStopInlinePill({
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.12)',
           overflow: 'hidden',
-          ...SHADOW.subtle,
+          ...(Platform.OS === 'android' ? {} : SHADOW.subtle),
         }}
       >
         <XStack items="center" gap="$2.5" px="$3" py="$2">
@@ -2868,6 +2907,7 @@ function IntroPanel({
 }) {
   const { t } = useTranslation()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   return (
     <PhaseCard>
       <PhaseCardHeader
@@ -2878,7 +2918,7 @@ function IntroPanel({
       <PhaseCardBody>
         <Image
           source={{ uri: intro.image }}
-          style={{ width: '100%', height: 160, borderRadius: 12 }}
+          style={{ width: '100%', height: isSmall ? 110 : 160, borderRadius: 12 }}
           resizeMode="cover"
         />
         <AudioPlayer
@@ -2926,6 +2966,7 @@ function OutroPanel({
 }) {
   const { t } = useTranslation()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   // Outro card — coral phase tint. Hero image sits in the body as a full-
   // width banner (this phase intentionally leans on the image as the
   // emotional close); audio + description below it. Same PhaseCard shape
@@ -2941,7 +2982,7 @@ function OutroPanel({
       <PhaseCardBody>
         <Image
           source={{ uri: outro.image }}
-          style={{ width: '100%', height: 160, borderRadius: 12 }}
+          style={{ width: '100%', height: isSmall ? 110 : 160, borderRadius: 12 }}
           resizeMode="cover"
         />
         <AudioPlayer
@@ -3053,7 +3094,7 @@ function BackButton({
       style={{
         position: 'absolute',
         top: topInset + 8,
-        left: H_PADDING,
+        left: SCREEN_PADDING,
         zIndex: 10,
       }}
     >

@@ -65,6 +65,8 @@ export function LanguageToggle() {
                 fontFamily="$body"
                 fontWeight={active ? '600' : '500'}
                 color={(active ? c.text : c.textMuted) as any}
+                numberOfLines={1}
+                style={{ flexShrink: 1 }}
               >
                 {isSystem ? t('profile.languageSystem') : opt.shortLabel}
               </SizableText>

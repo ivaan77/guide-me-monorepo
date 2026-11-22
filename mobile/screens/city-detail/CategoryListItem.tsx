@@ -5,6 +5,7 @@ import { SizableText, XStack, YStack } from 'tamagui'
 import type { PublicCategoryItem } from '@guide-me-app/core'
 import { RatingStars } from '../../common/RatingStars'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { useLayout } from '../../hooks/useLayout'
 
 type Props = {
   item: PublicCategoryItem
@@ -18,18 +19,23 @@ type Props = {
 
 export function CategoryListItem({ item, isLast, href, trailingBadge }: Props) {
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   const row = (
     <XStack
       items="center"
-      px="$4"
-      py="$3"
+      px={isSmall ? "$3" : "$4"}
+      py={isSmall ? "$2.5" : "$3"}
       gap="$3"
       borderBottomWidth={isLast ? 0 : 1}
       borderColor={c.border as any}
     >
       <Image
         source={{ uri: item.image }}
-        style={{ width: 52, height: 52, borderRadius: 10 }}
+        style={{
+          width: isSmall ? 44 : 52,
+          height: isSmall ? 44 : 52,
+          borderRadius: 10,
+        }}
         resizeMode="cover"
       />
       <YStack flex={1} gap="$1">
@@ -46,12 +52,12 @@ export function CategoryListItem({ item, isLast, href, trailingBadge }: Props) {
           </SizableText>
           {trailingBadge}
         </XStack>
-        <XStack items="center" gap="$2">
+        <XStack items="flex-start" gap="$2">
           <SizableText
             size="$2"
             fontFamily="$body"
             color={c.textMuted as any}
-            numberOfLines={1}
+            numberOfLines={isSmall ? 2 : 1}
             flex={1}
           >
             {item.meta}

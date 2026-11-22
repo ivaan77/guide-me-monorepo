@@ -3,8 +3,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XStack, YStack } from 'tamagui'
 import { Shimmer, useShimmerProgress } from '../../common/Shimmer'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
-const H_PADDING = 20
 
 export function ExcursionSkeleton() {
   const { width, height } = useWindowDimensions()
@@ -13,13 +13,13 @@ export function ExcursionSkeleton() {
   const { c } = useAppTheme()
 
   const mapHeight = height * 0.5
-  const rowWidth = width - H_PADDING * 2
+  const rowWidth = width - SCREEN_PADDING * 2
 
   return (
     <YStack flex={1} bg={c.background as any}>
       <Shimmer width={width} height={mapHeight} progress={progress} />
 
-      <YStack flex={1} px={H_PADDING} pt="$3" gap="$2">
+      <YStack flex={1} px={SCREEN_PADDING} pt="$3" gap="$2">
         {Array.from({ length: 5 }).map((_, idx) => (
           <XStack key={idx} items="center" gap="$3" py="$2.5">
             <Shimmer width={28} height={28} radius={14} progress={progress} />
@@ -36,7 +36,7 @@ export function ExcursionSkeleton() {
         bg={c.surface as any}
         borderTopWidth={1}
         borderColor={c.border as any}
-        px={H_PADDING}
+        px={SCREEN_PADDING}
         pt="$4"
         pb={Math.max(insets.bottom, 16)}
         gap="$3"

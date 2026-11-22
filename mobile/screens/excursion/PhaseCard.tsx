@@ -58,7 +58,7 @@ export function PhaseCard({ children }: CardProps) {
       bg={c.surface as any}
       rounded="$6"
       p="$3"
-      gap="$3"
+      gap="$2.5"
       borderWidth={1}
       borderColor={c.border as any}
       // Allow the card to shrink inside ExcursionScreen's height-capped
@@ -104,6 +104,8 @@ export function PhaseCardHeader({
             px="$2"
             py="$1"
             rounded="$10"
+            items="center"
+            justify="center"
             style={{ backgroundColor: PHASE_ACCENT[accent] }}
           >
             <SizableText
@@ -194,6 +196,8 @@ export function PhaseCardActions({
           fontFamily="$heading"
           fontWeight="700"
           size="$4"
+          numberOfLines={1}
+          style={{ flexShrink: 1 }}
         >
           {primary.label}
         </SizableText>
@@ -201,7 +205,7 @@ export function PhaseCardActions({
     </Pressable>
   )
   return (
-    <YStack gap="$2">
+    <YStack gap="$1.5">
       {secondary ? (
         <XStack items="stretch" gap="$3">
           <Pressable onPress={secondary.onPress} hitSlop={6} style={{ flex: 1 }}>
@@ -228,11 +232,12 @@ export function PhaseCardActions({
       )}
       {tertiary && (
         <Pressable onPress={tertiary.onPress} hitSlop={6}>
-          <YStack items="center" py="$1.5">
+          <YStack items="center" py="$1" px="$2">
             <SizableText
               fontFamily="$body"
               fontWeight="600"
               size="$3"
+              numberOfLines={1}
               style={{ color: palette.danger }}
             >
               {tertiary.label}

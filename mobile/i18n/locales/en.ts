@@ -91,6 +91,7 @@ export const en = {
     countLabel_other: '{{count}} ratings',
     signInToRate: 'Sign in to rate',
     noRatingsYet: 'No ratings yet',
+    noRatingsShort: 'Not rated yet',
     beFirstToRate: 'Be the first to rate',
     prompt: {
       titleCity: 'How was {{name}}?',
@@ -201,10 +202,22 @@ export const en = {
       bundleIntroBadge_one: 'Bundle · {{count}} stop',
       bundleIntroBadge_other: 'Bundle · {{count}} stops',
       bundlePositionBadge: 'Bundle · {{index}} of {{total}}',
+      bundleIntroShort_one: '{{count}} stop',
+      bundleIntroShort_other: '{{count}} stops',
+      bundlePositionShort: '{{index}} of {{total}}',
       startStops_one: 'Start {{count}} stop',
       startStops_other: 'Start {{count}} stops',
       skipSubStop: 'Skip {{name}}',
       skipBundle: 'Skip all spots at {{bundle}}',
+    },
+    intro: {
+      badge: 'Welcome',
+      continue: 'Continue',
+      skip: 'Skip',
+    },
+    map: {
+      enterFullscreen: 'Fullscreen map',
+      exitFullscreen: 'Exit fullscreen map',
     },
     outro: {
       badge: 'Wrap-up',

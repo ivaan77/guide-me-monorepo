@@ -7,10 +7,11 @@ import { BLOG_CATEGORIES, type BlogCategory } from '@guide-me-app/core'
 import { useCities } from '../../hooks/useCities'
 import { useStories } from '../../hooks/useStories'
 import { useTabBarPadding } from '../../hooks/useTabBarPadding'
+import { useLayout } from '../../hooks/useLayout'
 import { useAppTheme } from '../../providers/ThemeContext'
 import { StoryCard } from './StoryCard'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
-const H_PADDING = 20
 
 // Simple vertically-scrolling list of story cards. Category filter chips
 // at the top switch the fetch. No pagination on mobile for now — the
@@ -21,6 +22,7 @@ export function StoriesScreen() {
   const insets = useSafeAreaInsets()
   const tabPad = useTabBarPadding()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   const [category, setCategory] = useState<BlogCategory | undefined>(undefined)
   const [citySlug, setCitySlug] = useState<string | undefined>(undefined)
   const { data: cities } = useCities()
@@ -32,9 +34,9 @@ export function StoriesScreen() {
 
   return (
     <YStack flex={1} bg={c.background as any} pt={insets.top}>
-      <YStack px={H_PADDING} pt="$4" pb="$3">
+      <YStack px={SCREEN_PADDING} pt="$4" pb="$3">
         <SizableText
-          size="$9"
+          size={isSmall ? '$7' : '$9'}
           fontFamily="$heading"
           fontWeight="800"
           color={c.text as any}
@@ -47,7 +49,7 @@ export function StoriesScreen() {
         showsHorizontalScrollIndicator={false}
         data={[undefined, ...BLOG_CATEGORIES] as (BlogCategory | undefined)[]}
         keyExtractor={(item) => item ?? '__all'}
-        contentContainerStyle={{ paddingHorizontal: H_PADDING, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, gap: 8 }}
         style={{ flexGrow: 0, marginBottom: 8 }}
         renderItem={({ item }) => (
           <Chip
@@ -68,7 +70,7 @@ export function StoriesScreen() {
           showsHorizontalScrollIndicator={false}
           data={[undefined, ...cities.map((city) => city.id)] as (string | undefined)[]}
           keyExtractor={(item) => item ?? '__all-cities'}
-          contentContainerStyle={{ paddingHorizontal: H_PADDING, gap: 8 }}
+          contentContainerStyle={{ paddingHorizontal: SCREEN_PADDING, gap: 8 }}
           style={{ flexGrow: 0, marginBottom: 12 }}
           renderItem={({ item }) => (
             <Chip
@@ -88,13 +90,13 @@ export function StoriesScreen() {
           <ActivityIndicator />
         </YStack>
       ) : isError || !posts ? (
-        <YStack flex={1} items="center" justify="center" px={H_PADDING}>
+        <YStack flex={1} items="center" justify="center" px={SCREEN_PADDING}>
           <SizableText size="$3" fontFamily="$body" color={c.textMuted as any} text="center">
             {t('stories.errorBody')}
           </SizableText>
         </YStack>
       ) : posts.length === 0 ? (
-        <YStack flex={1} items="center" justify="center" px={H_PADDING}>
+        <YStack flex={1} items="center" justify="center" px={SCREEN_PADDING}>
           <SizableText size="$3" fontFamily="$body" color={c.textMuted as any} text="center">
             {t('stories.emptyBody')}
           </SizableText>
@@ -104,7 +106,7 @@ export function StoriesScreen() {
           data={posts}
           keyExtractor={(item) => item.slug}
           contentContainerStyle={{
-            paddingHorizontal: H_PADDING,
+            paddingHorizontal: SCREEN_PADDING,
             paddingBottom: tabPad + 24,
             gap: 16,
           }}
@@ -131,13 +133,17 @@ function Chip({
         px="$3"
         py="$1.5"
         rounded={9999}
+        items="center"
+        justify="center"
         bg={(active ? c.primary : c.surfaceMuted) as any}
       >
         <SizableText
           size="$2"
           fontFamily="$body"
           fontWeight="700"
+          numberOfLines={1}
           color={(active ? c.onBrand : c.text) as any}
+          style={{ lineHeight: 16, textAlignVertical: 'center' }}
         >
           {label}
         </SizableText>

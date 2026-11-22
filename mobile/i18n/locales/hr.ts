@@ -100,6 +100,7 @@ export const hr = {
     countLabel_other: '{{count}} ocjena',
     signInToRate: 'Prijavi se za ocjenjivanje',
     noRatingsYet: 'Još nema ocjena',
+    noRatingsShort: 'Još nije ocijenjeno',
     beFirstToRate: 'Budi prvi koji ocjenjuje',
     prompt: {
       titleCity: 'Kako ti se svidio {{name}}?',
@@ -216,11 +217,24 @@ export const hr = {
       bundleIntroBadge_few: 'Grupa · {{count}} postaje',
       bundleIntroBadge_other: 'Grupa · {{count}} postaja',
       bundlePositionBadge: 'Grupa · {{index}} od {{total}}',
+      bundleIntroShort_one: '{{count}} postaja',
+      bundleIntroShort_few: '{{count}} postaje',
+      bundleIntroShort_other: '{{count}} postaja',
+      bundlePositionShort: '{{index}} od {{total}}',
       startStops_one: 'Započni {{count}} postaju',
       startStops_few: 'Započni {{count}} postaje',
       startStops_other: 'Započni {{count}} postaja',
       skipSubStop: 'Preskoči {{name}}',
       skipBundle: 'Preskoči sve postaje na {{bundle}}',
+    },
+    intro: {
+      badge: 'Dobrodošli',
+      continue: 'Nastavi',
+      skip: 'Preskoči',
+    },
+    map: {
+      enterFullscreen: 'Karta preko cijelog zaslona',
+      exitFullscreen: 'Izađi iz cijelog zaslona',
     },
     outro: {
       badge: 'Kraj',

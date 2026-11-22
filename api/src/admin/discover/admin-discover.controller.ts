@@ -21,6 +21,7 @@ import {
   AdminPath,
   AdminPlaceReferencesResponse,
   AdminPlaceResponse,
+  AdminContentHealthResponse,
   AdminStatsResponse,
   AdminWebPath,
   PoiCategory,
@@ -153,6 +154,11 @@ export class AdminDiscoverController {
   @Get(AdminPath.Discover.stats)
   async getStats(): Promise<AdminStatsResponse> {
     return { stats: await this.service.getStats() };
+  }
+
+  @Get(AdminPath.Discover.contentHealth)
+  async getContentHealth(): Promise<AdminContentHealthResponse> {
+    return { health: await this.service.getContentHealth() };
   }
 
   // ---------- Web content (public web gallery curator) ----------

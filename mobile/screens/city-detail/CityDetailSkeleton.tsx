@@ -3,9 +3,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { XStack, YStack } from 'tamagui'
 import { Shimmer, useShimmerProgress } from '../../common/Shimmer'
 import { useAppTheme } from '../../providers/ThemeContext'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
 const HERO_RATIO = 0.85
-const H_PADDING = 20
 
 export function CityDetailSkeleton() {
   const { width } = useWindowDimensions()
@@ -13,17 +13,17 @@ export function CityDetailSkeleton() {
   const { c } = useAppTheme()
   const heroHeight = width * HERO_RATIO
   const progress = useShimmerProgress()
-  const bodyWidth = width - H_PADDING * 2
+  const bodyWidth = width - SCREEN_PADDING * 2
 
   return (
     <YStack flex={1} bg={c.background as any}>
       <Shimmer width={width} height={heroHeight} progress={progress} />
 
-      <YStack px={H_PADDING} mt={-14} z={5}>
+      <YStack px={SCREEN_PADDING} mt={-14} z={5}>
         <Shimmer width={bodyWidth} height={84} radius={24} progress={progress} />
       </YStack>
 
-      <YStack px={H_PADDING} pt="$5" gap="$3">
+      <YStack px={SCREEN_PADDING} pt="$5" gap="$3">
         {Array.from({ length: 4 }).map((_, idx) => (
           <XStack
             key={idx}

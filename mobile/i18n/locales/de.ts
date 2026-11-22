@@ -96,6 +96,7 @@ export const de = {
     countLabel_other: '{{count}} Bewertungen',
     signInToRate: 'Zum Bewerten anmelden',
     noRatingsYet: 'Noch keine Bewertungen',
+    noRatingsShort: 'Noch nicht bewertet',
     beFirstToRate: 'Sei der Erste, der bewertet',
     prompt: {
       titleCity: 'Wie war {{name}}?',
@@ -207,10 +208,22 @@ export const de = {
       bundleIntroBadge_one: 'Bundle · {{count}} Station',
       bundleIntroBadge_other: 'Bundle · {{count}} Stationen',
       bundlePositionBadge: 'Bundle · {{index}} von {{total}}',
+      bundleIntroShort_one: '{{count}} Station',
+      bundleIntroShort_other: '{{count}} Stationen',
+      bundlePositionShort: '{{index}} von {{total}}',
       startStops_one: '{{count}} Station starten',
       startStops_other: '{{count}} Stationen starten',
       skipSubStop: '{{name}} überspringen',
       skipBundle: 'Alle Stationen bei {{bundle}} überspringen',
+    },
+    intro: {
+      badge: 'Willkommen',
+      continue: 'Weiter',
+      skip: 'Überspringen',
+    },
+    map: {
+      enterFullscreen: 'Vollbildkarte',
+      exitFullscreen: 'Vollbildkarte beenden',
     },
     outro: {
       badge: 'Abschluss',

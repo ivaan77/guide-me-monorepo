@@ -17,10 +17,10 @@ import { ArrowUp, ChevronLeft } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
 import { useStory } from '../../hooks/useStories'
 import { TipTapRenderer } from './TipTapRenderer'
-import { SHADOW } from '../../constants/Sizes'
+import { SCREEN_PADDING, SHADOW } from '../../constants/Sizes'
+import { useLayout } from '../../hooks/useLayout'
 import { useAppTheme } from '../../providers/ThemeContext'
 
-const H_PADDING = 20
 
 // Story detail screen — cover, meta, title, excerpt, TipTap body.
 // Emits `story_viewed` on first successful load per (slug, category)
@@ -33,6 +33,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
   const posthog = usePostHog()
   const { data: post, isLoading, isError } = useStory(slug)
   const { c } = useAppTheme()
+  const { fontStep } = useLayout()
 
   // Scroll-to-top FAB. Threshold: user has scrolled past ~60% of screen
   // height. Animated.Value on the opacity means we fade in/out instead
@@ -94,7 +95,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
         bg={c.background as any}
         items="center"
         justify="center"
-        px={H_PADDING}
+        px={SCREEN_PADDING}
       >
         <SizableText size="$4" fontFamily="$body" color={c.textMuted as any} text="center">
           {t('stories.errorBody')}
@@ -125,7 +126,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
           style={{ width: '100%', aspectRatio: 16 / 9 }}
           resizeMode="cover"
         />
-        <YStack px={H_PADDING} pt="$5" gap="$3">
+        <YStack px={SCREEN_PADDING} pt="$5" gap="$3">
           <XStack items="center" gap="$2">
             <SizableText
               size="$1"
@@ -150,7 +151,7 @@ export function StoryDetailScreen({ slug }: { slug: string }) {
               size we use for large screen titles elsewhere, and pairs
               better with the excerpt below. */}
           <SizableText
-            size="$8"
+            size={fontStep('$8')}
             fontFamily="$heading"
             fontWeight="800"
             color={c.text as any}

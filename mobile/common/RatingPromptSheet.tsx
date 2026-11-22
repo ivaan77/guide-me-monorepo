@@ -9,6 +9,7 @@ import { Star } from '@tamagui/lucide-icons'
 import { H2, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import type { RatingTargetType, RatingValue } from '@guide-me-app/core'
 import { BottomSheet } from './BottomSheet'
+import { useLayout } from '../hooks/useLayout'
 import { useMyRating } from '../hooks/useMyRating'
 import { useRateTarget } from '../hooks/useRateTarget'
 import { UnauthorizedError } from '../lib/authedApi'
@@ -49,6 +50,7 @@ export function RatingPromptSheet({
   entityName,
 }: Props) {
   const { t } = useTranslation()
+  const { isSmall } = useLayout()
   const router = useRouter()
   const toast = useToastController()
   const posthog = usePostHog()
@@ -178,8 +180,13 @@ export function RatingPromptSheet({
   const litUpTo = hovered ?? selected ?? 0
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} heightRatio={0.42}>
-      <YStack px="$5" py="$4" gap="$4" flex={1}>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      fitContent
+      heightRatio={0.7}
+    >
+      <YStack px="$5" py="$4" gap="$3">
         <YStack gap="$2">
           <H2 color={c.text as any} fontFamily="$heading" fontWeight="700" fontSize="$7">
             {title}
@@ -196,7 +203,7 @@ export function RatingPromptSheet({
           </Paragraph>
         </YStack>
 
-        <XStack justify="center" gap="$3" py="$4">
+        <XStack justify="center" gap="$3" py="$2">
           {STAR_VALUES.map((v) => {
             const isLit = v <= litUpTo
             return (
@@ -209,7 +216,7 @@ export function RatingPromptSheet({
                 hitSlop={6}
               >
                 <Star
-                  size={44}
+                  size={isSmall ? 36 : 44}
                   color={isLit ? (STAR_FILLED as any) : (STAR_OUTLINE as any)}
                   fill={isLit ? (STAR_FILLED as any) : 'transparent'}
                 />

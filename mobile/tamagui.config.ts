@@ -2,6 +2,37 @@ import { defaultConfig } from '@tamagui/config/v4'
 import { createTamagui, createFont, createTokens } from 'tamagui'
 import { palette } from './constants/Colors'
 
+// Global small-screen type scale.
+//
+// The size ramps below are tuned for a ~390pt phone. On a 375pt-or-narrower
+// screen (iPhone SE, older Androids) every heading, row title and body line
+// reads oversized. Scaling per component leaves the app inconsistent — one
+// screen shrinks and the next doesn't — so the whole ramp is scaled once,
+// here, and every Tamagui text in the app inherits it.
+//
+// Read once at module load: phones are portrait-locked, so width is stable.
+const SMALL_SCREEN_MAX_WIDTH = 380
+// NativeModules aren't ready when this config module is evaluated, so
+// `Dimensions.get()` throws here. react-native's Platform exposes the
+// screen metrics synchronously from the constants bundle instead.
+const SCREEN_WIDTH = (() => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { width, height } = require('react-native').Dimensions.get('screen')
+    return Math.min(width, height)
+  } catch {
+    return 400
+  }
+})()
+const TYPE_SCALE = SCREEN_WIDTH < SMALL_SCREEN_MAX_WIDTH ? 0.86 : 1
+
+// Round to a half pixel — RN renders fractional sizes, and rounding to whole
+// numbers would collapse adjacent rungs of the ramp into the same value.
+const scaleRamp = (ramp: Record<string | number, number>) =>
+  Object.fromEntries(
+    Object.entries(ramp).map(([k, v]) => [k, Math.round(v * TYPE_SCALE * 2) / 2]),
+  ) as typeof ramp
+
 // Tamagui v4's default config does not register a `color` token group — its
 // themes set CSS variables directly. Tamagui's "is this a valid color?"
 // validator (the one that warns "$X is not a valid color or brush") looks
@@ -86,8 +117,8 @@ const darkOverrides = {
 // register there must match `face[weight].normal` here.
 const displayFont = createFont({
   family: 'BricolageGrotesque',
-  size: { 1: 11, 2: 12, 3: 14, 4: 16, 5: 19, 6: 20, 7: 24, 8: 28, 9: 40, 10: 64, 11: 96, true: 16 },
-  lineHeight: { 1: 16, 2: 16, 3: 20, 4: 24, 5: 28, 6: 28, 7: 32, 8: 36, 9: 48, 10: 68, 11: 96, true: 24 },
+  size: scaleRamp({ 1: 11, 2: 12, 3: 14, 4: 16, 5: 19, 6: 20, 7: 24, 8: 28, 9: 40, 10: 64, 11: 96, true: 16 }),
+  lineHeight: scaleRamp({ 1: 16, 2: 16, 3: 20, 4: 24, 5: 28, 6: 28, 7: 32, 8: 36, 9: 48, 10: 68, 11: 96, true: 24 }),
   weight: { 1: '400', 4: '600', 6: '700', 8: '800' },
   letterSpacing: { 1: 0, 4: -0.4, 6: -0.6, 8: -1 },
   face: {
@@ -101,8 +132,8 @@ const displayFont = createFont({
 // HeyLocal body font — Geist.
 const bodyFont = createFont({
   family: 'Geist',
-  size: { 1: 11, 2: 12, 3: 14, 4: 16, 5: 19, 6: 20, 7: 24, 8: 28, 9: 40, 10: 64, 11: 96, true: 16 },
-  lineHeight: { 1: 16, 2: 16, 3: 20, 4: 24, 5: 28, 6: 28, 7: 32, 8: 36, 9: 48, 10: 68, 11: 96, true: 24 },
+  size: scaleRamp({ 1: 11, 2: 12, 3: 14, 4: 16, 5: 19, 6: 20, 7: 24, 8: 28, 9: 40, 10: 64, 11: 96, true: 16 }),
+  lineHeight: scaleRamp({ 1: 16, 2: 16, 3: 20, 4: 24, 5: 28, 6: 28, 7: 32, 8: 36, 9: 48, 10: 68, 11: 96, true: 24 }),
   weight: { 1: '400', 2: '500', 3: '600', 4: '700' },
   letterSpacing: { 1: 0, 2: 0, 3: -0.1, 4: -0.2 },
   face: {
@@ -115,8 +146,8 @@ const bodyFont = createFont({
 
 const monoFont = createFont({
   family: 'GeistMono',
-  size: { 1: 10, 2: 11, 3: 12, 4: 13, 5: 14, true: 12 },
-  lineHeight: { 1: 14, 2: 16, 3: 16, 4: 18, 5: 20, true: 16 },
+  size: scaleRamp({ 1: 10, 2: 11, 3: 12, 4: 13, 5: 14, true: 12 }),
+  lineHeight: scaleRamp({ 1: 14, 2: 16, 3: 16, 4: 18, 5: 20, true: 16 }),
   weight: { 1: '400', 2: '500' },
   letterSpacing: { 1: 0, 2: 0 },
   face: {

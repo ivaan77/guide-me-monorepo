@@ -12,8 +12,8 @@ import { H3, Paragraph, SizableText, XStack, YStack } from 'tamagui'
 import { BottomSheet } from '../../common/BottomSheet'
 import { useAppTheme } from '../../providers/ThemeContext'
 import type { PoiCategory, PublicPoi as Poi } from '@guide-me-app/core'
+import { SCREEN_PADDING } from '../../constants/Sizes'
 
-const H_PADDING = 20
 
 const CATEGORY_EMOJI: Record<PoiCategory, string> = {
   restaurant: '🍴',
@@ -54,7 +54,7 @@ function PoiDetailSheetInner({ visible, poi, onClose }: Props) {
       onClose={onClose}
       heightRatio={0.82}
       header={
-        <YStack px={H_PADDING} pt="$2" pb="$3" gap="$1">
+        <YStack px={SCREEN_PADDING} pt="$2" pb="$3" gap="$1">
           <XStack items="center" gap="$2">
             <SizableText size="$4">{CATEGORY_EMOJI[poi.category]}</SizableText>
             <SizableText
@@ -145,7 +145,7 @@ function PoiBody({ poi }: { poi: Poi }) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <YStack px={H_PADDING} pt="$4" gap="$3">
+        <YStack px={SCREEN_PADDING} pt="$4" gap="$3">
           <Paragraph color={c.text as any} fontFamily="$body" size="$4" lineHeight="$6">
             {poi.description}
           </Paragraph>

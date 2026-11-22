@@ -27,7 +27,7 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets()
   const bottomPadding = useTabBarPadding()
   const deleteAccount = useDeleteAccount()
-  const { isTablet } = useLayout()
+  const { isTablet, fontStep } = useLayout()
 
   const displayName =
     user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress
@@ -119,7 +119,7 @@ export function ProfileScreen() {
               <User size={40} color={c.primary as any} />
             </YStack>
           )}
-          <H2 color={c.text as any} fontFamily="$body" fontWeight="600" fontSize="$8">
+          <H2 color={c.text as any} fontFamily="$body" fontWeight="600" fontSize={fontStep('$8')}>
             {isSignedIn ? displayName ?? t('profile.guestName') : t('profile.guestName')}
           </H2>
           {!isSignedIn && (

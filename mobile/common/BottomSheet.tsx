@@ -20,6 +20,14 @@ type Props = {
   onClose: () => void
   heightRatio?: number
   /**
+   * Size the sheet to its content instead of a fixed fraction of the screen,
+   * capped at `heightRatio`. Use for short sheets (a rating prompt, a date
+   * picker) where a fixed ratio leaves a block of dead space under the
+   * content on tall phones. Children must not use `flex={1}`, which would
+   * stretch them back out to fill the sheet.
+   */
+  fitContent?: boolean
+  /**
    * Header rendered above the body. The drag-to-dismiss gesture is captured
    * here so inner scroll views and carousels in `children` are not affected.
    */
@@ -31,10 +39,13 @@ export function BottomSheet({
   visible,
   onClose,
   heightRatio = 0.85,
+  fitContent = false,
   header,
   children,
 }: Props) {
   const { height: screenHeight, width: screenWidth } = useWindowDimensions()
+  // Fixed-fraction height by default. `fitContent` swaps to a maxHeight so
+  // the sheet hugs its content and still can't outgrow the screen.
   const sheetHeight = screenHeight * heightRatio
   const { c } = useAppTheme()
   const { isTablet } = useLayout()
@@ -137,14 +148,16 @@ export function BottomSheet({
 
         <Animated.View
           style={{
-            height: sheetHeight,
+            ...(fitContent
+              ? { maxHeight: sheetHeight }
+              : { height: sheetHeight }),
             width: sheetWidth,
             transform: [{ translateY }],
           }}
         >
           <YStack
             bg={c.surface as any}
-            flex={1}
+            {...(fitContent ? {} : { flex: 1 })}
             style={{
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,

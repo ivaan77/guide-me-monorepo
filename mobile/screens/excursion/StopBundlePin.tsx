@@ -55,6 +55,7 @@ export function SubStopDot({
       coordinate={coords}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={false}
+      zIndex={5}
       onPress={onPress}
     >
       <View
@@ -108,6 +109,7 @@ export function StopBundlePin({
       title={title}
       description={description}
       tracksViewChanges={false}
+      zIndex={5}
     >
       <View
         style={{

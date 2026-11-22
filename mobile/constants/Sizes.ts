@@ -31,10 +31,29 @@ export const AVATAR_LG_RADIUS = AVATAR_LG / 2
 // height exceed a fraction of viewport height on tablets — see
 // HERO_MAX_VIEWPORT_RATIO below.
 export const HERO_RATIO = 0.85
+// Small screens get a shorter hero: at 0.85 the image is 48% of an iPhone SE
+// versus 39% of a regular phone, so the smallest device shows the least
+// content below the fold — the opposite of what it needs.
+export const HERO_RATIO_SMALL = 0.68
 // Cap the hero at half the viewport height. On phones the width * 0.85
 // calc dominates; on tablets (where width is huge) this cap kicks in and
 // keeps the fold visible.
 export const HERO_MAX_VIEWPORT_RATIO = 0.5
+
+// Hero display title (city / place name over the hero image). 44pt is the
+// design size; on an iPhone SE-class screen (<380pt, see useLayout's
+// isSmall) a long name like "Savudrija" or "Šibenik City Museum" eats both
+// allowed lines and clips, so step it down. lineHeight travels with it —
+// a fixed lineHeight against a smaller size leaves an awkward gap.
+// Discover grid card image ratio (height = cardWidth * ratio). A portrait
+// 1.15 reads well on a big phone but is disproportionately tall on a 375pt
+// screen — the card eats so much height that fewer rows fit than on a larger
+// device, which is backwards. Square-ish on small screens restores the
+// "about two rows visible" rhythm everywhere.
+export const CITY_CARD_RATIO = { default: 1.15, small: 0.92 }
+
+export const HERO_TITLE_SIZE = { default: 44, small: 34 }
+export const HERO_TITLE_LINE_HEIGHT = { default: 48, small: 38 }
 
 // Bottom tab bar height. Was hardcoded 49/iOS + 80/Android inconsistently.
 // - iOS: 49pt is the standard tab bar (matches Apple's UITabBar default).

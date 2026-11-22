@@ -23,7 +23,7 @@ export function EmptyState(props: Props) {
 
   if (props.variant === 'no-results') {
     return (
-      <YStack flex={1} items="center" justify="center" px="$6" gap="$3" pt="$10">
+      <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
         <SearchX size={40} color={c.textMuted as any} />
         <SizableText size="$5" color={c.text as any} fontFamily="$body" fontWeight="600">
           {t('discover.noResultsTitle')}
@@ -36,7 +36,7 @@ export function EmptyState(props: Props) {
   }
 
   return (
-    <YStack flex={1} items="center" justify="center" px="$6" gap="$3" pt="$10">
+    <YStack flex={1} items="center" justify="center" px="$6" gap="$3">
       <CloudOff size={40} color={c.primary as any} />
       <SizableText size="$5" color={c.text as any} fontFamily="$body" fontWeight="600">
         {t('common.somethingWentWrong')}

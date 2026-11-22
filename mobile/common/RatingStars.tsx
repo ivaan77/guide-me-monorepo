@@ -140,8 +140,14 @@ function DisplayStars({
         color={STAR_OUTLINE as any}
         fill="transparent"
       />
-      <SizableText color={c.textMuted as any} fontFamily="$body" size="$2">
-        {t('ratings.noRatingsYet')}
+      <SizableText
+        color={c.textMuted as any}
+        fontFamily="$body"
+        size="$2"
+        numberOfLines={1}
+        style={{ flexShrink: 1 }}
+      >
+        {compact ? t('ratings.noRatingsShort') : t('ratings.noRatingsYet')}
       </SizableText>
     </XStack>
   ) : (

@@ -9,6 +9,7 @@ import {
 } from 'expo-audio'
 import { useAudioPlaybackTracker } from '../hooks/useAudioPlaybackTracker'
 import { useAppTheme } from '../providers/ThemeContext'
+import { useLayout } from '../hooks/useLayout'
 import {
   Headphones,
   Pause,
@@ -69,6 +70,7 @@ export function AudioPlayer({
 }: Props) {
   const { t } = useTranslation()
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
 
   // useAudioPlayer accepts null to lazily allocate. We pass null when no URL
   // is supplied so we don't open a native audio session for a stub card.
@@ -146,15 +148,15 @@ export function AudioPlayer({
         items="center"
         bg={c.surfaceMuted as any}
         rounded="$5"
-        px="$3"
-        py="$3"
-        gap="$3"
+        px={isSmall ? "$2.5" : "$3"}
+        py={isSmall ? "$2.5" : "$3"}
+        gap={isSmall ? "$2" : "$3"}
         borderWidth={1}
         borderColor={c.border as any}
       >
         <YStack
-          width={36}
-          height={36}
+          width={isSmall ? 30 : 36}
+          height={isSmall ? 30 : 36}
           rounded={18}
           bg={c.background as any}
           items="center"
@@ -182,16 +184,16 @@ export function AudioPlayer({
     <YStack
       bg={c.surfaceMuted as any}
       rounded="$5"
-      px="$3"
-      py="$3"
-      gap="$3"
+      px={isSmall ? '$2.5' : '$3'}
+      py={isSmall ? '$2' : '$3'}
+      gap={isSmall ? '$2' : '$3'}
       borderWidth={1}
       borderColor={c.border as any}
     >
-      <XStack items="center" gap="$2.5">
+      <XStack items="center" gap={isSmall ? "$2" : "$2.5"}>
         <YStack
-          width={36}
-          height={36}
+          width={isSmall ? 30 : 36}
+          height={isSmall ? 30 : 36}
           rounded={18}
           bg={c.background as any}
           items="center"
@@ -201,19 +203,25 @@ export function AudioPlayer({
         </YStack>
         <YStack flex={1} gap="$0.5" minW={0} style={{ flexShrink: 1 }}>
           <SizableText
-            size="$3"
             color={c.text as any}
             fontFamily="$body"
             fontWeight="600"
+            style={{
+              fontSize: isSmall ? 13.5 : 14,
+              lineHeight: isSmall ? 18 : 19,
+            }}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
             {title}
           </SizableText>
           <SizableText
-            size="$2"
             color={c.textMuted as any}
             fontFamily="$body"
+            style={{
+              fontSize: isSmall ? 11.5 : 12,
+              lineHeight: isSmall ? 15 : 16,
+            }}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -222,7 +230,7 @@ export function AudioPlayer({
               : t((promptKey ?? 'excursion.stopSheet.audioPrompt') as never)}
           </SizableText>
         </YStack>
-        <XStack gap="$1" items="center">
+        <XStack gap={isSmall ? "$0.5" : "$1"} items="center">
           <CircleButton
             icon={Rewind}
             onPress={handleSeekBack}
@@ -242,11 +250,13 @@ export function AudioPlayer({
             onPress={handleSeekForward}
             disabled={!hasStarted}
           />
-          <CircleButton
-            icon={Square}
-            onPress={handleStop}
-            disabled={!isPlaying}
-          />
+          {(!isSmall || isPlaying) && (
+            <CircleButton
+              icon={Square}
+              onPress={handleStop}
+              disabled={!isPlaying}
+            />
+          )}
         </XStack>
       </XStack>
       {hasStarted && (
@@ -295,11 +305,12 @@ function CircleButton({
   disabled?: boolean
 }) {
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   return (
     <Pressable onPress={onPress} disabled={disabled} hitSlop={6}>
       <YStack
-        width={40}
-        height={40}
+        width={isSmall ? 34 : 40}
+        height={isSmall ? 34 : 40}
         rounded={20}
         bg={c.background as any}
         borderWidth={1}
@@ -327,6 +338,7 @@ export function PlayButtonWithRing({
   onPress: () => void
 }) {
   const { c } = useAppTheme()
+  const { isSmall } = useLayout()
   // Use the muted text color for the dashed track — borderColor is too
   // subtle to read against the sheet's surface, especially in light mode.
   const trackColor = c.textMuted
@@ -405,8 +417,8 @@ export function PlayButtonWithRing({
           </Svg>
         )}
         <YStack
-          width={40}
-          height={40}
+          width={isSmall ? 34 : 40}
+          height={isSmall ? 34 : 40}
           rounded={20}
           bg={c.primary as any}
           items="center"

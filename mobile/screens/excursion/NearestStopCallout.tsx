@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Platform } from 'react-native'
 import { Marker } from 'react-native-maps'
 import { MapPin } from '@tamagui/lucide-icons'
 import { SizableText, XStack, YStack } from 'tamagui'
@@ -40,7 +41,11 @@ export function NearestStopCallout({ coords }: Props) {
           py="$1"
           rounded="$10"
           bg={c.accent as any}
-          style={SHADOW.amberPill}
+          style={
+            Platform.OS === 'android'
+              ? { ...SHADOW.amberPill, elevation: 0 }
+              : SHADOW.amberPill
+          }
         >
           <MapPin size={11} color={ON_ACCENT as any} />
           <SizableText
