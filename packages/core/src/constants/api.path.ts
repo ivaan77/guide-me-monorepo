@@ -8,6 +8,7 @@ export const AdminPath = {
         placeBySlug: '/admin/discover/places/:slug',
         placeReferencesBySlug: '/admin/discover/places/:slug/references',
         stats: '/admin/discover/stats',
+        contentHealth: '/admin/discover/content-health',
         getCity: (slug: string): string => `/admin/discover/cities/${slug}`,
         getExcursion: (slug: string): string => `/admin/discover/excursions/${slug}`,
         getPlace: (slug: string): string => `/admin/discover/places/${slug}`,

@@ -11,8 +11,13 @@ import {
   AdminGalleryUpdateRequest,
   AdminInactiveRef,
   AdminPlace,
+  AdminAudioSlot,
+  AdminContentHealth,
   AdminStats,
   AdminStatsTimeseriesPoint,
+  ContentHealthSeverity,
+  Locale,
+  SUPPORTED_LOCALES,
   DEFAULT_LOCALE,
   PoiCategory,
 } from '@guide-me-app/core';
@@ -287,6 +292,71 @@ export class AdminDiscoverService {
   }
 
   // ---------------- Stats ----------------
+
+  // ---------- Content health ----------
+
+  // Audio coverage across every narrated surface. Deliberately metadata-only:
+  // grading images needs real pixel dimensions and byte sizes, which means
+  // downloading ~50 MB, so that half stays in .content-audit/audit.py.
+  //
+  // Severity matches the audit script exactly so the two can be compared:
+  //   critical — no audio in any locale
+  //   high     — some audio but no English (the fallback locale, so these
+  //              render silent for most users)
+  //   medium   — English present, German and/or Croatian missing
+  //   ok       — all three present
+  async getContentHealth(): Promise<AdminContentHealth> {
+    const excursions = await this.repo.findAllExcursionsAdmin();
+
+    const gradeSlot = (
+      urls: Partial<Record<Locale, string>> | undefined,
+    ): { languages: Locale[]; severity: ContentHealthSeverity } => {
+      const languages = SUPPORTED_LOCALES.filter((l) => urls?.[l]);
+      if (languages.length === 0) {
+        return { languages, severity: 'critical' };
+      }
+      if (!languages.includes('en')) {
+        return { languages, severity: 'high' };
+      }
+      return {
+        languages,
+        severity: languages.length === SUPPORTED_LOCALES.length ? 'ok' : 'medium',
+      };
+    };
+
+    const slots: AdminAudioSlot[] = [];
+    for (const e of excursions) {
+      const excursionName = e.name?.en ?? e.slug;
+      const push = (slot: string, urls?: Partial<Record<Locale, string>>) => {
+        slots.push({
+          excursionSlug: e.slug,
+          excursionName,
+          slot,
+          ...gradeSlot(urls),
+        });
+      };
+      // Slot labels mirror the audit script's vocabulary ('intro', 'stop 3',
+      // 'stop 3.sub2') so rows line up between the two reports.
+      if (e.intro) push('intro', e.intro.audioUrl);
+      (e.stops ?? []).forEach((stop, si) => {
+        push(`stop ${si + 1}`, stop.audioUrl);
+        (stop.subStops ?? []).forEach((sub, bi) => {
+          push(`stop ${si + 1}.sub${bi + 1}`, sub.audioUrl);
+        });
+      });
+      if (e.outro) push('outro', e.outro.audioUrl);
+    }
+
+    const bySeverity: Record<ContentHealthSeverity, number> = {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      ok: 0,
+    };
+    for (const s of slots) bySeverity[s.severity] += 1;
+
+    return { audio: { total: slots.length, bySeverity, slots } };
+  }
 
   async getStats(): Promise<AdminStats> {
     // Fetch all three collections in parallel. The dataset is small (admin
