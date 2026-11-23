@@ -22,8 +22,8 @@ core feature you will need to simulate a location in Zagreb, Croatia.
 
 RECOMMENDED TEST ROUTE
   City:   Zagreb
-  Route:  "Heart of Old Zagreb"  (10 stops, ~70 min, full audio in
-          English, German and Croatian)
+  Route:  "Heart of Old Zagreb"  (full audio narration in English,
+          German and Croatian)
 
 HOW TO SIMULATE LOCATION
   iOS Simulator:  Features → Location → Custom Location…
@@ -44,8 +44,8 @@ STEP 2 — Open the route
 STEP 3 — Confirm arrival at Stop 1
   Because the simulated location is already at Stop 1, the app shows
   the "You've arrived" card for Ban Josip Jelacic Square, plays a
-  chime, and offers the stop's audio guide. This stop also contains 4
-  sub-stops — swipe the card horizontally to page through them.
+  chime, and offers the stop's audio guide. This stop also contains
+  several sub-stops — swipe the card horizontally to page through them.
 
 STEP 4 — Walk to the next stop (the key interaction)
   Change the simulated location to Stop 2:
@@ -82,7 +82,7 @@ IMPORTANT
   • Audio is streamed, so the device needs a network connection.
 
 OTHER AREAS TO REVIEW (no location needed)
-  • Discover tab — browse 11 Croatian cities, their restaurants, bars,
+  • Discover tab — browse Croatian cities, their restaurants, bars,
     museums and viewpoints.
   • Stories tab — editorial articles.
   • Profile tab — switch language (English / German / Croatian) and
