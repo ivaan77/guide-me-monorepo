@@ -9,6 +9,7 @@ and matching all ten counts.
 Usage:
     python3 .content-audit/audit.py            # snapshot only
     python3 .content-audit/audit.py --compare  # snapshot + diff vs baseline
+    python3 .content-audit/audit.py --live --compare  # only content reachable in the app
 """
 import json, os, re, sys, datetime, urllib.request, urllib.error
 from pathlib import Path
@@ -123,9 +124,17 @@ def grade_audio(present):
 
 
 def collect(tok):
-    imgs, aud = [], []
+    """Walk cities, places and excursions, grading images + audio.
 
-    def add_img(kind_type, slug, kind, lang, url):
+    Records carry `scope` metadata so a later pass can restrict the report to
+    content a user can actually reach (enabled city -> its excursions and
+    places). A disabled city hides everything under it even when the child
+    docs are themselves enabled.
+    """
+    imgs, aud = [], []
+    scope = {'imgs': [], 'aud': []}
+
+    def add_img(kind_type, slug, kind, lang, url, city=None, live=True):
         if not url:
             return
         got = fetch_image(url)
@@ -135,50 +144,67 @@ def collect(tok):
         sev, issues = grade_image(url, w, h, kb)
         imgs.append([kind_type, slug, kind, lang, w, h,
                      round(w / h, 2) if h else 0, kb, sev, issues, url])
+        scope['imgs'].append({'city': city, 'live': live})
 
     def langs_with_audio(node):
         a = (node or {}).get('audioUrl') or {}
         return {l for l in LANGS if a.get(l)}
 
-    for c in get('/admin/discover/cities', tok, 'cities'):
+    cities = get('/admin/discover/cities', tok, 'cities')
+    enabled_cities = {c['slug'] for c in cities if c.get('isEnabled')}
+    # A place is reachable only through a city that lists it AND is enabled.
+    live_place_slugs = set()
+    for c in cities:
         slug = c.get('slug', '')
         full = get(f'/admin/discover/cities/{slug}', tok, 'city')
-        add_img('city', slug, 'hero', '', full.get('image'))
+        live = slug in enabled_cities
+        if live:
+            live_place_slugs.update(full.get('cityPlaceSlugs') or [])
+        add_img('city', slug, 'hero', '', full.get('image'), slug, live)
         for i, g in enumerate(full.get('images') or [], 1):
-            add_img('city', slug, f'gallery{i}', '', g)
+            add_img('city', slug, f'gallery{i}', '', g, slug, live)
 
     for p in get('/admin/discover/places', tok, 'places'):
         slug = p.get('slug', '')
         full = get(f'/admin/discover/places/{slug}', tok, 'place')
-        add_img('place', slug, 'hero', '', full.get('image'))
+        live = slug in live_place_slugs and full.get('isEnabled', True)
+        add_img('place', slug, 'hero', '', full.get('image'), None, live)
         for i, g in enumerate(full.get('images') or [], 1):
-            add_img('place', slug, f'gallery{i}', '', g)
+            add_img('place', slug, f'gallery{i}', '', g, None, live)
 
     for e in get('/admin/discover/excursions', tok, 'excursions'):
         slug = e.get('slug', '')
         full = get(f'/admin/discover/excursions/{slug}', tok, 'excursion')
-        add_img('excursion', slug, 'hero', '', full.get('image'))
+        city = full.get('citySlug')
+        # An enabled excursion under a disabled city is unreachable: the city
+        # never appears in Discover, so there is no path to its routes.
+        live = bool(full.get('isEnabled')) and city in enabled_cities
+        add_img('excursion', slug, 'hero', '', full.get('image'), city, live)
         for part in ('intro', 'outro'):
             node = full.get(part)
             if node:
-                add_img('excursion', slug, part, '', node.get('image'))
+                add_img('excursion', slug, part, '', node.get('image'), city, live)
                 s, prob, miss = grade_audio(langs_with_audio(node))
                 aud.append([slug, part, '',
                             ''.join(sorted(langs_with_audio(node))), s, prob, miss])
+                scope['aud'].append({'city': city, 'live': live})
         for si, st in enumerate(full.get('stops') or [], 1):
-            add_img('stop', slug, f'stop {si}', '', st.get('image'))
+            add_img('stop', slug, f'stop {si}', '', st.get('image'), city, live)
             for gi, g in enumerate(st.get('images') or [], 1):
-                add_img('stop', slug, f'stop {si} gallery{gi}', '', g)
+                add_img('stop', slug, f'stop {si} gallery{gi}', '', g, city, live)
             s, prob, miss = grade_audio(langs_with_audio(st))
             aud.append([slug, f'stop {si}', '',
                         ''.join(sorted(langs_with_audio(st))), s, prob, miss])
+            scope['aud'].append({'city': city, 'live': live})
             for bi, sub in enumerate(st.get('subStops') or [], 1):
                 k = f'stop {si}.sub{bi}'
-                add_img('stop', slug, k, '', sub.get('image'))
+                add_img('stop', slug, k, '', sub.get('image'), city, live)
                 s, prob, miss = grade_audio(langs_with_audio(sub))
                 aud.append([slug, k, '',
                             ''.join(sorted(langs_with_audio(sub))), s, prob, miss])
-    return {'imgs': imgs, 'aud': aud}
+                scope['aud'].append({'city': city, 'live': live})
+    return {'imgs': imgs, 'aud': aud, 'scope': scope,
+            'enabledCities': sorted(enabled_cities)}
 
 
 def counts(snap):
@@ -206,6 +232,23 @@ def show_diff(base, cur):
             print(f'{k:10} {b[k]:>8} {c[k]:>8} {arrow:>8}')
 
 
+def filter_live(snap):
+    """Restrict a snapshot to records reachable in the app.
+
+    Returns a plain {'imgs','aud'} snapshot so it can be fed to the same
+    counts()/show_diff() as any other. A snapshot taken before scope
+    tracking existed has no 'scope' key — return it unchanged rather than
+    silently reporting zero.
+    """
+    sc = snap.get('scope')
+    if not sc:
+        return {'imgs': snap['imgs'], 'aud': snap['aud']}
+    return {
+        'imgs': [r for r, m in zip(snap['imgs'], sc['imgs']) if m['live']],
+        'aud': [r for r, m in zip(snap['aud'], sc['aud']) if m['live']],
+    }
+
+
 def main():
     tok = token()
     print(f'Fetching from {API} ...', file=sys.stderr)
@@ -215,8 +258,37 @@ def main():
     out.write_text(json.dumps(snap))
     print(f'wrote {out} ({len(snap["imgs"])} images, {len(snap["aud"])} audio)',
           file=sys.stderr)
+    live_only = '--live' in sys.argv
+    if live_only:
+        cities = snap.get('enabledCities') or []
+        print(f'\nLIVE SCOPE — enabled cities: {", ".join(cities) or "(none)"}',
+              file=sys.stderr)
+        view = filter_live(snap)
+        ic, ac = counts(view)
+        order = ['critical', 'high', 'medium', 'minor', 'ok']
+        print(f'\nIMAGES  {len(view["imgs"])} reachable '
+              f'(of {len(snap["imgs"])} total)')
+        for k in order:
+            print(f'  {k:10} {ic[k]:>5}')
+        print(f'\nAUDIO   {len(view["aud"])} reachable '
+              f'(of {len(snap["aud"])} total)')
+        for k in order:
+            print(f'  {k:10} {ac[k]:>5}')
+
     if '--compare' in sys.argv:
         base = json.loads(BASELINE.read_text())
+        if live_only:
+            # Compare like with like: restrict the baseline to the SAME
+            # records that are live now, so the diff shows content change,
+            # not the effect of disabling cities.
+            keep_i = {r[10] for r in filter_live(snap)['imgs']}
+            keep_a = {(r[0], r[1]) for r in filter_live(snap)['aud']}
+            base = {
+                'imgs': [r for r in base['imgs'] if r[10] in keep_i],
+                'aud': [r for r in base['aud'] if (r[0], r[1]) in keep_a],
+            }
+            snap = filter_live(snap)
+            print('\n(diff restricted to currently-reachable content)')
         show_diff(base, snap)
 
 
