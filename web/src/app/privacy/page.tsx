@@ -255,6 +255,11 @@ export default function PrivacyPage() {
           permanently deletes your profile record, favorites, and sign-in
           identity. This action cannot be undone.
         </p>
+        <p>
+          See <a href="/delete-account">Delete Your Account</a> for full
+          instructions, including how to request deletion by email if you can
+          no longer access the app, and what happens to ratings you submitted.
+        </p>
 
         <h2>9. Children</h2>
         <p>
