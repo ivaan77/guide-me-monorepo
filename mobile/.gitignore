@@ -46,3 +46,7 @@ node_modules
 .expo
 ios
 android
+
+# Play Store service account key (never commit)
+credentials/
+*-service-account*.json
